@@ -1,0 +1,231 @@
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Animated } from 'react-native';
+import { SvgXml } from 'react-native-svg';
+import { Screen, Tap, Row, Card, Header } from '../components/kit';
+import { Icon } from '../components/Icon';
+import { colors, shadow } from '../theme';
+
+/* device / edit avatars — ported verbatim from the prototype (DEVAVATAR / EDITAVATAR) */
+const DEVAVATAR =
+  '<svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg"><mask id="devav-mask" fill="white"><path d="M0 16C0 7.16344 7.16344 0 16 0H40C48.8366 0 56 7.16344 56 16V40C56 48.8366 48.8366 56 40 56H16C7.16344 56 0 48.8366 0 40V16Z"/></mask><path d="M0 16C0 7.16344 7.16344 0 16 0H40C48.8366 0 56 7.16344 56 16V40C56 48.8366 48.8366 56 40 56H16C7.16344 56 0 48.8366 0 40V16Z" fill="white" fill-opacity="0.15"/><path d="M16 0V1H40V0V-1H16V0ZM56 16H55V40H56H57V16H56ZM40 56V55H16V56V57H40V56ZM0 40H1V16H0H-1V40H0ZM16 56V55C7.71573 55 1 48.2843 1 40H0H-1C-1 49.3888 6.61116 57 16 57V56ZM56 40H55C55 48.2843 48.2843 55 40 55V56V57C49.3888 57 57 49.3888 57 40H56ZM40 0V1C48.2843 1 55 7.71573 55 16H56H57C57 6.61116 49.3888 -1 40 -1V0ZM16 0V-1C6.61116 -1 -1 6.61116 -1 16H0H1C1 7.71573 7.71573 1 16 1V0Z" fill="white" fill-opacity="0.2" mask="url(#devav-mask)"/><path d="M28 12C20.2688 12 14 18.2688 14 26C14 33.7313 20.2688 40 28 40C35.7313 40 42 33.7313 42 26C42 18.2688 35.7313 12 28 12ZM28 15.5C28.8281 15.5 29.5 16.1719 29.5 17C29.5 17.8281 28.8281 18.5 28 18.5C27.1719 18.5 26.5 17.8281 26.5 17C26.5 16.1719 27.1719 15.5 28 15.5ZM28 33C24.1344 33 21 29.8656 21 26C21 22.1344 24.1344 19 28 19C31.8656 19 35 22.1344 35 26C35 29.8656 31.8656 33 28 33Z" fill="white"/><path d="M33 26C33 27.3344 32.4813 28.5906 31.5344 29.5344C30.5906 30.4812 29.3344 31 28 31C26.6656 31 25.4094 30.4812 24.4656 29.5344C23.5188 28.5906 23 27.3344 23 26C23 24.6656 23.5188 23.4094 24.4656 22.4656C25.4094 21.5187 26.6656 21 28 21C29.3344 21 30.5906 21.5187 31.5344 22.4656C32.4813 23.4094 33 24.6656 33 26ZM37.5844 39.5906C38.1782 39.9969 38.1594 40.8781 37.55 41.2625C34.7813 42.9969 31.5094 44 28 44C24.4906 44 21.2188 42.9969 18.45 41.2594C17.8406 40.8781 17.8219 39.9969 18.4156 39.5875C18.7438 39.3625 19.175 39.3531 19.5156 39.5656C20.2344 40.0156 20.9875 40.4094 21.775 40.7406C23.7438 41.5781 25.8375 42 28 42C30.1625 42 32.2563 41.5781 34.2281 40.7437C35.0156 40.4094 35.7688 40.0188 36.4875 39.5688C36.825 39.3563 37.2563 39.3625 37.5844 39.5906Z" fill="white"/></svg>';
+const EDITAVATAR =
+  '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><mask id="editav-mask" fill="white"><path d="M0 8C0 3.58172 3.58172 0 8 0H16C20.4183 0 24 3.58172 24 8V16C24 20.4183 20.4183 24 16 24H8C3.58172 24 0 20.4183 0 16V8Z"/></mask><path d="M0 8C0 3.58172 3.58172 0 8 0H16C20.4183 0 24 3.58172 24 8V16C24 20.4183 20.4183 24 16 24H8C3.58172 24 0 20.4183 0 16V8Z" fill="white" fill-opacity="0.15"/><path d="M8 0V1H16V0V-1H8V0ZM24 8H23V16H24H25V8H24ZM16 24V23H8V24V25H16V24ZM0 16H1V8H0H-1V16H0ZM8 24V23C4.13401 23 1 19.866 1 16H0H-1C-1 20.9706 3.02944 25 8 25V24ZM24 16H23C23 19.866 19.866 23 16 23V24V25C20.9706 25 25 20.9706 25 16H24ZM16 0V1C19.866 1 23 4.13401 23 8H24H25C25 3.02944 20.9706 -1 16 -1V0ZM8 0V-1C3.02944 -1 -1 3.02944 -1 8H0H1C1 4.13401 4.13401 1 8 1V0Z" fill="white" fill-opacity="0.2" mask="url(#editav-mask)"/><path d="M6 18H18M13.1896 7.54114C13.1896 7.54114 13.1896 8.63089 14.2794 9.72064C15.3691 10.8104 16.4589 10.8104 16.4589 10.8104M8.87975 15.992L11.1682 15.6651C11.4983 15.618 11.8042 15.465 12.04 15.2292L17.5486 9.72064C18.1505 9.11879 18.1505 8.14299 17.5486 7.54114L16.4589 6.45139C15.857 5.84954 14.8812 5.84954 14.2794 6.45139L8.77078 11.96C8.53499 12.1958 8.38203 12.5017 8.33488 12.8318L8.00795 15.1202C7.9353 15.6288 8.3712 16.0647 8.87975 15.992Z" stroke="white" stroke-linecap="round"/></svg>';
+
+type TipKey = 'serial' | 'mac';
+const DEVTIPS: Record<TipKey, string> = {
+  serial: 'Unique device identifier, typically used for after-sales service or troubleshooting.',
+  mac: "Device's network identification address, typically used for network connection or technical troubleshooting.",
+};
+
+export default function DevInfo({ navigation }: any) {
+  const [tip, setTip] = useState<TipKey | null>(null);
+  const [devName, setDevName] = useState('Living Room');
+  const [editing, setEditing] = useState(false);
+
+  // brief "Copied" toast (RN stand-in for the copy-to-clipboard action)
+  const [toast, setToast] = useState(false);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const showToast = () => {
+    setToast(true);
+    toastAnim.setValue(0);
+    Animated.timing(toastAnim, { toValue: 1, duration: 160, useNativeDriver: true }).start(() => {
+      Animated.timing(toastAnim, {
+        toValue: 0,
+        delay: 1000,
+        duration: 240,
+        useNativeDriver: true,
+      }).start(() => setToast(false));
+    });
+  };
+
+  const toggleTip = (key: TipKey) => setTip((t) => (t === key ? null : key));
+
+  return (
+    <Screen contentStyle={{ paddingBottom: 54 }}>
+      <Header title="Device Details" onBack={() => navigation.goBack()} />
+
+      {/* device summary card (brand gradient approximated with a solid brand fill) */}
+      <View style={st.hero}>
+        <View style={{ width: 56, height: 56 }}>
+          <SvgXml xml={DEVAVATAR} width={56} height={56} />
+        </View>
+        {editing ? (
+          <TextInput
+            value={devName}
+            onChangeText={setDevName}
+            onBlur={() => setEditing(false)}
+            onSubmitEditing={() => setEditing(false)}
+            autoFocus
+            placeholderTextColor="rgba(255,255,255,.6)"
+            style={st.heroNameInput}
+          />
+        ) : (
+          <Text style={st.heroName}>{devName}</Text>
+        )}
+        <Text style={st.heroSub}>Indoor · IP Camera</Text>
+
+        <Tap style={st.editBtn} onPress={() => setEditing((e) => !e)} hitSlop={8}>
+          <SvgXml xml={EDITAVATAR} width={36} height={36} />
+        </Tap>
+      </View>
+
+      {/* Device version */}
+      <View style={st.eyebrow}>
+        <View style={[st.dot, { backgroundColor: colors.brand }]} />
+        <Text style={st.eyebrowTxt}>Device version</Text>
+      </View>
+      <Card style={st.card}>
+        <InfoRow label="Firmware" value="v2.4.1" />
+        <InfoRow label="Embedded Application" value="1.0.8" last />
+      </Card>
+
+      {/* Device information */}
+      <View style={st.eyebrow}>
+        <View style={[st.dot, { backgroundColor: colors.preventive }]} />
+        <Text style={st.eyebrowTxt}>Device information</Text>
+      </View>
+      <Card style={st.card}>
+        <InfoRow label="Model" value="IP Camera" copy onCopy={showToast} />
+        <InfoRow
+          label="Serial Number"
+          value="IH34100102000039"
+          copy
+          onCopy={showToast}
+          tipKey="serial"
+          tipOpen={tip === 'serial'}
+          onTip={() => toggleTip('serial')}
+        />
+        <InfoRow
+          label="MAC Address"
+          value="2C:D8:DE:4F:AD:75"
+          copy
+          onCopy={showToast}
+          tipKey="mac"
+          tipOpen={tip === 'mac'}
+          onTip={() => toggleTip('mac')}
+          last
+        />
+      </Card>
+
+      {toast && (
+        <Animated.View style={[st.toast, { opacity: toastAnim }]} pointerEvents="none">
+          <Text style={st.toastTxt}>Copied</Text>
+        </Animated.View>
+      )}
+    </Screen>
+  );
+}
+
+function InfoRow({
+  label,
+  value,
+  copy,
+  onCopy,
+  last,
+  tipKey,
+  tipOpen,
+  onTip,
+}: {
+  label: string;
+  value: string;
+  copy?: boolean;
+  onCopy?: () => void;
+  last?: boolean;
+  tipKey?: TipKey;
+  tipOpen?: boolean;
+  onTip?: () => void;
+}) {
+  const showTip = !!tipKey && !!tipOpen;
+  const showDivider = !(last && !showTip);
+  return (
+    <View>
+      <Row style={st.infoRow}>
+        <View style={st.infoLabelWrap}>
+          <Text style={st.infoLabel}>{label}</Text>
+          {!!tipKey && (
+            <Tap onPress={onTip} hitSlop={8}>
+              <Icon name="info" size={14} color={showTip ? colors.brand : '#F1889B'} sw={2} />
+            </Tap>
+          )}
+        </View>
+        <Text style={st.infoVal}>{value}</Text>
+        {copy && (
+          <Tap style={{ marginLeft: 2 }} onPress={onCopy} hitSlop={8}>
+            <Icon name="copy" size={15} color={colors.textTertiary} />
+          </Tap>
+        )}
+      </Row>
+      {showTip && (
+        <View style={st.tipWrap}>
+          <View style={st.tipCard}>
+            <Text style={st.tipTxt}>{tipKey ? DEVTIPS[tipKey] : ''}</Text>
+          </View>
+        </View>
+      )}
+      {showDivider && <View style={st.divider} />}
+    </View>
+  );
+}
+
+const st = StyleSheet.create({
+  hero: {
+    marginHorizontal: 18,
+    marginTop: 8,
+    borderRadius: 22,
+    padding: 20,
+    backgroundColor: '#2E7DF2',
+    ...shadow.md,
+  },
+  heroName: { fontSize: 22, fontWeight: '700', color: '#fff', marginTop: 14 },
+  heroNameInput: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+    marginTop: 14,
+    padding: 0,
+  },
+  heroSub: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,.75)', marginTop: 2 },
+  editBtn: { position: 'absolute', top: 20, right: 20, width: 36, height: 36 },
+
+  eyebrow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
+  dot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },
+  eyebrowTxt: { fontSize: 12, fontWeight: '600', color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.4 },
+
+  card: { marginHorizontal: 18 },
+
+  infoRow: { minHeight: 52, paddingHorizontal: 16, gap: 8 },
+  infoLabelWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  infoLabel: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
+  infoVal: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+  divider: { height: 1, marginHorizontal: 16, backgroundColor: colors.border },
+
+  tipWrap: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 12 },
+  tipCard: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    ...shadow.md,
+  },
+  tipTxt: { fontSize: 12, fontWeight: '500', color: colors.textSecondary, lineHeight: 18 },
+
+  toast: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 40,
+    alignItems: 'center',
+  },
+  toastTxt: {
+    backgroundColor: 'rgba(26,26,26,.92)',
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+});

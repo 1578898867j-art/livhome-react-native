@@ -1,0 +1,494 @@
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, DimensionValue, PanResponder } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { SvgXml } from 'react-native-svg';
+import { Modal, Pressable } from 'react-native';
+import { Screen, Tap, Row } from '../components/kit';
+import { Icon } from '../components/Icon';
+import { PHOTOICONS, PBTABICONS, FEICONS } from '../icons/protoSets';
+import { CALICON, FILTERICON, CLIPGRIP } from '../icons/protoIcons';
+import CalendarModal, { CAL_TODAY } from '../components/CalendarModal';
+import { colors } from '../theme';
+
+// ── Ported from the prototype's devPlayback() (SD PLAYBACK).
+// Timeline segments (0..50 range → mapped to % of the 24h track).
+type Seg = { s: number; e: number; t: 'reg' | 'evt'; ev?: string };
+const PBSEGS: Seg[] = [
+  { s: 0, e: 20, t: 'reg' },
+  { s: 20, e: 24, t: 'evt', ev: 'motion' },
+  { s: 24, e: 33, t: 'reg' },
+  { s: 33, e: 37, t: 'evt', ev: 'sound' },
+  { s: 37, e: 40, t: 'reg' },
+  { s: 44, e: 50, t: 'reg' },
+];
+const PB_REG = 'rgba(35,130,255,0.22)';
+const CLIP_RAIL = '#7C828C';
+const TIME_LABELS = ['06:00', '06:10', '06:20', '06:30', '06:40', '06:50'];
+const EVFILTER_COUNT = 4; // motion / sound / lineCross / geofence
+// 原型 EVFILTERS + FEICONS 底部筛选面板
+const EV_FILTERS = [
+  { key: 'motion', label: 'Motion', icon: 'motion' },
+  { key: 'sound', label: 'Sound', icon: 'sound' },
+  { key: 'lineCross', label: 'Line Crossing', icon: 'lineCross' },
+  { key: 'geofence', label: 'Geofence', icon: 'geofence' },
+];
+const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const pct = (v: number): DimensionValue => `${(v / 50) * 100}%`;
+const pad = (n: number) => (n < 10 ? '0' : '') + n;
+
+export default function DevPlayback({ navigation }: any) {
+  // playhead position + active recording-event filters (mirrors S.pbHead / S.pbEvents)
+  const [pbHead, setPbHead] = useState(23);
+  const [pbEvents, setPbEvents] = useState<string[]>(['motion', 'sound']);
+  // date (mirrors S.pbM/pbD; TODAY = 2026-04-23) + overlays
+  const [pbM, setPbM] = useState(3);
+  const [pbD, setPbD] = useState(23);
+  const [calOpen, setCalOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const toggleEvt = (k: string) =>
+    setPbEvents((ev) => (ev.indexOf(k) >= 0 ? ev.filter((v) => v !== k) : ev.concat(k)));
+  const toggleAllEvt = () =>
+    setPbEvents((ev) => (ev.length === EV_FILTERS.length ? [] : EV_FILTERS.map((e) => e.key)));
+  const [ctlSpk, setCtlSpk] = useState(false);
+  const [ctlMic, setCtlMic] = useState(false);
+  const [ctlRec, setCtlRec] = useState(false);
+  const [ctlSnap, setCtlSnap] = useState(false);
+
+  // clip (trim) mode — mirrors S.pbClip / S.pbClipS / S.pbClipE
+  const [clipMode, setClipMode] = useState(false);
+  const [clipS, setClipS] = useState(15);
+  const [clipE, setClipE] = useState(31);
+
+  const mm = Math.floor(pbHead);
+  const ss = Math.round((pbHead - mm) * 60);
+  const stamp = `2026-04-23 06:${pad(mm)}:${pad(ss)}`;
+
+  const evtOn = (sg: Seg) => sg.t === 'evt' && !!sg.ev && pbEvents.indexOf(sg.ev) >= 0;
+  const filterActive = pbEvents.length < EVFILTER_COUNT;
+
+  // playhead on a recorded segment? (pbSegAt) — gates the Clip action
+  const segAt = PBSEGS.find((sg) => pbHead >= sg.s && pbHead < sg.e) || null;
+
+  const enterClip = () => {
+    setClipS(Math.max(0, pbHead - 8));
+    setClipE(Math.min(50, pbHead + 8));
+    setClipMode(true);
+  };
+
+  // ── draggable playhead: PanResponder over the track, x → 0..50
+  const trackRef = useRef<View>(null);
+  const trackX = useRef(0);
+  const trackW = useRef(1);
+  const measureTrack = () => {
+    trackRef.current?.measureInWindow((x, _y, w) => {
+      trackX.current = x;
+      trackW.current = w || 1;
+    });
+  };
+  const seekTo = (pageX: number) => {
+    const p = Math.max(0, Math.min(1, (pageX - trackX.current) / trackW.current));
+    setPbHead(Math.round(p * 50 * 10) / 10);
+  };
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => seekTo(e.nativeEvent.pageX),
+      onPanResponderMove: (e) => seekTo(e.nativeEvent.pageX),
+    })
+  ).current;
+
+  const ctl = (name: string, on: boolean, toggle: () => void) => {
+    const glyph = on ? (name === 'speaker' ? 'speakerSolid' : name === 'mic' ? 'micSolid' : name) : name;
+    return (
+      <Tap style={st.ctlBtn} onPress={toggle}>
+        <SvgXml xml={PHOTOICONS[glyph]} width={18} height={18} color={on ? colors.brand : colors.textPrimary} />
+      </Tap>
+    );
+  };
+
+  return (
+    <Screen scroll={false}>
+      {/* nav row */}
+      <Row style={st.nav}>
+        <Tap style={st.navIcon} onPress={() => navigation.goBack()} hitSlop={8}>
+          <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
+        </Tap>
+        <Text style={st.navTitle}>Home Monitoring</Text>
+        <Tap style={st.navIcon} onPress={() => navigation.navigate('dev-settings')} hitSlop={8}>
+          <Icon name="gear" size={18} color={colors.textPrimary} />
+        </Tap>
+      </Row>
+
+      {/* video + control cluster */}
+      <View style={st.videoWrap}>
+        <View style={st.video}>
+          {segAt ? (
+            <>
+              {/* prototype dark gradient: linear-gradient(180deg,#2A2520,#15110d) */}
+              <LinearGradient colors={['#2A2520', '#15110D'] as const} style={StyleSheet.absoluteFill} />
+              <Text style={st.stamp}>{stamp}</Text>
+              <Text style={st.quality}>1080P</Text>
+              <View style={st.scanBtn}>
+                <Icon name="scan" size={16} color="#fff" sw={2} />
+              </View>
+            </>
+          ) : (
+            <View style={st.noRecWrap}>
+              <Text style={st.noRecTxt}>No recordings in this time period</Text>
+            </View>
+          )}
+        </View>
+        <Row style={st.ctlRow}>
+          {ctl('speaker', ctlSpk, () => setCtlSpk((v) => !v))}
+          {ctl('mic', ctlMic, () => setCtlMic((v) => !v))}
+          {ctl('record', ctlRec, () => setCtlRec((v) => !v))}
+          {ctl('camera', ctlSnap, () => setCtlSnap((v) => !v))}
+        </Row>
+      </View>
+
+      {/* date + filter row */}
+      <Row style={st.dateRow}>
+        <Tap style={st.dateTap} onPress={() => setCalOpen(true)}>
+          <SvgXml xml={CALICON} width={19} height={19} color={colors.textSecondary} />
+          <Text style={st.dateText}>
+            {MONTHS_ABBR[pbM]} {pbD}
+          </Text>
+          {pbM === CAL_TODAY.m && pbD === CAL_TODAY.d && <Text style={st.todayText}>| Today</Text>}
+        </Tap>
+        <View style={{ flex: 1 }} />
+        {!clipMode && (
+          <Tap style={st.filterTap} onPress={() => setFilterOpen(true)}>
+            <SvgXml
+              xml={FILTERICON}
+              width={18}
+              height={18}
+              color={filterActive ? colors.brand : colors.textSecondary}
+            />
+            <Text
+              style={[st.filterText, { color: filterActive ? colors.brand : colors.textSecondary }]}
+            >
+              Recording Filter
+            </Text>
+          </Tap>
+        )}
+      </Row>
+
+      {/* 24h timeline */}
+      <View style={st.timelineWrap}>
+        <Row style={st.labelRow}>
+          {TIME_LABELS.map((l) => (
+            <Text key={l} style={st.label}>
+              {l}
+            </Text>
+          ))}
+        </Row>
+        <View
+          ref={trackRef}
+          onLayout={measureTrack}
+          style={st.track}
+          {...(clipMode ? {} : pan.panHandlers)}
+        >
+          {clipMode ? (
+            <>
+              {/* trim bar: rails + kept span + green start / red end handles */}
+              <View style={st.clipRail} pointerEvents="none" />
+              <View
+                style={[st.clipSpan, { left: pct(clipS), width: pct(clipE - clipS) }]}
+                pointerEvents="none"
+              />
+              <View style={[st.clipHandle, { left: pct(clipS), backgroundColor: '#22C55E' }]}>
+                <SvgXml xml={CLIPGRIP} width={17} height={17} />
+              </View>
+              <View style={[st.clipHandle, { left: pct(clipE), backgroundColor: '#EF4444' }]}>
+                <SvgXml xml={CLIPGRIP} width={17} height={17} />
+              </View>
+            </>
+          ) : (
+            <>
+              {PBSEGS.map((sg, i) => (
+                <View
+                  key={i}
+                  pointerEvents="none"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: pct(sg.s),
+                    width: pct(sg.e - sg.s),
+                    backgroundColor: evtOn(sg) ? colors.brand : PB_REG,
+                  }}
+                />
+              ))}
+              <View pointerEvents="none" style={[st.playhead, { left: pct(pbHead) }]} />
+            </>
+          )}
+        </View>
+      </View>
+
+      {/* legend (hidden while trimming) */}
+      {!clipMode && (
+        <View style={st.legend}>
+          <Row style={st.legendRow}>
+            <View style={[st.swatch, { backgroundColor: PB_REG }]} />
+            <Text style={st.legendText}>Regular Recording</Text>
+          </Row>
+          <Row style={st.legendRow}>
+            <View style={[st.swatch, { backgroundColor: colors.brand }]} />
+            <Text style={st.legendText}>Event Recording</Text>
+          </Row>
+        </View>
+      )}
+
+      <View style={{ flex: 1 }} />
+
+      {/* bottom action bar — Album / Clip / Return (clip mode: Save to Album / Return) */}
+      {clipMode ? (
+        <Row style={[st.bottomBar, { paddingHorizontal: 64 }]}>
+          <Tap style={st.barItem} onPress={() => navigation.navigate('dev-download')}>
+            <SvgXml xml={PBTABICONS.album} width={21} height={21} color={colors.textSecondary} />
+            <Text style={st.barLabel}>Save to Album</Text>
+          </Tap>
+          <Tap style={st.barItem} onPress={() => setClipMode(false)}>
+            <SvgXml xml={PBTABICONS.return} width={21} height={21} color={colors.textSecondary} />
+            <Text style={st.barLabel}>Return</Text>
+          </Tap>
+        </Row>
+      ) : (
+        <Row style={st.bottomBar}>
+          <Tap style={st.barItem} onPress={() => navigation.navigate('album')}>
+            <SvgXml xml={PBTABICONS.album} width={21} height={21} color={colors.textSecondary} />
+            <Text style={st.barLabel}>Album</Text>
+          </Tap>
+          <Tap
+            style={[st.barItem, !segAt && { opacity: 0.5 }]}
+            onPress={segAt ? enterClip : undefined}
+          >
+            <SvgXml
+              xml={PBTABICONS.clip}
+              width={21}
+              height={21}
+              color={segAt ? colors.textSecondary : colors.textTertiary}
+            />
+            <Text style={[st.barLabel, !segAt && { color: colors.textTertiary }]}>Clip</Text>
+          </Tap>
+          <Tap style={st.barItem} onPress={() => navigation.goBack()}>
+            <SvgXml xml={PBTABICONS.return} width={21} height={21} color={colors.textSecondary} />
+            <Text style={st.barLabel}>Return</Text>
+          </Tap>
+        </Row>
+      )}
+
+      {/* 日历选择(原型 pb-cal-open → msg-cal) */}
+      <CalendarModal
+        visible={calOpen}
+        initM={pbM}
+        initD={pbD}
+        onClose={() => setCalOpen(false)}
+        onConfirm={(m, d) => {
+          setPbM(m);
+          setPbD(d);
+          setCalOpen(false);
+        }}
+      />
+
+      {/* 事件筛选底部面板(原型 pb-filter) */}
+      <Modal visible={filterOpen} transparent animationType="fade" onRequestClose={() => setFilterOpen(false)}>
+        <Pressable style={st.sheetOvl} onPress={() => setFilterOpen(false)}>
+          <Pressable style={st.sheet} onPress={(e) => e.stopPropagation()}>
+            <View style={st.grabber} />
+            <Row style={{ paddingHorizontal: 22, paddingTop: 10, paddingBottom: 6 }}>
+              <Text style={{ flex: 1, fontSize: 17, fontWeight: '800', color: colors.textPrimary }}>
+                Filter Events
+              </Text>
+              <Tap
+                onPress={() => {
+                  setFilterOpen(false);
+                  navigation.navigate('storage-settings');
+                }}
+              >
+                <Text style={{ fontSize: 14, fontWeight: '700', color: colors.brand }}>Storage Settings</Text>
+              </Tap>
+            </Row>
+            <Tap style={st.feRow} onPress={toggleAllEvt}>
+              <View style={st.feIcon}>
+                <SvgXml xml={FEICONS.allMotion} width={18} height={18} color={colors.textSecondary} />
+              </View>
+              <Text style={st.feLabel}>All Motion</Text>
+              {pbEvents.length === EV_FILTERS.length && <Icon name="check" size={18} color={colors.brand} sw={2.4} />}
+            </Tap>
+            {EV_FILTERS.map((e) => (
+              <View key={e.key}>
+                <View style={st.feDivider} />
+                <Tap style={st.feRow} onPress={() => toggleEvt(e.key)}>
+                  <View style={st.feIcon}>
+                    <SvgXml xml={FEICONS[e.icon]} width={18} height={18} color={colors.textSecondary} />
+                  </View>
+                  <Text style={st.feLabel}>{e.label}</Text>
+                  {pbEvents.indexOf(e.key) >= 0 && <Icon name="check" size={18} color={colors.brand} sw={2.4} />}
+                </Tap>
+              </View>
+            ))}
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </Screen>
+  );
+}
+
+const st = StyleSheet.create({
+  sheetOvl: { flex: 1, backgroundColor: 'rgba(0,0,0,.4)', justifyContent: 'flex-end' },
+  sheet: {
+    width: '100%',
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    paddingBottom: 20,
+  },
+  grabber: {
+    width: 38,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.borderStrong,
+    alignSelf: 'center',
+    marginTop: 9,
+    marginBottom: 3,
+  },
+  feRow: { flexDirection: 'row', alignItems: 'center', height: 54, paddingHorizontal: 22, gap: 13 },
+  feIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.bgSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  feDivider: { height: 1, backgroundColor: colors.border, marginLeft: 69 },
+  nav: { paddingHorizontal: 16, paddingVertical: 8, gap: 10 },
+  navIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  navTitle: { flex: 1, fontSize: 17, fontWeight: '600', textAlign: 'center', color: colors.textPrimary },
+
+  videoWrap: { marginHorizontal: 18, marginTop: 6, borderRadius: 18, overflow: 'hidden' },
+  video: { width: '100%', aspectRatio: 16 / 9, backgroundColor: '#1E1A16' },
+  noRecWrap: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#2E2E30',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noRecTxt: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '500' },
+  stamp: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowRadius: 3,
+    textShadowOffset: { width: 0, height: 1 },
+  },
+  quality: {
+    position: 'absolute',
+    bottom: 11,
+    right: 42,
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowRadius: 3,
+    textShadowOffset: { width: 0, height: 1 },
+  },
+  scanBtn: {
+    position: 'absolute',
+    bottom: 8,
+    right: 10,
+    width: 26,
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctlRow: { gap: 8, padding: 12, backgroundColor: colors.surface },
+  ctlBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
+
+  dateRow: { paddingHorizontal: 18, paddingTop: 20 },
+  dateTap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  dateText: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  todayText: { fontSize: 16, fontWeight: '500', color: colors.textTertiary },
+  filterTap: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  filterText: { fontSize: 14, fontWeight: '500' },
+
+  timelineWrap: { paddingHorizontal: 18, marginTop: 18 },
+  labelRow: { justifyContent: 'space-between', height: 18, marginBottom: 8 },
+  label: { fontSize: 12, fontWeight: '500', color: colors.textTertiary },
+  track: {
+    position: 'relative',
+    height: 80,
+    borderRadius: 10,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  playhead: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 3,
+    marginLeft: -1.5,
+    backgroundColor: colors.brand,
+  },
+
+  // clip trim bar
+  clipRail: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 26,
+    height: 28,
+    borderTopWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: CLIP_RAIL,
+  },
+  clipSpan: {
+    position: 'absolute',
+    top: 26,
+    height: 28,
+    backgroundColor: colors.surface,
+    borderTopWidth: 4,
+    borderBottomWidth: 4,
+    borderColor: CLIP_RAIL,
+    zIndex: 2,
+  },
+  clipHandle: {
+    position: 'absolute',
+    top: 14,
+    height: 52,
+    width: 38,
+    marginLeft: -19,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
+    borderWidth: 3,
+    borderColor: colors.surface,
+  },
+
+  legend: { paddingHorizontal: 18, paddingTop: 18, gap: 12 },
+  legendRow: { gap: 10 },
+  swatch: { width: 16, height: 16, borderRadius: 3 },
+  legendText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+
+  bottomBar: {
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingHorizontal: 24,
+    paddingTop: 10,
+    paddingBottom: 26,
+  },
+  barItem: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 6 },
+  barLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
+});
