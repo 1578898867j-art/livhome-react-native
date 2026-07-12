@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap } from '../components/kit';
@@ -27,7 +28,7 @@ const GROUPS: { label: string; items: Convo[] }[] = [
   },
 ];
 
-export default function AgentHistory({ navigation }: any) {
+export default function AgentHistory({ navigation }: AppScreenProps) {
   const openChat = () => navigation.navigate('Main', { screen: 'agent-chat' });
 
   return (

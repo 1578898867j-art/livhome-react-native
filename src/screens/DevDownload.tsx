@@ -1,10 +1,11 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Screen, Tap, Row, Card } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 
-export default function DevDownload({ navigation }: any) {
+export default function DevDownload({ navigation }: AppScreenProps) {
   const [dlPct] = useState(41);
   const p = Math.round(dlPct);
   const done = p >= 100;

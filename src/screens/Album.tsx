@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row } from '../components/kit';
@@ -12,7 +13,7 @@ const GROUPS: Group[] = [
   { title: '2026-03-22', times: ['21:03', '18:44'] },
 ];
 
-export default function Album({ navigation }: any) {
+export default function Album({ navigation }: AppScreenProps) {
   const [editMode, setEditMode] = useState(false);
 
   return (

@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import {
   View,
@@ -22,7 +23,7 @@ const NF_OPTS: [string, string][] = [
   ['60', '1 hour'],
 ];
 
-export default function NotifFrequency({ navigation }: any) {
+export default function NotifFrequency({ navigation }: AppScreenProps) {
   const [notifFreq, setNotifFreq] = useState<string>('10');
   const [notifCustom, setNotifCustom] = useState<number | null>(null);
   const [dlgOpen, setDlgOpen] = useState(false);

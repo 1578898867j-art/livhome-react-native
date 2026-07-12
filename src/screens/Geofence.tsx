@@ -1,10 +1,11 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row, Card, Header, Toggle } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 
-export default function Geofence({ navigation }: any) {
+export default function Geofence({ navigation }: AppScreenProps) {
   const [geofenceOn, setGeofenceOn] = useState(true);
 
   return (

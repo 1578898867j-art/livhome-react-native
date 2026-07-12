@@ -1,3 +1,5 @@
+import { navigateTo } from '../navigation/types';
+import type { AppScreenProps, StackRouteName } from '../navigation/types';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable, ActivityIndicator } from 'react-native';
 import { SvgXml } from 'react-native-svg';
@@ -10,7 +12,7 @@ import { ME_NOTIF, ME_ALBUM, ME_FEEDBACK, ME_HELP } from '../icons/meIcons';
 type MeMenuRow = {
   svg: string;
   name: string;
-  target: string | null;
+  target: StackRouteName | null;
 };
 
 // Icons are the prototype's own SVGs, rendered at 18px in text-secondary.
@@ -23,7 +25,7 @@ const MENU: MeMenuRow[] = [
 
 type Overlay = null | 'avatar-sheet' | 'uploading' | 'upgrade';
 
-export default function MeHome({ navigation }: any) {
+export default function MeHome({ navigation }: AppScreenProps) {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const uploadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -93,7 +95,7 @@ export default function MeHome({ navigation }: any) {
             <Tap
               key={r.name}
               style={st.menuRow}
-              onPress={() => r.target && navigation.navigate(r.target)}
+              onPress={() => r.target && navigateTo(navigation, r.target)}
             >
               <View style={st.menuIcon}>
                 <SvgXml xml={r.svg} width={18} height={18} color={colors.textSecondary} />

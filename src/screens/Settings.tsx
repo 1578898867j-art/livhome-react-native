@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { Screen, NavBar, Card, SettingRow } from '../components/kit';
@@ -5,7 +6,7 @@ import { colors } from '../theme';
 
 type Overlay = null | 'logout' | 'delete' | 'unbind';
 
-export default function Settings({ navigation }: any) {
+export default function Settings({ navigation }: AppScreenProps) {
   const [overlay, setOverlay] = useState<Overlay>(null);
 
   const close = () => setOverlay(null);

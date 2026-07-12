@@ -1,16 +1,15 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { STACK_ROUTES } from './routes';
 import { screenFor } from './registry';
+import { STACK_ROUTES, TAB_ROUTES } from './types';
+import type { MainTabParamList, RootStackParamList } from './types';
 import TabBar from './TabBar';
 
-const Stack = createNativeStackNavigator();
-const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // Prototype tab order: Devices · Assistant (center) · Profile
-const ORDERED_TABS = ['dev-home', 'agent-chat', 'me-home'];
-
 function MainTabs() {
   return (
     <Tab.Navigator
@@ -18,7 +17,7 @@ function MainTabs() {
       screenOptions={{ headerShown: false }}
       tabBar={(props) => <TabBar {...props} />}
     >
-      {ORDERED_TABS.map((id) => (
+      {TAB_ROUTES.map((id) => (
         <Tab.Screen key={id} name={id} component={screenFor(id)} />
       ))}
     </Tab.Navigator>

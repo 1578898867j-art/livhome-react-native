@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,7 +7,7 @@ import { Icon } from '../components/Icon';
 import { CamPreview } from '../components/CamPreview';
 import { colors } from '../theme';
 
-export default function NotifImage({ navigation }: any) {
+export default function NotifImage({ navigation }: AppScreenProps) {
   return (
     <SafeAreaView style={st.root} edges={['top', 'bottom']}>
       {/* top bar: back + centered date/time */}

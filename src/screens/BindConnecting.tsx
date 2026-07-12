@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
@@ -38,7 +39,7 @@ function Step({ done, title, sub }: { done: boolean; title: string; sub: string 
   );
 }
 
-export default function BindConnecting({ navigation }: any) {
+export default function BindConnecting({ navigation }: AppScreenProps) {
   // progress ring geometry (r=58): circumference ~364, offset 36 ≈ 90%
   const R = 58;
   const CIRC = 364;

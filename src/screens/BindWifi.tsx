@@ -1,10 +1,11 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { Screen, Tap, Row, Header } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 
-export default function BindWifi({ navigation }: any) {
+export default function BindWifi({ navigation }: AppScreenProps) {
   const [password, setPassword] = useState('');
   const filled = password.length > 0;
 

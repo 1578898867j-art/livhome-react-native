@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Header, SecondaryBtn } from '../components/kit';
@@ -21,7 +22,7 @@ const PAT = [
 
 const CELL = 14;
 
-export default function BindQR({ navigation }: any) {
+export default function BindQR({ navigation }: AppScreenProps) {
   return (
     <Screen scroll={false}>
       <Header title="QR Pairing" onBack={() => navigation.goBack()} />

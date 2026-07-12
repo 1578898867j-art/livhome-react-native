@@ -10,12 +10,11 @@
 ## 运行
 
 ```bash
-cd livhome-rn
-npm install          # 或 yarn
-npx expo start       # 扫码用 Expo Go 打开，或按 i / a 开模拟器
+npm ci
+npx expo start --clear --go --port 8082
 ```
 
-> 首次安装后如提示版本不匹配，运行 `npx expo install --fix` 让依赖对齐当前 Expo SDK。
+当前固定使用 Expo SDK 54，以兼容 App Store 中的 iOS Expo Go。真机联调后端时，将 `.env.example` 复制为本地环境文件，并把 API 地址改为开发电脑的局域网地址。
 
 ## 目录结构
 
@@ -23,35 +22,30 @@ npx expo start       # 扫码用 Expo Go 打开，或按 i / a 开模拟器
 App.tsx                    入口：SafeAreaProvider + NavigationContainer
 index.js                   registerRootComponent
 src/
-  theme/index.ts           设计令牌（颜色 / 圆角 / 间距 / 阴影 / 字号）——从原型 :root 1:1 移植
+  api/client.ts            统一 HTTP、超时、取消和错误处理
+  contracts/               前后端 DTO 与稳定枚举
+  features/                聊天、设备等功能状态与行为
+  theme/index.ts           设计令牌（颜色 / 圆角 / 间距 / 阴影 / 字号）
   components/
-    SunLogo.tsx            太阳放射标（react-native-svg 绘制，任意尺寸清晰）
-    ui.tsx                 Screen / Card / Row / 按钮 / 文本样式等基础组件
+    kit.tsx                Screen / Card / Row / 按钮等共享组件
+    SunLogo.tsx            太阳放射标
   assets/images.ts         摄像头照片等 data URI 资源
   navigation/
-    RootNavigator.tsx      Stack(Login → Main → DeviceDetail) + BottomTabs(Home/Assistant/Profile)
-  screens/
-    LoginScreen.tsx        登录（邮箱 / Google / Apple）
-    DeviceHomeScreen.tsx   设备首页（在线卡片 + 离线卡片，含摄像头照片头像）
-    DeviceDetailScreen.tsx 实时画面（Controls / Tilt / Messages / Playback 四 Tab）
-    AssistantScreen.tsx    AI 助手（空态问候 + 建议 Pills + 流式对话 + 复制/朗读）
-    ProfileScreen.tsx      我的（资料卡 + 相册/通知/反馈/帮助/设置分组）
+    types.ts               路由名、参数与页面导航类型
+    registry.tsx           页面注册表
+    RootNavigator.tsx      Stack + Bottom Tabs
+  screens/                 页面组合与本地视觉状态
 ```
 
-## 已转换的页面（核心主流程）
+## 后端联调
 
-- 登录 → 设备首页 → 实时画面 → AI 助手 → 我的
-
-## 尚未转换（原型里还有，可继续补）
-
-通知中心 / 通知设置、AI 侦测（移动/声音/越界/电子围栏）、相册、自动化（闹钟/定时关机）、
-配网流程（搜索/Wi-Fi/连接/成功/失败/二维码）、设置子页（关于/语言/时区/存储卡）、反馈中心表单等。
-
-这些在 HTML 原型里都已存在，按需要可以按同样的 `screens/*.tsx` 模式逐个补齐并挂到导航上。
+- 接口约定见 `docs/API_CONTRACT.md`。
+- 页面不得直接调用 `fetch`，统一使用 `src/api/client.ts`。
+- DTO 与枚举维护在 `src/contracts/`。
+- 团队与编码代理协作规则见 `AGENTS.md` 和 `CLAUDE.md`。
 
 ## 技术栈
 
-- Expo SDK 52 · React Native 0.76 · TypeScript
+- Expo SDK 54 · React Native 0.81 · TypeScript 5.9
 - React Navigation v7（native-stack + bottom-tabs）
 - react-native-svg（自绘图标 / logo）
-- @expo/vector-icons（Feather / Ionicons）

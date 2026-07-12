@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -5,7 +6,7 @@ import { Tap } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { CamPreview } from '../components/CamPreview';
 
-export default function AlbumDetail({ navigation }: any) {
+export default function AlbumDetail({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
 
   return (

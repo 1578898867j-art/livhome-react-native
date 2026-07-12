@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { Screen, Header, Hint, Eyebrow, Card, Tap, Row } from '../components/kit';
@@ -25,7 +26,7 @@ const TZ_DEFAULT = ['Beijing', 'Tokyo', 'Bangkok', 'New Delhi', 'Dubai', 'Tehran
 
 const norm = (s: string) => s.toLowerCase().replace(/\s+/g, '');
 
-export default function Timezone({ navigation }: any) {
+export default function Timezone({ navigation }: AppScreenProps) {
   const [query, setQuery] = useState('');
   const [sel, setSel] = useState('Beijing');
 

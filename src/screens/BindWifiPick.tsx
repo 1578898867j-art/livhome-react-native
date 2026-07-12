@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap } from '../components/kit';
@@ -16,7 +17,7 @@ const NETWORKS: Net[] = [
   { name: 'TP-LINK_8821' },
 ];
 
-export default function BindWifiPick({ navigation }: any) {
+export default function BindWifiPick({ navigation }: AppScreenProps) {
   const pick = () => navigation.navigate('bind-wifi');
 
   return (

@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Header, Card, Row, Tap } from '../components/kit';
@@ -5,7 +6,7 @@ import { SunLogo } from '../components/SunLogo';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 
-export default function About({ navigation }: any) {
+export default function About({ navigation }: AppScreenProps) {
   return (
     <Screen contentStyle={{ paddingBottom: 54 }}>
       <Header title="About" onBack={() => navigation.goBack()} />

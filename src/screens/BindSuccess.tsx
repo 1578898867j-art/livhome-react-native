@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { Screen, Header, Tap, PrimaryBtn } from '../components/kit';
@@ -6,7 +7,7 @@ import { colors } from '../theme';
 
 const ROOMS = ['Living', 'Bedroom', 'Backyard', 'Other'];
 
-export default function BindSuccess({ navigation }: any) {
+export default function BindSuccess({ navigation }: AppScreenProps) {
   const [name, setName] = useState('Living Room Camera');
   const [room, setRoom] = useState('Living');
 

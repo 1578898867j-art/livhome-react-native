@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Header, Card, PrimaryBtn } from '../components/kit';
@@ -32,7 +33,7 @@ function PrepItem({ n, title, desc, first }: { n: string; title: string; desc: s
   );
 }
 
-export default function BindPrep({ navigation }: any) {
+export default function BindPrep({ navigation }: AppScreenProps) {
   return (
     <Screen scroll={false}>
       <View style={{ flex: 1 }}>

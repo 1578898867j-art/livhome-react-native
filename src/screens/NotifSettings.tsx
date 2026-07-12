@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import {
@@ -9,7 +10,7 @@ import {
   SettingRow,
 } from '../components/kit';
 
-export default function NotifSettings({ navigation }: any) {
+export default function NotifSettings({ navigation }: AppScreenProps) {
   const [notifOn, setNotifOn] = useState(true);
   const [motionOn, setMotionOn] = useState(true);
 

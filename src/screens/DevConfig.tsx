@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
@@ -107,7 +108,7 @@ function FlipCard({
   );
 }
 
-export default function DevConfig({ navigation }: any) {
+export default function DevConfig({ navigation }: AppScreenProps) {
   // Local state seeded from the prototype S defaults
   const [tzGmt] = useState('GMT+8:00'); // tzSel:'Beijing' → GMT+8:00
   const [offTime] = useState('None');

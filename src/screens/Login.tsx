@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SvgXml } from 'react-native-svg';
@@ -12,7 +13,7 @@ const GOOGLE_LOGO =
 const APPLE_LOGO =
   '<svg width="28" height="28" viewBox="14.48 14.79 22.42 22.42" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M34.9727 22.3157C33.818 20.8768 32.1979 20.0443 30.6686 20.0443C28.6453 20.0443 27.7904 21.0056 26.3868 21.0056C24.94 21.0056 23.8399 20.0457 22.0899 20.0457C20.371 20.0457 18.5434 21.0898 17.3848 22.8743C15.7544 25.3836 16.0304 30.105 18.6742 34.1283C19.6198 35.5669 20.8826 37.1848 22.5337 37.2002C24.0012 37.2136 24.4164 36.2641 26.4075 36.2529C28.3989 36.242 28.7755 37.2106 30.2427 37.1968C31.8938 37.1811 33.2261 35.3897 34.1711 33.9508C34.8484 32.9201 35.1007 32.3993 35.6268 31.2342C31.8045 29.79 31.1899 24.3891 34.9727 22.3157Z" fill="#111827"/><path fill-rule="evenodd" clip-rule="evenodd" d="M29.1338 18.4322C29.8688 17.4892 30.4271 16.157 30.2244 14.7956C29.0238 14.8785 27.6193 15.642 26.7995 16.638C26.0552 17.5418 25.4406 18.8822 25.6797 20.185C26.9904 20.2256 28.3467 19.4425 29.1338 18.4322Z" fill="#111827"/></svg>';
 
-export default function Login({ navigation }: any) {
+export default function Login({ navigation }: AppScreenProps) {
   const enterApp = () => navigation.navigate('email-login');
 
   return (

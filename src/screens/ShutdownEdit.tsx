@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row, Card, Header, PrimaryBtn } from '../components/kit';
@@ -19,7 +20,7 @@ function repeatLabel(days: boolean[]) {
   return 'Custom';
 }
 
-export default function ShutdownEdit({ navigation }: any) {
+export default function ShutdownEdit({ navigation }: AppScreenProps) {
   const [edOff, setEdOff] = useState<TM>({ h: 22, m: 0 });
   const [edOn, setEdOn] = useState<TM>({ h: 7, m: 0 });
   const [edDays] = useState<boolean[]>([true, true, true, true, true, true, true]);

@@ -1,5 +1,5 @@
-import React from 'react';
-import Stub from '../screens/_Stub';
+import type { ComponentType } from 'react';
+import type { AppScreenProps, ScreenName } from './types';
 
 import Login from '../screens/Login';
 import DevHome from '../screens/DevHome';
@@ -52,7 +52,7 @@ import BindSuccess from '../screens/BindSuccess';
 import BindFail from '../screens/BindFail';
 import BindQR from '../screens/BindQR';
 
-const MAP: Record<string, React.ComponentType<any>> = {
+const SCREENS = {
   'login': Login,
   'dev-home': DevHome,
   'dev-detail': DevDetail,
@@ -103,8 +103,9 @@ const MAP: Record<string, React.ComponentType<any>> = {
   'bind-success': BindSuccess,
   'bind-fail': BindFail,
   'bind-qr': BindQR,
-};
+} satisfies Record<ScreenName, ComponentType<AppScreenProps>>;
 
-export function screenFor(id: string): React.ComponentType<any> {
-  return MAP[id] || Stub;
+// React Navigation injects route-specific props at this dynamic registration boundary.
+export function screenFor(id: ScreenName): ComponentType<any> {
+  return SCREENS[id];
 }

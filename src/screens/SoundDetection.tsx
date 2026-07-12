@@ -1,9 +1,10 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { Screen, Header, Eyebrow, Card, ToggleRow, Segmented } from '../components/kit';
 import { colors } from '../theme';
 
-export default function SoundDetection({ navigation }: any) {
+export default function SoundDetection({ navigation }: AppScreenProps) {
   const [soundOn, setSoundOn] = useState(true);
   const [soundSens, setSoundSens] = useState(1);
 

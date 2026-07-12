@@ -1,8 +1,9 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { colors } from '../theme';
 
-export default function PrivacyTerms({ navigation }: any) {
+export default function PrivacyTerms({ navigation }: AppScreenProps) {
   return (
     <View style={st.overlay}>
       <View style={st.card}>
@@ -22,7 +23,7 @@ export default function PrivacyTerms({ navigation }: any) {
 
         <View style={st.actions}>
           <Pressable
-            onPress={() => navigation.replace('Main')}
+            onPress={() => navigation.replace('Main', { screen: 'dev-home' })}
             style={({ pressed }) => [st.btn, st.btnPri, pressed && { opacity: 0.85 }]}
           >
             <Text style={st.btnPriText}>Agree and continue</Text>

@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -5,7 +6,7 @@ import { Screen, Header, Eyebrow, Row, Tap, PrimaryBtn } from '../components/kit
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 
-export default function EditProfile({ navigation }: any) {
+export default function EditProfile({ navigation }: AppScreenProps) {
   const [nickname, setNickname] = useState('Jon Alishon');
 
   return (

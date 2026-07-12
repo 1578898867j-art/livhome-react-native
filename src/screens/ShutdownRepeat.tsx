@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row, Card, NavBar } from '../components/kit';
@@ -15,7 +16,7 @@ function repeatLabel(days: boolean[]): string {
   return 'Custom';
 }
 
-export default function ShutdownRepeat({ navigation }: any) {
+export default function ShutdownRepeat({ navigation }: AppScreenProps) {
   const [days, setDays] = useState<boolean[]>([true, true, true, true, true, true, true]);
 
   const toggle = (i: number) =>

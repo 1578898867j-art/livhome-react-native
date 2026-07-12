@@ -1,3 +1,5 @@
+import { navigateTo } from '../navigation/types';
+import type { AppScreenProps, StackRouteName } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { Screen, Tap, Row } from '../components/kit';
@@ -7,8 +9,8 @@ import { CAMAVATAR } from '../assets/images';
 
 type Prev = { tag: string; label: string };
 
-export default function DevHome({ navigation }: any) {
-  const go = (id: string) => () => navigation.navigate(id);
+export default function DevHome({ navigation }: AppScreenProps) {
+  const go = (id: StackRouteName) => () => navigateTo(navigation, id);
 
   /* ---- camPreview({play:true, tag, label}) ---- */
   const CamPreview = ({ tag, label }: Prev) => (
@@ -22,11 +24,11 @@ export default function DevHome({ navigation }: any) {
       {/* bottom timestamp label */}
       <Text style={st.previewLabel}>{label}</Text>
       {/* play button */}
-      <Tap style={st.playWrap} onPress={go('dev-detail')}>
+      <View style={st.playWrap}>
         <View style={st.playBtn}>
           <Icon name="play" size={24} color="#fff" sw={1.6} />
         </View>
-      </Tap>
+      </View>
     </View>
   );
 

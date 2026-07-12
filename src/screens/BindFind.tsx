@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { Screen, Tap, Row, Header } from '../components/kit';
@@ -27,7 +28,7 @@ function DeviceTile({ name, onPress }: { name: string; onPress?: () => void }) {
   );
 }
 
-export default function BindFind({ navigation }: any) {
+export default function BindFind({ navigation }: AppScreenProps) {
   // ping ripples (two rings staggered) + breathing dot
   const ping1 = useRef(new Animated.Value(0)).current;
   const ping2 = useRef(new Animated.Value(0)).current;

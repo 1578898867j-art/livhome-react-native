@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { Screen, Tap, Header, Card, Eyebrow } from '../components/kit';
@@ -13,7 +14,7 @@ const REC_OPTS: string[] = ['off', 'alert', 'allday'];
 
 type Overlay = null | 'rec' | 'format';
 
-export default function StorageSettings({ navigation }: any) {
+export default function StorageSettings({ navigation }: AppScreenProps) {
   const [recMode, setRecMode] = useState<string>('allday');
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [used, setUsed] = useState(2.19);

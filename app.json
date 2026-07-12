@@ -5,10 +5,6 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "splash": {
-      "backgroundColor": "#FBFBFB"
-    },
     "ios": {
       "supportsTablet": true
     },
@@ -21,8 +17,12 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-asset",
-      "expo-font"
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#FBFBFB"
+        }
+      ]
     ]
   }
 }

@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, NavBar, Card, Row, RadioRow } from '../components/kit';
@@ -6,7 +7,7 @@ import { colors } from '../theme';
 
 const LANGS = ['English', '简体中文', '繁體中文', '日本語', '한국어', 'Español', 'Deutsch'];
 
-export default function Language({ navigation }: any) {
+export default function Language({ navigation }: AppScreenProps) {
   const [selected, setSelected] = useState('English');
 
   return (

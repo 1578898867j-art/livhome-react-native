@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useRef, useState } from 'react';
 import {
   View,
@@ -20,7 +21,7 @@ const FRAME_H = 210;
 
 const clamp = (v: number) => Math.max(4, Math.min(96, v));
 
-export default function TripWire({ navigation }: any) {
+export default function TripWire({ navigation }: AppScreenProps) {
   const [twA, setTwA] = useState<Pt>({ x: 26, y: 26 });
   const [twB, setTwB] = useState<Pt>({ x: 72, y: 74 });
   const [twDir, setTwDir] = useState<Dir>('both');

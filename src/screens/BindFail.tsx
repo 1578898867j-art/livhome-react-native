@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Header, PrimaryBtn, SecondaryBtn } from '../components/kit';
@@ -22,7 +23,7 @@ function CauseRow({ text, first }: { text: string; first?: boolean }) {
   );
 }
 
-export default function BindFail({ navigation }: any) {
+export default function BindFail({ navigation }: AppScreenProps) {
   return (
     <Screen scroll={false}>
       <Header title="Connection failed" onBack={() => navigation.goBack()} />

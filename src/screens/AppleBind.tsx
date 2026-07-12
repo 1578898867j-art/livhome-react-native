@@ -1,10 +1,11 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { Screen, Tap, Row, Eyebrow, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 
-export default function AppleBind({ navigation }: any) {
+export default function AppleBind({ navigation }: AppScreenProps) {
   const [email, setEmail] = useState('');
 
   return (
@@ -39,7 +40,10 @@ export default function AppleBind({ navigation }: any) {
       <View style={{ flex: 1 }} />
 
       <View style={st.footer}>
-        <PrimaryBtn label="Get Verification Code" onPress={() => navigation.replace('Main')} />
+        <PrimaryBtn
+          label="Get Verification Code"
+          onPress={() => navigation.replace('Main', { screen: 'dev-home' })}
+        />
       </View>
     </Screen>
   );

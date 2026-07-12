@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
@@ -6,10 +7,13 @@ import { Icon } from '../components/Icon';
 import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS, MOVEICONS } from '../icons/protoSets';
 import { ZOOMICON, SELICON, SELICON2 } from '../icons/protoIcons';
 import { colors } from '../theme';
-
-type Tab = 'messages' | 'controls' | 'tilt' | 'playback';
-
-type Msg = { icon: string; title: string; time: string };
+import { useDeviceDetailPrototype } from '../features/devices/useDeviceDetailPrototype';
+import type {
+  ControlKey as CtlKey,
+  DeviceDetailTab as Tab,
+  DeviceMessage as Msg,
+  TiltKey,
+} from '../features/devices/useDeviceDetailPrototype';
 
 const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -29,16 +33,6 @@ const TILT_ITEMS: { icon: string; label: string; key: TiltKey }[] = [
   { icon: 'sound', label: 'Sound Detection', key: 'soundOn' },
   { icon: 'siren', label: 'Siren', key: 'sirenOn' },
   { icon: 'privacy', label: 'Privacy', key: 'privacyOn' },
-];
-
-type TiltKey = 'smartTrack' | 'nightVision' | 'motionOn' | 'soundOn' | 'sirenOn' | 'privacyOn';
-type CtlKey = 'ctlSpk' | 'ctlMic' | 'ctlRec' | 'ctlSnap';
-
-const INITIAL_MSGS: Msg[] = [
-  { icon: 'cross', title: 'Line Crossing Detected', time: '09:41' },
-  { icon: 'motion', title: 'Motion Detected', time: '09:41' },
-  { icon: 'sound', title: 'Sound Detected', time: '08:12' },
-  { icon: 'fence', title: 'Geofence Alert', time: '07:15' },
 ];
 
 /* ---- dark camera preview (linear-gradient approximated with a solid dark surface) ---- */
@@ -78,37 +72,26 @@ function CamPreview({
   );
 }
 
-export default function DevDetail({ navigation }: any) {
-  const [tab, setTab] = useState<Tab>('controls');
+export default function DevDetail({ navigation }: AppScreenProps) {
+  const {
+    clearChecked,
+    cruising,
+    ctl,
+    ctrlView,
+    deleteCheckedMessages,
+    msgChecked,
+    msgs,
+    setCruising,
+    setCtrlView,
+    setTab,
+    tab,
+    tilt,
+    toggleChecked,
+    toggleCtl,
+    toggleTilt,
+  } = useDeviceDetailPrototype();
 
-  // player controls (ctlSpk/ctlMic/ctlRec/ctlSnap all default false)
-  const [ctl, setCtl] = useState<Record<CtlKey, boolean>>({
-    ctlSpk: false,
-    ctlMic: false,
-    ctlRec: false,
-    ctlSnap: false,
-  });
-  const toggleCtl = (k: CtlKey) => setCtl((s) => ({ ...s, [k]: !s[k] }));
-
-  // controls tab pan/preset view
-  const [ctrlView, setCtrlView] = useState<'pad' | 'presets'>('pad');
-  const [cruising, setCruising] = useState(false);
-
-  // tilt tab toggles (defaults from the prototype S object)
-  const [tilt, setTilt] = useState<Record<TiltKey, boolean>>({
-    smartTrack: true,
-    nightVision: false,
-    motionOn: true,
-    soundOn: true,
-    sirenOn: true,
-    privacyOn: false,
-  });
-  const toggleTilt = (k: TiltKey) => setTilt((s) => ({ ...s, [k]: !s[k] }));
-
-  // messages tab
-  const [msgs, setMsgs] = useState<Msg[]>(INITIAL_MSGS);
   const [msgSelect, setMsgSelect] = useState(false);
-  const [msgChecked, setMsgChecked] = useState<number[]>([]);
   const [msgFilter, setMsgFilter] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [delConfirm, setDelConfirm] = useState(false);
@@ -144,19 +127,15 @@ export default function DevDetail({ navigation }: any) {
     setCalOpen(false);
   };
 
-  const toggleChecked = (i: number) =>
-    setMsgChecked((c) => (c.indexOf(i) >= 0 ? c.filter((v) => v !== i) : c.concat(i)));
-
   const deleteChecked = () => {
-    setMsgs((ms) => ms.filter((_, i) => msgChecked.indexOf(i) < 0));
-    setMsgChecked([]);
+    deleteCheckedMessages();
     setMsgSelect(false);
     setDelConfirm(false);
   };
 
   const pickFilter = (k: string) => {
     setMsgFilter((f) => (f === k ? null : k));
-    setMsgChecked([]);
+    clearChecked();
     setFilterOpen(false);
   };
 
@@ -224,7 +203,7 @@ export default function DevDetail({ navigation }: any) {
             onFilterClear={() => setMsgFilter(null)}
             onToggleSelect={() => {
               setMsgSelect((v) => {
-                if (v) setMsgChecked([]);
+                if (v) clearChecked();
                 return !v;
               });
             }}

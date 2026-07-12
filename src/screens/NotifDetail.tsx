@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row, Card } from '../components/kit';
@@ -14,7 +15,7 @@ type InfoRowProps = {
   last?: boolean;
 };
 
-export default function NotifDetail({ navigation }: any) {
+export default function NotifDetail({ navigation }: AppScreenProps) {
   /* ---- infoRow(icon, color, label, val, last) ---- */
   const InfoRow = ({ icon, color, soft, label, val, last }: InfoRowProps) => (
     <Row style={st.infoRow}>

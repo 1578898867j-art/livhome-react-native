@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Header, Tap, PrimaryBtn } from '../components/kit';
@@ -30,7 +31,7 @@ function DeviceTile({ name, onPress }: { name: string; onPress?: () => void }) {
   );
 }
 
-export default function BindNone({ navigation }: any) {
+export default function BindNone({ navigation }: AppScreenProps) {
   const goPrep = () => navigation.navigate('bind-prep');
 
   return (

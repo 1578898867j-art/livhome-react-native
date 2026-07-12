@@ -1,7 +1,8 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { Screen, Header, Eyebrow, Card, SettingRow } from '../components/kit';
 
-export default function AlertSettings({ navigation }: any) {
+export default function AlertSettings({ navigation }: AppScreenProps) {
   return (
     <Screen>
       <Header title="Alarm Settings" onBack={() => navigation.goBack()} />

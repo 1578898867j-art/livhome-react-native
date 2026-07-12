@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
@@ -70,7 +71,7 @@ const SYSTEM: Alert[] = [
   },
 ];
 
-export default function NotifCenter({ navigation }: any) {
+export default function NotifCenter({ navigation }: AppScreenProps) {
   const [notifTab, setNotifTab] = useState<'device' | 'system'>('device');
   const [editMode, setEditMode] = useState(false);
 

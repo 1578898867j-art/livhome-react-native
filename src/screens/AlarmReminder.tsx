@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Card, Header, Eyebrow, ToggleRow, SettingRow } from '../components/kit';
@@ -35,7 +36,7 @@ function AvRow({
   );
 }
 
-export default function AlarmReminder({ navigation }: any) {
+export default function AlarmReminder({ navigation }: AppScreenProps) {
   const [notifOn, setNotifOn] = useState(true);
   const [voiceAlarm, setVoiceAlarm] = useState(true);
   const [alarmVoice, setAlarmVoice] = useState<'system' | 'custom'>('system');

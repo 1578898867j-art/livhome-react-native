@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, DimensionValue } from 'react-native';
 import { Screen, NavBar } from '../components/kit';
@@ -23,7 +24,7 @@ const DOTS: { left: DimensionValue; top: DimensionValue }[] = [];
   });
 });
 
-export default function DetectionArea({ navigation }: any) {
+export default function DetectionArea({ navigation }: AppScreenProps) {
   const [cells, setCells] = useState<boolean[]>(DEFAULT_CELLS);
   const [notify, setNotify] = useState(false);
   const [toast, setToast] = useState<string | null>(null);

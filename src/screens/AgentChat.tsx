@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -24,6 +25,7 @@ import { SunBurst } from '../components/SunLogo';
 import { colors } from '../theme';
 import { CAREPICS } from '../assets/images';
 import { SENDICON, SCROLLDOWN, CONV_EDIT, CONV_TRASH } from '../icons/protoIcons';
+import { CONVERSATION_GROUPS, useAssistantPrototype } from '../features/assistant/useAssistantPrototype';
 
 const W = Dimensions.get('window').width;
 const H = Dimensions.get('window').height;
@@ -76,19 +78,6 @@ const CONV: Block[] = [
   { t: 'gap' },
   { t: 'me', text: 'Yes, set an evening check-in for 6 PM.' },
   { t: 'p', text: 'Done ✅ Evening check-in set for <b>6:00 PM</b> daily. I’ll send a short summary of the day’s activity and flag anything unusual. You can change or turn this off anytime in the check-in settings.' },
-];
-
-// Drawer conversation history (mirrors the prototype's S.convList).
-type ConvGroup = 'Today' | 'Yesterday' | 'Within 30 days';
-type ConvItem = { id: number; name: string; grp: ConvGroup };
-const CONV_GROUPS: ConvGroup[] = ['Today', 'Yesterday', 'Within 30 days'];
-const INITIAL_CONVS: ConvItem[] = [
-  { id: 1, name: 'Today’s home summary', grp: 'Today' },
-  { id: 2, name: 'Any alerts overnight?', grp: 'Today' },
-  { id: 3, name: 'Set a daily check-in', grp: 'Yesterday' },
-  { id: 4, name: 'Front door notifications', grp: 'Yesterday' },
-  { id: 5, name: 'Night vision setup', grp: 'Within 30 days' },
-  { id: 6, name: 'Notify family on alerts', grp: 'Within 30 days' },
 ];
 
 // Render text with <b>…</b> bold spans.
@@ -243,9 +232,20 @@ function VoiceOverlay({ state, anim }: { state: 'active' | 'cancel'; anim: Anima
   );
 }
 
-export default function AgentChat({ navigation }: any) {
+export default function AgentChat({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
-  const [mode, setMode] = useState<'empty' | 'conv'>('empty');
+  const {
+    conversations: convs,
+    deleteConversation,
+    draft,
+    mode,
+    openConversation,
+    renameConversation,
+    reset: resetAssistant,
+    send: sendAssistant,
+    setDraft,
+    thinking,
+  } = useAssistantPrototype();
   const [voiceMode, setVoiceMode] = useState(false);
   // 长按说话:null=未按住;active=松手发送;cancel=上移后松手取消
   const [speak, setSpeak] = useState<null | 'active' | 'cancel'>(null);
@@ -281,14 +281,10 @@ export default function AgentChat({ navigation }: any) {
   useEffect(() => {
     navigation.setParams({ conv: mode === 'conv' || speak !== null });
   }, [mode, speak, navigation]);
-  const [draft, setDraft] = useState('');
-  const [thinking, setThinking] = useState(false);
   const [kb, setKb] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Chat drawer + conversation list state (mirrors prototype chat-drawer overlay).
-  const [convs, setConvs] = useState<ConvItem[]>(INITIAL_CONVS);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const drawerAnim = useRef(new Animated.Value(0)).current;
   const [convMenu, setConvMenu] = useState<number | null>(null);
@@ -303,7 +299,6 @@ export default function AgentChat({ navigation }: any) {
   const [scrollBtnActive, setScrollBtnActive] = useState(false);
   const scrollMetrics = useRef({ offset: 0, content: 0, layout: 0 });
 
-  useEffect(() => () => timers.current.forEach(clearTimeout), []);
   useEffect(() => {
     const show = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hide = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -313,18 +308,12 @@ export default function AgentChat({ navigation }: any) {
   }, []);
 
   function send() {
-    setDraft('');
     Keyboard.dismiss();
-    setMode('conv');
-    setThinking(true);
-    timers.current.push(setTimeout(() => setThinking(false), 800));
+    sendAssistant();
   }
 
   function reset() {
-    timers.current.forEach(clearTimeout);
-    setMode('empty');
-    setThinking(false);
-    setDraft('');
+    resetAssistant();
     scrollMetrics.current = { offset: 0, content: 0, layout: 0 };
     scrollBtnShown.current = false;
     setScrollBtnActive(false);
@@ -357,9 +346,7 @@ export default function AgentChat({ navigation }: any) {
   }
 
   function openConv() {
-    timers.current.forEach(clearTimeout);
-    setThinking(false);
-    setMode('conv');
+    openConversation();
     closeDrawer();
   }
 
@@ -372,8 +359,7 @@ export default function AgentChat({ navigation }: any) {
   }
 
   function confirmRename() {
-    const nm = renameVal.trim();
-    if (nm) setConvs((cs) => cs.map((c) => (c.id === renameId ? { ...c, name: nm } : c)));
+    renameConversation(renameId, renameVal);
     setRenameId(null);
   }
 
@@ -383,7 +369,7 @@ export default function AgentChat({ navigation }: any) {
   }
 
   function confirmDelete() {
-    setConvs((cs) => cs.filter((c) => c.id !== deleteId));
+    deleteConversation(deleteId);
     setDeleteId(null);
   }
 
@@ -643,7 +629,7 @@ export default function AgentChat({ navigation }: any) {
               </Pressable>
             </View>
             <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-              {CONV_GROUPS.map((g) => {
+              {CONVERSATION_GROUPS.map((g) => {
                 const items = convs.filter((c) => c.grp === g);
                 if (!items.length) return null;
                 return (

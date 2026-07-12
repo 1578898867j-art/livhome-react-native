@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Screen, Tap, Row, Header, Segmented } from '../components/kit';
@@ -43,7 +44,7 @@ function CamPreview({ tag, label, pic }: { tag: string; label: string; pic: stri
   );
 }
 
-export default function DevMessages({ navigation }: any) {
+export default function DevMessages({ navigation }: AppScreenProps) {
   // The All/Cloud/SD Card filter is decorative in the prototype — switching is purely visual.
   const [active, setActive] = useState(0);
 

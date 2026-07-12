@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Header } from '../components/kit';
@@ -48,7 +49,7 @@ const SECTIONS: { h: string; p: string[] }[] = [
   },
 ];
 
-export default function PrivacyAgreement({ navigation }: any) {
+export default function PrivacyAgreement({ navigation }: AppScreenProps) {
   return (
     <Screen contentStyle={{ paddingBottom: 54 }}>
       <Header title="Privacy & User Agreement" onBack={() => navigation.goBack()} />

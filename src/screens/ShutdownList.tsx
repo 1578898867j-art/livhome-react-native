@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SvgXml } from 'react-native-svg';
@@ -28,7 +29,7 @@ function repeatLabel(days: boolean[]) {
   return 'Custom';
 }
 
-export default function ShutdownList({ navigation }: any) {
+export default function ShutdownList({ navigation }: AppScreenProps) {
   const [schedules, setSchedules] = useState<Sched[]>(INITIAL);
 
   const del = (i: number) => setSchedules((prev) => prev.filter((_, idx) => idx !== i));

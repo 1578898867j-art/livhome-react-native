@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, DimensionValue, PanResponder } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -37,7 +38,7 @@ const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 const pct = (v: number): DimensionValue => `${(v / 50) * 100}%`;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
-export default function DevPlayback({ navigation }: any) {
+export default function DevPlayback({ navigation }: AppScreenProps) {
   // playhead position + active recording-event filters (mirrors S.pbHead / S.pbEvents)
   const [pbHead, setPbHead] = useState(23);
   const [pbEvents, setPbEvents] = useState<string[]>(['motion', 'sound']);

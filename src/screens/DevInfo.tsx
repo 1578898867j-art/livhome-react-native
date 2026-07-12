@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Animated } from 'react-native';
 import { SvgXml } from 'react-native-svg';
@@ -17,7 +18,7 @@ const DEVTIPS: Record<TipKey, string> = {
   mac: "Device's network identification address, typically used for network connection or technical troubleshooting.",
 };
 
-export default function DevInfo({ navigation }: any) {
+export default function DevInfo({ navigation }: AppScreenProps) {
   const [tip, setTip] = useState<TipKey | null>(null);
   const [devName, setDevName] = useState('Living Room');
   const [editing, setEditing] = useState(false);

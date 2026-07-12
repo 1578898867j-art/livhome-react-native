@@ -1,13 +1,36 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Pressable } from 'react-native';
+import type { AppScreenProps } from '../navigation/types';
+import React, { useEffect, useState } from 'react';
+import {
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Pressable,
+} from 'react-native';
 import { Screen, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
-import { colors } from '../theme';
+import { colors, spacing } from '../theme';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-export default function EmailLogin({ navigation }: any) {
+export default function EmailLogin({ navigation }: AppScreenProps) {
   const [email, setEmail] = useState('');
+  const [keyboardShown, setKeyboardShown] = useState(false);
+
+  useEffect(() => {
+    const show = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hide = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSubscription = Keyboard.addListener(show, () => setKeyboardShown(true));
+    const hideSubscription = Keyboard.addListener(hide, () => setKeyboardShown(false));
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, []);
 
   const trimmed = email.trim();
   const valid = EMAIL_RE.test(trimmed);
@@ -15,71 +38,77 @@ export default function EmailLogin({ navigation }: any) {
   const borderColor = showErr ? colors.critical : email ? colors.brand : colors.border;
 
   return (
-    <Screen scroll={false} contentStyle={st.page}>
-      {/* close / back */}
-      <Row style={st.topRow}>
-        <Pressable
-          style={({ pressed }) => [st.iconbtn, pressed && { opacity: 0.55 }]}
-          hitSlop={8}
-          onPress={() => navigation.goBack()}
-        >
-          <Icon name="x" size={18} color={colors.textPrimary} sw={2} />
-        </Pressable>
-      </Row>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <Screen scroll={false} contentStyle={[st.page, keyboardShown && st.pageKeyboard]}>
+        {/* close / back */}
+        <Row style={st.topRow}>
+          <Pressable
+            style={({ pressed }) => [st.iconbtn, pressed && { opacity: 0.55 }]}
+            hitSlop={8}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="x" size={18} color={colors.textPrimary} sw={2} />
+          </Pressable>
+        </Row>
 
-      {/* content */}
-      <View style={st.body}>
-        <Text style={st.title}>Add a Contact Email</Text>
-        <Text style={st.subtitle}>Please enter your email to continue</Text>
+        {/* content */}
+        <View style={st.body}>
+          <Text style={st.title}>Add a Contact Email</Text>
+          <Text style={st.subtitle}>Please enter your email to continue</Text>
 
-        <Text style={st.eyebrow}>Email Address</Text>
+          <Text style={st.eyebrow}>Email Address</Text>
 
-        <View style={[st.inputRow, { borderColor }]}>
-          <Icon name="mail" size={18} color={showErr ? colors.critical : colors.textTertiary} />
-          <TextInput
-            style={st.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Enter your email"
-            placeholderTextColor={colors.textTertiary}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
+          <View style={[st.inputRow, { borderColor }]}>
+            <Icon name="mail" size={18} color={showErr ? colors.critical : colors.textTertiary} />
+            <TextInput
+              style={st.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              placeholderTextColor={colors.textTertiary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+
+          {showErr && (
+            <Row style={st.errRow}>
+              <Icon name="warn" size={14} color={colors.critical} />
+              <Text style={st.errText}>Invalid Email. Please try again</Text>
+            </Row>
+          )}
         </View>
 
-        {showErr && (
-          <Row style={st.errRow}>
-            <Icon name="warn" size={14} color={colors.critical} />
-            <Text style={st.errText}>Invalid Email. Please try again</Text>
-          </Row>
-        )}
-      </View>
+        <View style={{ flex: 1 }} />
 
-      <View style={{ flex: 1 }} />
-
-      {/* CTA */}
-      <View style={st.ctaWrap}>
-        <Pressable
-          disabled={!valid}
-          onPress={() => navigation.replace('Main')}
-          style={({ pressed }) => [
-            st.btn,
-            { backgroundColor: valid ? colors.brand : colors.bgSecondary },
-            valid && pressed && { opacity: 0.85 },
-          ]}
-        >
-          <Text style={[st.btnText, { color: valid ? '#fff' : colors.textTertiary }]}>
-            Get Verification Code
-          </Text>
-        </Pressable>
-      </View>
-    </Screen>
+        {/* CTA */}
+        <View style={st.ctaWrap}>
+          <Pressable
+            disabled={!valid}
+            onPress={() => navigation.replace('Main', { screen: 'dev-home' })}
+            style={({ pressed }) => [
+              st.btn,
+              { backgroundColor: valid ? colors.brand : colors.bgSecondary },
+              valid && pressed && { opacity: 0.85 },
+            ]}
+          >
+            <Text style={[st.btnText, { color: valid ? colors.textInverse : colors.textTertiary }]}>
+              Get Verification Code
+            </Text>
+          </Pressable>
+        </View>
+      </Screen>
+    </KeyboardAvoidingView>
   );
 }
 
 const st = StyleSheet.create({
   page: { paddingTop: 6, paddingBottom: 54 },
+  pageKeyboard: { paddingBottom: spacing.md },
   topRow: { paddingHorizontal: 18, paddingVertical: 8 },
   iconbtn: {
     width: 34,

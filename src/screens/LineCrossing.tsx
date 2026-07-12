@@ -1,9 +1,10 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Header, Eyebrow, Card, ToggleRow, Segmented, SettingRow } from '../components/kit';
 import { colors } from '../theme';
 
-export default function LineCrossing({ navigation }: any) {
+export default function LineCrossing({ navigation }: AppScreenProps) {
   const [lineOn, setLineOn] = useState(true);
   const [lineSens, setLineSens] = useState(1);
 

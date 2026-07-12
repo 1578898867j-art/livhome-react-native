@@ -1,9 +1,10 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { Screen, Header, Eyebrow, Card, ToggleRow, Segmented, SettingRow } from '../components/kit';
 import { colors } from '../theme';
 
-export default function MotionDetection({ navigation }: any) {
+export default function MotionDetection({ navigation }: AppScreenProps) {
   const [motionOn, setMotionOn] = useState(true);
   const [motionSens, setMotionSens] = useState(1);
 

@@ -1,3 +1,4 @@
+import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import {
   View,
@@ -20,7 +21,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Overlay = null | 'type' | 'contact' | 'photo';
 
-export default function Feedback({ navigation }: any) {
+export default function Feedback({ navigation }: AppScreenProps) {
   const [fbType, setFbType] = useState<string | null>(null);
   const [fbText, setFbText] = useState('');
   const [fbEmail, setFbEmail] = useState('jon.a@livhome.app');
