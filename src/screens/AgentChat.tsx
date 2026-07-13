@@ -600,9 +600,9 @@ export default function AgentChat({ navigation }: AppScreenProps) {
       {/* 长按说话浮层(盖住整屏,含隐藏后的 tab 区域) */}
       {speak !== null && <VoiceOverlay state={speak} anim={waveAnim} />}
 
-      {/* chat drawer overlay */}
+      {/* chat drawer overlay(zIndex 高于顶部渐变栏的 40,盖住 Assistant 标题) */}
       {drawerOpen && (
-        <View style={StyleSheet.absoluteFill}>
+        <View style={[StyleSheet.absoluteFill, { zIndex: 60 }]}>
           <Animated.View style={[styles.drawerBackdrop, { opacity: drawerAnim }]}>
             <Pressable style={{ flex: 1 }} onPress={closeDrawer} />
           </Animated.View>
