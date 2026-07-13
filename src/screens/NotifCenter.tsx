@@ -83,20 +83,21 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
 
   return (
     <Screen contentStyle={{ paddingBottom: 40 }} bg={colors.bgSecondary}>
-      {/* nav:返回 + 居中标题 + 编辑态 Done */}
+      {/* nav:返回 + 居中标题 + 编辑态 Done。行高固定 50,左右槽等宽 60,
+          Done 出现/消失不改变任何布局 */}
       <Row style={st.nav}>
-        <View style={{ width: 44 }}>
+        <View style={st.navSlot}>
           <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
             <Icon name="chevL" size={16} color={colors.textPrimary} sw={2} />
           </Tap>
         </View>
-        <Text style={st.navTitle}>Notification Center</Text>
+        <Text style={st.navTitle} numberOfLines={1}>Notification Center</Text>
         {edit ? (
-          <Tap onPress={exitEdit} hitSlop={8} style={{ width: 44, paddingRight: 6 }}>
+          <Tap onPress={exitEdit} hitSlop={8} style={[st.navSlot, st.navSlotR]}>
             <Text style={st.doneTxt} numberOfLines={1}>Done</Text>
           </Tap>
         ) : (
-          <View style={{ width: 44 }} />
+          <View style={st.navSlot} />
         )}
       </Row>
 
@@ -149,13 +150,11 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
               <Row style={st.dayRow}>
                 <Text style={st.dayNum}>{g.day}</Text>
                 <Text style={st.dayMon}> {g.mon}</Text>
-                <View style={{ flex: 1 }} />
                 {gi === 0 && !edit && (
                   <Tap style={st.selBtn} onPress={() => setEdit(true)} hitSlop={10}>
                     <SvgXml xml={SELICON} width={22} height={22} color={colors.textPrimary} />
                   </Tap>
                 )}
-
               </Row>
             )}
             {g.msgs.map((m) => {
@@ -225,16 +224,19 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  nav: { paddingHorizontal: 16, paddingVertical: 8, gap: 10 },
+  nav: { paddingHorizontal: 16, height: 50, gap: 10 },
+  navSlot: { width: 60, height: '100%', justifyContent: 'center' },
+  navSlotR: { alignItems: 'flex-end', paddingRight: 6 },
   iconbtn: {
     width: 34, height: 34, borderRadius: 17,
     backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center',
   },
   navTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: colors.textPrimary },
-  doneTxt: { fontSize: 16, fontWeight: '600', color: colors.brand, textAlign: 'right' },
+  doneTxt: { fontSize: 16, fontWeight: '600', color: colors.brand },
 
   // ↓ 数值均为 Figma 4527:581 逐像素实测(430pt 画板,1:1)
-  tabRow: { paddingHorizontal: 22, marginTop: 8, marginBottom: 12, gap: 24 },
+  // tab 行 / 日期行高度写死:进入编辑态(出现 Delete All、隐藏日期行图标)零纵向位移
+  tabRow: { paddingHorizontal: 22, marginTop: 8, marginBottom: 12, height: 38, gap: 24 },
   tabPill: { paddingHorizontal: 16, height: 38, borderRadius: 19, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   tabPillOn: { backgroundColor: colors.textPrimary },
   tabTxt: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
@@ -243,10 +245,11 @@ const st = StyleSheet.create({
   delAllRow: { gap: 12 },
   delAllTxt: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
 
-  dayRow: { paddingHorizontal: 22, marginTop: 8, marginBottom: 16, alignItems: 'baseline' },
+  dayRow: { paddingHorizontal: 22, marginTop: 8, marginBottom: 16, height: 30, alignItems: 'baseline' },
   dayNum: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, color: colors.textPrimary },
   dayMon: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
-  selBtn: { alignSelf: 'center' },
+  // 多选入口绝对定位在行右侧:出现/消失不参与布局
+  selBtn: { position: 'absolute', right: 22, top: '50%', marginTop: -11, width: 22, height: 22 },
 
   cardRow: { marginHorizontal: 22, marginBottom: 16 },
   card: {
