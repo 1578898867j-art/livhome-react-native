@@ -139,11 +139,11 @@ const st = StyleSheet.create({
   },
   badge: {
     position: 'absolute',
-    top: 7,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 8,
+    right: 9,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: colors.critical,
   },
 
