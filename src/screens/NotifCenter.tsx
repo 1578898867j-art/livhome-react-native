@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Image, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
-import { SELICON, SELICON2 } from '../icons/protoIcons';
+import { SELICON } from '../icons/protoIcons';
 import { CAMAVATAR } from '../assets/images';
 import { colors } from '../theme';
 
@@ -139,17 +139,13 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
                     <SvgXml xml={SELICON} width={18} height={18} color={colors.textSecondary} />
                   </Tap>
                 )}
-                {gi === 0 && edit && (
-                  <Tap style={[st.selBtn, { backgroundColor: colors.brandSoft }]} onPress={exitEdit} hitSlop={8}>
-                    <SvgXml xml={SELICON2} width={18} height={18} color={colors.brand} />
-                  </Tap>
-                )}
+
               </Row>
             )}
             {g.msgs.map((m) => {
               const on = checked.indexOf(m.id) >= 0;
               return (
-                <Row key={m.id} style={{ marginHorizontal: 18, marginBottom: 16 }}>
+                <Row key={m.id} style={{ marginLeft: edit ? 0 : 18, marginRight: edit ? 36 : 18, marginBottom: 16 }}>
                   <Tap
                     style={[st.card, { flex: 1 }]}
                     onPress={() => (edit ? toggleCheck(m.id) : navigation.navigate('notif-detail'))}
@@ -262,10 +258,9 @@ const st = StyleSheet.create({
     borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
   selOverlay: {
-    position: 'absolute', right: 12, top: '50%', marginTop: -11,
+    position: 'absolute', right: -29, top: '50%', marginTop: -11,
     width: 22, height: 22, borderRadius: 11, borderWidth: 1.5,
     borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: colors.surface,
   },
 
   emptyWrap: { alignItems: 'center', paddingTop: 90, paddingHorizontal: 40 },
