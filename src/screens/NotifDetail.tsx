@@ -153,9 +153,9 @@ const st = StyleSheet.create({
     backgroundColor: colors.surface, padding: 12, paddingTop: 12, paddingBottom: 16,
   },
   event: { alignItems: 'flex-start', marginBottom: 38 },
-  // 连接线(挂在事件行上):图标底(48)+12 起,越过 38 行距、止于下一图标上方 12
+  // 连接线(挂在事件行上):上端贴住图标底部(48),下端止于下一图标上方 12
   connector: {
-    position: 'absolute', left: 23, top: 60, bottom: -26, width: 2,
+    position: 'absolute', left: 23, top: 48, bottom: -26, width: 2,
     borderRadius: 1, backgroundColor: colors.border,
   },
 
