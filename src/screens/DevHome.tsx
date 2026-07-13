@@ -54,18 +54,18 @@ export default function DevHome({ navigation }: AppScreenProps) {
           onPress={go('dev-detail')}
           style={({ pressed }) => [st.actBtn, st.actBtnDark, pressed && { opacity: 0.85 }]}
         >
-          <Icon name="play" size={13} color="#fff" sw={1.6} />
+          <Icon name="play" size={16} color="#fff" sw={1.6} />
           <Text style={[st.actText, { color: colors.textInverse }]}>Live view</Text>
         </Pressable>
         <View style={[st.actBtn, st.actBtnOutline]}>
-          <Icon name="mic" size={13} color={colors.textPrimary} />
+          <Icon name="mic" size={16} color={colors.textPrimary} />
           <Text style={[st.actText, { color: colors.textPrimary }]}>Talk</Text>
         </View>
         <Pressable
           onPress={go('dev-messages')}
           style={({ pressed }) => [st.actBtn, st.actBtnOutline, pressed && { opacity: 0.85 }]}
         >
-          <Icon name="bell" size={13} color={colors.textPrimary} />
+          <Icon name="bell" size={16} color={colors.textPrimary} />
           <Text style={[st.actText, { color: colors.textPrimary }]}>Alerts</Text>
         </Pressable>
       </Row>
