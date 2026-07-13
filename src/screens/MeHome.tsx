@@ -46,7 +46,9 @@ export default function MeHome({ navigation }: AppScreenProps) {
   };
 
   return (
-    <Screen contentStyle={{ paddingTop: 8, paddingBottom: 120 }}>
+    // 注意:scroll 模式下 contentStyle 的 paddingTop 会覆盖 kit Screen 的
+    // insets.top(状态栏让位),header 会被顶到蒙版底下 —— 不要在这里传 paddingTop
+    <Screen contentStyle={{ paddingBottom: 120 }}>
       {/* header */}
       <Row style={st.topRow}>
         <Text style={st.title}>Me</Text>
