@@ -411,12 +411,12 @@ export default function AgentChat({ navigation }: AppScreenProps) {
               </View>
               <Text style={styles.greeting}>Hi Jon, how can I help?</Text>
               <Text style={styles.greetingSub}>
-                I'm your home-care assistant — I keep an eye on your devices, alerts and daily
+                I&apos;m your home-care assistant — I keep an eye on your devices, alerts and daily
                 check-ins so you always know things are okay at home.
               </Text>
             </Pressable>
 
-            <View style={[styles.bottomWrap, { paddingBottom: kb ? 14 : 120 }]}>
+            <View style={[styles.bottomWrap, { paddingBottom: kb ? 14 : 114 }]}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
