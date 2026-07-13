@@ -701,7 +701,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
               <Text style={styles.editMsgTitle}>Edit Message</Text>
               <View style={{ flex: 1 }} />
               <Pressable style={styles.editMsgClose} onPress={() => setEditMsg(null)} hitSlop={8}>
-                <Icon name="x" size={11} color={colors.textSecondary} sw={2.4} />
+                <Icon name="x" size={12} color={colors.textSecondary} sw={2.4} />
               </Pressable>
             </View>
             <TextInput
@@ -718,7 +718,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 style={[styles.editMsgOk, editVal.trim().length === 0 && { backgroundColor: colors.borderStrong }]}
                 onPress={editVal.trim().length > 0 ? confirmEditMsg : undefined}
               >
-                <Icon name="check" size={15} color="#fff" sw={2.6} />
+                <Icon name="check" size={13} color="#fff" sw={2.6} />
               </Pressable>
             </View>
           </View>
@@ -1009,7 +1009,7 @@ const styles = StyleSheet.create({
   editMsgBar: { width: 3, height: 14, borderRadius: 2, backgroundColor: colors.borderStrong },
   editMsgTitle: { fontSize: 13, fontWeight: '600', color: colors.textTertiary },
   editMsgClose: {
-    width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bgSecondary,
+    width: 30, height: 30, borderRadius: 15, backgroundColor: colors.bgSecondary,
     alignItems: 'center', justifyContent: 'center',
   },
   editMsgInput: {
@@ -1018,7 +1018,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top', paddingTop: 0,
   },
   editMsgOk: {
-    marginTop: 8, width: 34, height: 34, borderRadius: 17,
+    marginTop: 8, width: 30, height: 30, borderRadius: 15,
     backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center',
   },
 
