@@ -19,17 +19,19 @@ export function Screen({
   scroll = true,
   edges = ['top'],
   contentStyle,
+  bg = colors.bgPrimary,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
   contentStyle?: StyleProp<ViewStyle>;
+  bg?: string; // 页面底色(如消息中心的灰底),默认全局 bgPrimary
 }) {
   const insets = useSafeAreaInsets();
   if (scroll) {
-    // 内容允许滚到状态栏后面,顶部用 白→透明 渐变蒙版让其淡出(全局统一效果)
+    // 内容允许滚到状态栏后面,顶部用 底色→透明 渐变蒙版让其淡出(全局统一效果)
     return (
-      <SafeAreaView style={s.screen} edges={edges.filter((e) => e !== 'top')}>
+      <SafeAreaView style={[s.screen, { backgroundColor: bg }]} edges={edges.filter((e) => e !== 'top')}>
         <ScrollView
           contentContainerStyle={[{ paddingTop: insets.top, paddingBottom: 28 }, contentStyle]}
           showsVerticalScrollIndicator={false}
@@ -37,7 +39,7 @@ export function Screen({
           {children}
         </ScrollView>
         <LinearGradient
-          colors={[colors.bgPrimary, colors.bgPrimary, 'rgba(251,251,251,0)']}
+          colors={[bg, bg, `${bg}00`]}
           locations={[0, 0.55, 1]}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
           pointerEvents="none"
@@ -46,7 +48,7 @@ export function Screen({
     );
   }
   return (
-    <SafeAreaView style={s.screen} edges={edges}>
+    <SafeAreaView style={[s.screen, { backgroundColor: bg }]} edges={edges}>
       <View style={[{ flex: 1 }, contentStyle]}>{children}</View>
     </SafeAreaView>
   );

@@ -5,7 +5,7 @@ import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { SELICON } from '../icons/protoIcons';
-import { CAMAVATAR } from '../assets/images';
+import { CAMAVATAR, MAILBOX_EMPTY } from '../assets/images';
 import { colors } from '../theme';
 
 // 消息中心 —— 按 Figma 4527:581:Device/System 两级,日期分组,编辑态 Delete All,
@@ -31,7 +31,7 @@ const SYSTEM_INIT: DayGroup[] = [
   {
     day: '24', mon: 'Jan',
     msgs: [
-      { id: 11, title: 'Message Title', time: '17:40:20', body: 'Congratulations! Your registration was successful, Welcome abo.' },
+      { id: 11, title: 'Message Title', time: '17:40:20', body: 'Congratulations! Your registration was successful, Welcome abo.', unread: true },
       { id: 12, title: 'Message Title', time: '17:40:20', body: 'Congratulations! Your registration was successful, Welcome abo.' },
     ],
   },
@@ -59,6 +59,10 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
   const toggleCheck = (id: number) =>
     setChecked((c) => (c.indexOf(id) >= 0 ? c.filter((v) => v !== id) : c.concat(id)));
 
+  const allIds = groups.reduce<number[]>((acc, g) => acc.concat(g.msgs.map((m) => m.id)), []);
+  const allChecked = allIds.length > 0 && allIds.every((id) => checked.indexOf(id) >= 0);
+  const toggleAll = () => setChecked(allChecked ? [] : allIds);
+
   const exitEdit = () => {
     setEdit(false);
     setChecked([]);
@@ -74,8 +78,11 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
     exitEdit();
   };
 
+  // 红点挂在"有未读且未选中"的 tab 胶囊右上角(设计稿两帧规则)
+  const hasUnread = (gs: DayGroup[]) => gs.some((g) => g.msgs.some((m) => m.unread));
+
   return (
-    <Screen contentStyle={{ paddingBottom: 40 }}>
+    <Screen contentStyle={{ paddingBottom: 40 }} bg={colors.bgSecondary}>
       {/* nav:返回 + 居中标题 + 编辑态 Done */}
       <Row style={st.nav}>
         <View style={{ width: 44 }}>
@@ -85,7 +92,7 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
         </View>
         <Text style={st.navTitle}>Notification Center</Text>
         {edit ? (
-          <Tap onPress={exitEdit} hitSlop={8} style={{ width: 44 }}>
+          <Tap onPress={exitEdit} hitSlop={8} style={{ width: 44, paddingRight: 6 }}>
             <Text style={st.doneTxt} numberOfLines={1}>Done</Text>
           </Tap>
         ) : (
@@ -95,30 +102,39 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
 
       {/* tabs + 编辑态 Delete All */}
       <Row style={st.tabRow}>
-        <Tap style={[st.tabPill, tab === 'device' && st.tabPillOn]} onPress={() => { setTab('device'); exitEdit(); }}>
-          <Text style={[st.tabTxt, tab === 'device' && st.tabTxtOn]}>Device</Text>
-        </Tap>
+        <View>
+          <Tap style={[st.tabPill, tab === 'device' && st.tabPillOn]} onPress={() => { setTab('device'); exitEdit(); }}>
+            <Text style={[st.tabTxt, tab === 'device' && st.tabTxtOn]}>Device</Text>
+          </Tap>
+          {tab !== 'device' && hasUnread(deviceMsgs) && <View style={st.tabDot} />}
+        </View>
         <View>
           <Tap style={[st.tabPill, tab === 'system' && st.tabPillOn]} onPress={() => { setTab('system'); exitEdit(); }}>
             <Text style={[st.tabTxt, tab === 'system' && st.tabTxtOn]}>System</Text>
           </Tap>
-          <View style={st.tabDot} />
+          {tab !== 'system' && hasUnread(systemMsgs) && <View style={st.tabDot} />}
         </View>
         <View style={{ flex: 1 }} />
         {edit && !empty && (
-          <Tap style={st.delAllRow} onPress={() => setConfirm('all')}>
-            <Text style={st.delAllTxt}>Delete All</Text>
-            <View style={st.selCircle} />
-          </Tap>
+          <Row style={st.delAllRow}>
+            <Tap onPress={() => setConfirm(checked.length > 0 ? 'sel' : 'all')} hitSlop={8}>
+              <Text style={st.delAllTxt}>Delete All</Text>
+            </Tap>
+            <Tap
+              style={[st.selCircle, allChecked && { backgroundColor: colors.brand, borderWidth: 0 }]}
+              onPress={toggleAll}
+              hitSlop={8}
+            >
+              {allChecked && <Icon name="check" size={12} color="#fff" sw={3} />}
+            </Tap>
+          </Row>
         )}
       </Row>
 
-      {/* 空态(设计稿:No camera messages yet.) */}
+      {/* 空态(设计稿:邮筒插画 + No camera messages yet.) */}
       {empty ? (
         <View style={st.emptyWrap}>
-          <View style={st.emptyArt}>
-            <Icon name="mail" size={44} color={colors.textTertiary} sw={1.4} />
-          </View>
+          <Image source={{ uri: MAILBOX_EMPTY }} style={st.emptyArt} resizeMode="contain" />
           <Text style={st.emptyTitle}>
             {tab === 'device' ? 'No camera messages yet.' : 'No system messages yet.'}
           </Text>
@@ -135,8 +151,8 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
                 <Text style={st.dayMon}> {g.mon}</Text>
                 <View style={{ flex: 1 }} />
                 {gi === 0 && !edit && (
-                  <Tap style={st.selBtn} onPress={() => setEdit(true)} hitSlop={8}>
-                    <SvgXml xml={SELICON} width={18} height={18} color={colors.textSecondary} />
+                  <Tap style={st.selBtn} onPress={() => setEdit(true)} hitSlop={10}>
+                    <SvgXml xml={SELICON} width={22} height={22} color={colors.textPrimary} />
                   </Tap>
                 )}
 
@@ -145,9 +161,11 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
             {g.msgs.map((m) => {
               const on = checked.indexOf(m.id) >= 0;
               return (
-                <Row key={m.id} style={{ marginLeft: edit ? 0 : 18, marginRight: edit ? 36 : 18, marginBottom: 16 }}>
+                // 编辑态:整卡向左平移 38(宽度/内容不重排,左缘出屏被裁),
+                // 右侧露出 60 空档,圆圈落在屏右 22 边距、垂直居中 —— Figma 4527:581 实测
+                <Row key={m.id} style={[st.cardRow, edit && { transform: [{ translateX: -38 }] }]}>
                   <Tap
-                    style={[st.card, { flex: 1 }]}
+                    style={[st.card, { flex: 1 }, tab === 'system' && { paddingLeft: 20 }]}
                     onPress={() => (edit ? toggleCheck(m.id) : navigation.navigate('notif-detail'))}
                   >
                     {tab === 'device' && (
@@ -157,35 +175,28 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
                     )}
                     <View style={{ flex: 1, minWidth: 0 }}>
                       <Row style={{ gap: 8 }}>
-                        <Text style={st.msgTitle}>{m.title}</Text>
+                        <Text style={st.msgTitle} numberOfLines={1}>{m.title}</Text>
                         <View style={{ flex: 1 }} />
                         <Text style={st.msgTime}>{m.time}</Text>
-                        {m.unread && <View style={st.unreadDot} />}
                       </Row>
                       <Text style={st.msgBody} numberOfLines={2}>{m.body}</Text>
                     </View>
-                    {edit && (
-                      <Tap
-                        style={[st.selOverlay, on && { backgroundColor: colors.brand, borderWidth: 0 }]}
-                        onPress={() => toggleCheck(m.id)}
-                        hitSlop={6}
-                      >
-                        {on && <Icon name="check" size={12} color="#fff" sw={3} />}
-                      </Tap>
-                    )}
+                    {m.unread && !edit && <View style={st.unreadDot} />}
                   </Tap>
+                  {edit && (
+                    <Tap
+                      style={[st.selOverlay, on && { backgroundColor: colors.brand, borderWidth: 0 }]}
+                      onPress={() => toggleCheck(m.id)}
+                      hitSlop={10}
+                    >
+                      {on && <Icon name="check" size={12} color="#fff" sw={3} />}
+                    </Tap>
+                  )}
                 </Row>
               );
             })}
           </View>
         ))
-      )}
-
-      {/* 编辑态:删除选中(有勾选时出现) */}
-      {edit && checked.length > 0 && (
-        <Tap style={st.delSelBtn} onPress={() => setConfirm('sel')}>
-          <Text style={st.delSelTxt}>Delete ({checked.length})</Text>
-        </Tap>
       )}
 
       {/* 删除确认弹窗(设计稿两种文案) */}
@@ -220,71 +231,64 @@ const st = StyleSheet.create({
     backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center',
   },
   navTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: colors.textPrimary },
-  doneTxt: { fontSize: 15, fontWeight: '700', color: colors.brand, textAlign: 'right' },
+  doneTxt: { fontSize: 16, fontWeight: '600', color: colors.brand, textAlign: 'right' },
 
-  tabRow: { paddingHorizontal: 18, marginTop: 8, gap: 8 },
-  tabPill: { paddingHorizontal: 16, height: 32, borderRadius: 16, backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
+  // ↓ 数值均为 Figma 4527:581 逐像素实测(430pt 画板,1:1)
+  tabRow: { paddingHorizontal: 22, marginTop: 8, marginBottom: 12, gap: 24 },
+  tabPill: { paddingHorizontal: 16, height: 38, borderRadius: 19, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   tabPillOn: { backgroundColor: colors.textPrimary },
-  tabTxt: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  tabTxt: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   tabTxtOn: { color: '#fff' },
-  tabDot: { position: 'absolute', top: -1, right: -1, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.critical },
-  delAllRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  delAllTxt: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  tabDot: { position: 'absolute', top: 0, right: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.critical },
+  delAllRow: { gap: 12 },
+  delAllTxt: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
 
-  dayRow: { paddingHorizontal: 18, marginTop: 8, marginBottom: 16, alignItems: 'baseline' },
-  dayNum: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4, color: colors.textPrimary },
+  dayRow: { paddingHorizontal: 22, marginTop: 8, marginBottom: 16, alignItems: 'baseline' },
+  dayNum: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, color: colors.textPrimary },
   dayMon: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
-  selBtn: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: colors.bgSecondary,
-    alignItems: 'center', justifyContent: 'center', alignSelf: 'center',
-  },
+  selBtn: { alignSelf: 'center' },
 
+  cardRow: { marginHorizontal: 22, marginBottom: 16 },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: colors.surface, borderRadius: 16, padding: 12,
+    backgroundColor: colors.surface, borderRadius: 16,
+    padding: 16, paddingRight: 20,
   },
   devThumb: {
-    width: 44, height: 44, borderRadius: 12, backgroundColor: colors.bgSecondary,
-    alignItems: 'center', justifyContent: 'center', padding: 7, flexShrink: 0,
+    width: 72, height: 72, borderRadius: 16, backgroundColor: '#FAFAFA',
+    alignItems: 'center', justifyContent: 'center', padding: 6, flexShrink: 0,
   },
   devImg: { width: '100%', height: '100%' },
-  msgTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  msgTime: { fontSize: 11, fontWeight: '500', color: colors.textTertiary },
-  unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.critical },
-  msgBody: { marginTop: 4, fontSize: 12, fontWeight: '500', lineHeight: 17, color: colors.textSecondary },
+  msgTitle: { fontSize: 17, fontWeight: '600', lineHeight: 20, color: colors.textPrimary, flexShrink: 1 },
+  msgTime: { fontSize: 12, fontWeight: '500', color: colors.textTertiary },
+  // 红点对齐正文第一行、右缩进 20(编辑态隐藏)
+  unreadDot: { position: 'absolute', right: 20, top: 55, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.critical },
+  msgBody: { marginTop: 12, fontSize: 14, fontWeight: '500', lineHeight: 20, color: colors.textSecondary },
 
   selCircle: {
-    width: 22, height: 22, borderRadius: 11, borderWidth: 1.5,
+    width: 24, height: 24, borderRadius: 12, borderWidth: 1.5,
     borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
+  // 圈挂在卡行右外侧 38 处;整行 translateX(-38) 后恰好落在屏右 22 边距
   selOverlay: {
-    position: 'absolute', right: -29, top: '50%', marginTop: -11,
-    width: 22, height: 22, borderRadius: 11, borderWidth: 1.5,
+    position: 'absolute', right: -38, top: '50%', marginTop: -12,
+    width: 24, height: 24, borderRadius: 12, borderWidth: 1.5,
     borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center',
   },
 
-  emptyWrap: { alignItems: 'center', paddingTop: 90, paddingHorizontal: 40 },
-  emptyArt: {
-    width: 96, height: 96, borderRadius: 48, backgroundColor: colors.bgSecondary,
-    alignItems: 'center', justifyContent: 'center', marginBottom: 22,
-  },
-  emptyTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
-  emptySub: { marginTop: 8, fontSize: 12, fontWeight: '500', lineHeight: 18, color: colors.textTertiary, textAlign: 'center' },
-
-  delSelBtn: {
-    marginHorizontal: 18, marginTop: 16, height: 48, borderRadius: 99,
-    backgroundColor: colors.criticalSoft, alignItems: 'center', justifyContent: 'center',
-  },
-  delSelTxt: { fontSize: 15, fontWeight: '700', color: colors.critical },
+  emptyWrap: { alignItems: 'center', paddingTop: 72, paddingHorizontal: 40 },
+  emptyArt: { width: 237, height: 190, marginBottom: 24 },
+  emptyTitle: { fontSize: 18, fontWeight: '600', color: colors.textPrimary },
+  emptySub: { marginTop: 12, fontSize: 14, fontWeight: '500', lineHeight: 22, color: colors.textTertiary, textAlign: 'center' },
 
   ovl: { flex: 1, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center', padding: 36 },
-  dialog: { width: '100%', maxWidth: 300, backgroundColor: colors.surface, borderRadius: 18, overflow: 'hidden' },
+  dialog: { width: '100%', maxWidth: 350, backgroundColor: colors.surface, borderRadius: 18, overflow: 'hidden' },
   dialogTxt: {
-    paddingHorizontal: 22, paddingTop: 24, paddingBottom: 20,
-    fontSize: 14, fontWeight: '600', lineHeight: 21, color: colors.textPrimary, textAlign: 'center',
+    paddingHorizontal: 22, paddingTop: 21, paddingBottom: 19,
+    fontSize: 15, fontWeight: '600', lineHeight: 22, color: colors.textPrimary, textAlign: 'center',
   },
   dialogBtns: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border },
-  dialogBtn: { flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' },
+  dialogBtn: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' },
   dialogDivV: { width: 1, backgroundColor: colors.border },
   dialogCancel: { fontSize: 15, fontWeight: '500', color: colors.textSecondary },
   dialogDelete: { fontSize: 15, fontWeight: '700', color: colors.critical },
