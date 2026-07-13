@@ -285,7 +285,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
 
             {/* 顶部渐变淡出蒙版(全局统一) */}
       <LinearGradient
-        colors={[colors.bgPrimary, 'rgba(251,251,251,0.7)', 'rgba(251,251,251,0)']}
+        colors={[colors.bgPrimary, 'rgba(251,251,251,0.3)', 'rgba(251,251,251,0)']}
         locations={[0, 0.45, 1]}
         style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
         pointerEvents="none"
