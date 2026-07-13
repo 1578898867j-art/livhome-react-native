@@ -1,6 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,9 +27,11 @@ export default function Album({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
+  const [groups, setGroups] = useState<Group[]>(GROUPS);
+  const [confirm, setConfirm] = useState(false);
 
-  const allKeys = GROUPS.flatMap((g) => g.times.map((t) => g.title + t));
-  const allOn = selected.length === allKeys.length;
+  const allKeys = groups.flatMap((g) => g.times.map((t) => g.title + t));
+  const allOn = allKeys.length > 0 && selected.length === allKeys.length;
 
   const toggleSel = (k: string) =>
     setSelected((s) => (s.indexOf(k) >= 0 ? s.filter((v) => v !== k) : s.concat(k)));
@@ -37,6 +39,16 @@ export default function Album({ navigation }: AppScreenProps) {
   const exitEdit = () => {
     setEditMode(false);
     setSelected([]);
+  };
+
+  const doDelete = () => {
+    setGroups((gs) =>
+      gs
+        .map((g) => ({ ...g, times: g.times.filter((t) => selected.indexOf(g.title + t) < 0) }))
+        .filter((g) => g.times.length > 0),
+    );
+    setConfirm(false);
+    exitEdit();
   };
 
   return (
@@ -69,7 +81,7 @@ export default function Album({ navigation }: AppScreenProps) {
       )}
 
       <View style={{ paddingHorizontal: 18 }}>
-        {GROUPS.map((g) => (
+        {groups.map((g) => (
           <View key={g.title}>
             <Text style={st.groupTitle}>{g.title}</Text>
             <View style={st.grid}>
@@ -119,11 +131,29 @@ export default function Album({ navigation }: AppScreenProps) {
           <Tap style={st.barBtn}>
             <SvgXml xml={DL_ICON} width={24} height={24} color={colors.brand} />
           </Tap>
-          <Tap style={st.barBtn}>
+          <Tap style={st.barBtn} onPress={() => selected.length > 0 && setConfirm(true)}>
             <SvgXml xml={TRASH_ICON} width={24} height={24} color={colors.brand} />
           </Tap>
         </View>
       )}
+
+      {/* 删除确认弹窗(与消息中心同款式) */}
+      <Modal transparent visible={confirm} animationType="fade" onRequestClose={() => setConfirm(false)}>
+        <Pressable style={st.ovl} onPress={() => setConfirm(false)}>
+          <Pressable style={st.dialog} onPress={(e) => e.stopPropagation()}>
+            <Text style={st.dialogTxt}>Are you sure you want to delete the selected videos?</Text>
+            <View style={st.dialogBtns}>
+              <Tap style={st.dialogBtn} onPress={() => setConfirm(false)}>
+                <Text style={st.dialogCancel}>Cancel</Text>
+              </Tap>
+              <View style={st.dialogDivV} />
+              <Tap style={st.dialogBtn} onPress={doDelete}>
+                <Text style={st.dialogDelete}>Delete</Text>
+              </Tap>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
@@ -214,8 +244,20 @@ const st = StyleSheet.create({
     width: 64,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.brandSoft,
+    backgroundColor: '#FAF9FB',
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  ovl: { flex: 1, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center', padding: 36 },
+  dialog: { width: '100%', maxWidth: 350, backgroundColor: colors.surface, borderRadius: 18, overflow: 'hidden' },
+  dialogTxt: {
+    paddingHorizontal: 22, paddingTop: 21, paddingBottom: 19,
+    fontSize: 15, fontWeight: '600', lineHeight: 22, color: colors.textPrimary, textAlign: 'center',
+  },
+  dialogBtns: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border },
+  dialogBtn: { flex: 1, height: 56, alignItems: 'center', justifyContent: 'center' },
+  dialogDivV: { width: 1, backgroundColor: colors.border },
+  dialogCancel: { fontSize: 15, fontWeight: '500', color: colors.textSecondary },
+  dialogDelete: { fontSize: 15, fontWeight: '700', color: colors.critical },
 });
