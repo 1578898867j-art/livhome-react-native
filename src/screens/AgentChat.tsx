@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 import { SvgXml } from 'react-native-svg';
 import { Icon, IconFill } from '../components/Icon';
 import { SunBurst } from '../components/SunLogo';
@@ -293,6 +294,43 @@ export default function AgentChat({ navigation }: AppScreenProps) {
   const [renameVal, setRenameVal] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
+  // 长按消息气泡:Edit Message / Copy(Figma 3986:1509 / 3987:2114 的交互,样式随本 App)
+  const [conv, setConv] = useState<Block[]>(CONV);
+  const [msgMenu, setMsgMenu] = useState<{ idx: number; y: number } | null>(null);
+  const [editMsg, setEditMsg] = useState<number | null>(null);
+  const [editVal, setEditVal] = useState('');
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
+
+  const showCopied = (text: string) => {
+    Clipboard.setStringAsync(text.replace(/<\/?b>/g, '')).catch(() => {});
+    setCopied(true);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 1500);
+  };
+
+  const openEditMsg = () => {
+    if (msgMenu == null) return;
+    setEditVal((conv[msgMenu.idx].text ?? '').replace(/<\/?b>/g, ''));
+    setEditMsg(msgMenu.idx);
+    setMsgMenu(null);
+  };
+
+  const confirmEditMsg = () => {
+    const v = editVal.trim();
+    if (editMsg != null && v.length > 0) {
+      setConv((prev) => prev.map((b, i) => (i === editMsg ? { ...b, text: v } : b)));
+    }
+    setEditMsg(null);
+    Keyboard.dismiss();
+  };
+
   // Scroll-to-bottom button state (conv mode).
   const scrollBtnAnim = useRef(new Animated.Value(0)).current;
   const scrollBtnShown = useRef(false);
@@ -314,6 +352,9 @@ export default function AgentChat({ navigation }: AppScreenProps) {
 
   function reset() {
     resetAssistant();
+    setConv(CONV);
+    setMsgMenu(null);
+    setEditMsg(null);
     scrollMetrics.current = { offset: 0, content: 0, layout: 0 };
     scrollBtnShown.current = false;
     setScrollBtnActive(false);
@@ -505,14 +546,21 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                   </View>
                 ) : (
                   <>
-                    {CONV.map((b, i) => {
+                    {conv.map((b, i) => {
                       if (b.t === 'gap') return <View key={i} style={{ height: 14 }} />;
                       if (b.t === 'me')
                         return (
                           <View key={i} style={styles.meRow}>
-                            <View style={styles.meBubble}>
+                            <Pressable
+                              style={({ pressed }) => [styles.meBubble, pressed && { backgroundColor: colors.bgSecondary }]}
+                              delayLongPress={350}
+                              onLongPress={(e) => {
+                                Keyboard.dismiss();
+                                setMsgMenu({ idx: i, y: e.nativeEvent.pageY });
+                              }}
+                            >
                               <Text style={styles.meText}>{b.text}</Text>
-                            </View>
+                            </Pressable>
                           </View>
                         );
                       if (b.t === 'h') return <Text key={i} style={styles.h}>{b.text}</Text>;
@@ -530,9 +578,20 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                     })}
                     {/* copy / speak */}
                     <View style={styles.ansActions}>
-                      <View style={styles.ansBtn}>
+                      <Pressable
+                        style={styles.ansBtn}
+                        hitSlop={6}
+                        onPress={() =>
+                          showCopied(
+                            conv
+                              .filter((b) => b.t !== 'me' && b.t !== 'gap' && b.text)
+                              .map((b) => b.text!)
+                              .join('\n'),
+                          )
+                        }
+                      >
                         <SvgXml xml={COPY_ICON} width={16} height={16} color={colors.textSecondary} />
-                      </View>
+                      </Pressable>
                       <View style={styles.ansBtn}>
                         <SvgXml xml={SPEAK_ICON} width={16} height={16} color={colors.textSecondary} />
                       </View>
@@ -599,6 +658,82 @@ export default function AgentChat({ navigation }: AppScreenProps) {
 
       {/* 长按说话浮层(盖住整屏,含隐藏后的 tab 区域) */}
       {speak !== null && <VoiceOverlay state={speak} anim={waveAnim} />}
+
+      {/* 长按消息:Edit Message / Copy 菜单(样式同会话列表长按菜单) */}
+      {msgMenu != null && (
+        <Pressable
+          style={[StyleSheet.absoluteFill, { zIndex: 55 }]}
+          onPress={() => setMsgMenu(null)}
+        >
+          <View style={[styles.convMenu, { top: Math.min(msgMenu.y + 14, H - 250) }]}>
+            <Pressable style={styles.convMenuRow} onPress={openEditMsg}>
+              <SvgXml xml={CONV_EDIT} width={18} height={18} color={colors.textPrimary} />
+              <Text style={styles.convMenuText}>Edit Message</Text>
+            </Pressable>
+            <View style={styles.menuDivider} />
+            <Pressable
+              style={styles.convMenuRow}
+              onPress={() => {
+                showCopied(conv[msgMenu.idx].text ?? '');
+                setMsgMenu(null);
+              }}
+            >
+              <SvgXml xml={COPY_ICON} width={18} height={18} color={colors.textPrimary} />
+              <Text style={styles.convMenuText}>Copy</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      )}
+
+      {/* Edit Message 面板:停靠在键盘上方 */}
+      {editMsg != null && (
+        <KeyboardAvoidingView
+          style={[StyleSheet.absoluteFill, { zIndex: 55, justifyContent: 'flex-end' }]}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <Pressable
+            style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(20,20,22,0.25)' }]}
+            onPress={() => setEditMsg(null)}
+          />
+          <View style={styles.editMsgCard}>
+            <View style={styles.editMsgHead}>
+              <View style={styles.editMsgBar} />
+              <Text style={styles.editMsgTitle}>Edit Message</Text>
+              <View style={{ flex: 1 }} />
+              <Pressable style={styles.editMsgClose} onPress={() => setEditMsg(null)} hitSlop={8}>
+                <Icon name="x" size={11} color={colors.textSecondary} sw={2.4} />
+              </Pressable>
+            </View>
+            <TextInput
+              value={editVal}
+              onChangeText={setEditVal}
+              multiline
+              autoFocus
+              style={styles.editMsgInput}
+              placeholder="Edit your message"
+              placeholderTextColor={colors.textTertiary}
+            />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+              <Pressable
+                style={[styles.editMsgOk, editVal.trim().length === 0 && { backgroundColor: colors.borderStrong }]}
+                onPress={editVal.trim().length > 0 ? confirmEditMsg : undefined}
+              >
+                <Icon name="check" size={15} color="#fff" sw={2.6} />
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      )}
+
+      {/* Copied toast(与图片保存 toast 同款) */}
+      {copied && (
+        <View style={[styles.copiedToast, { top: insets.top + 10 }]} pointerEvents="none">
+          <View style={styles.copiedCheck}>
+            <Icon name="check" size={12} color="#fff" sw={3} />
+          </View>
+          <Text style={styles.copiedText}>Copied</Text>
+        </View>
+      )}
 
       {/* chat drawer overlay(zIndex 高于顶部渐变栏的 40,盖住 Assistant 标题) */}
       {drawerOpen && (
@@ -862,6 +997,44 @@ const styles = StyleSheet.create({
   convMenuRow: { height: 52, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 12 },
   convMenuText: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
   menuDivider: { height: 1, backgroundColor: colors.border },
+
+  // 长按消息 → Edit Message 面板(键盘上方)
+  editMsgCard: {
+    marginHorizontal: 12, marginBottom: 8, padding: 16,
+    backgroundColor: colors.surface, borderRadius: 20,
+    shadowColor: '#000', shadowOpacity: 0.14, shadowRadius: 30, shadowOffset: { width: 0, height: 10 },
+    elevation: 10,
+  },
+  editMsgHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  editMsgBar: { width: 3, height: 14, borderRadius: 2, backgroundColor: colors.borderStrong },
+  editMsgTitle: { fontSize: 13, fontWeight: '600', color: colors.textTertiary },
+  editMsgClose: {
+    width: 26, height: 26, borderRadius: 13, backgroundColor: colors.bgSecondary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  editMsgInput: {
+    marginTop: 10, minHeight: 56, maxHeight: 140,
+    fontSize: 15, fontWeight: '500', lineHeight: 21, color: colors.textPrimary,
+    textAlignVertical: 'top', paddingTop: 0,
+  },
+  editMsgOk: {
+    marginTop: 8, width: 34, height: 34, borderRadius: 17,
+    backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center',
+  },
+
+  // Copied toast(顶部居中,同「保存到相册」款式)
+  copiedToast: {
+    position: 'absolute', alignSelf: 'center', zIndex: 90,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: colors.surface,
+    shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 22, shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  copiedCheck: {
+    width: 22, height: 22, borderRadius: 11, backgroundColor: '#22A45D',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  copiedText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
 
   // dialogs
   dialogWrap: {
