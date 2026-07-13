@@ -84,10 +84,10 @@ export default function NotifDetail({ navigation }: AppScreenProps) {
           const unread = e.unread && readIds.indexOf(e.id) < 0;
           return (
             <Row key={e.id} style={[st.event, i === list.length - 1 && { marginBottom: 0 }]}>
-              {/* 图标 tile + 连接线 */}
+              {/* 连接线挂在整行上:图标下 12 起,到下一个图标上方 12 止 */}
+              {i < list.length - 1 && <View style={st.connector} />}
               <View style={{ width: 48 }}>
                 <SvgXml xml={e.icon} width={48} height={48} />
-                {i < list.length - 1 && <View style={st.connector} />}
               </View>
 
               {/* 事件内容 */}
@@ -131,7 +131,7 @@ const st = StyleSheet.create({
   allReadPill: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     height: 32, paddingHorizontal: 10, borderRadius: 16,
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: '#E5E5E7',
+    backgroundColor: colors.surface,
   },
   allReadCheck: {
     width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: colors.textTertiary,
@@ -153,7 +153,7 @@ const st = StyleSheet.create({
     backgroundColor: colors.surface, padding: 12, paddingTop: 12, paddingBottom: 16,
   },
   event: { alignItems: 'flex-start', marginBottom: 38 },
-  // 连接线:tile 底往下延伸,停在下一个 tile 上方 12(38 间距里占 26)
+  // 连接线(挂在事件行上):图标底(48)+12 起,越过 38 行距、止于下一图标上方 12
   connector: {
     position: 'absolute', left: 23, top: 60, bottom: -26, width: 2,
     borderRadius: 1, backgroundColor: colors.border,
