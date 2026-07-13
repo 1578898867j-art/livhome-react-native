@@ -165,7 +165,11 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
                 <Row key={m.id} style={[st.cardRow, edit && { transform: [{ translateX: -38 }] }]}>
                   <Tap
                     style={[st.card, { flex: 1 }, tab === 'system' && { paddingLeft: 20 }]}
-                    onPress={() => (edit ? toggleCheck(m.id) : navigation.navigate('notif-detail'))}
+                    onPress={() =>
+                      edit
+                        ? toggleCheck(m.id)
+                        : navigation.navigate(tab === 'system' ? 'notif-system' : 'notif-detail')
+                    }
                   >
                     {tab === 'device' && (
                       <View style={st.devThumb}>

@@ -7,7 +7,7 @@ export const TAB_ROUTES = ['dev-home', 'agent-chat', 'me-home'] as const;
 export const STACK_ROUTES = [
   'splash',
   'dev-detail', 'dev-playback', 'dev-download', 'dev-messages', 'dev-config', 'dev-settings', 'dev-info',
-  'notif-center', 'notif-detail', 'notif-image', 'notif-settings', 'notif-frequency', 'alert-settings',
+  'notif-center', 'notif-detail', 'notif-system', 'notif-image', 'notif-settings', 'notif-frequency', 'alert-settings',
   'motion-detection', 'detection-area', 'sound-detection', 'line-crossing', 'trip-wire', 'geofence',
   'agent-history',
   'album', 'album-detail',
