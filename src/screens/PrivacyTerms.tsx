@@ -3,108 +3,90 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { colors } from '../theme';
 
+// 欢迎/隐私同意页(Figma 4060:1921):浅灰底 + 大白卡,三段文案 + Agree/Disagree
+// 文案按产品定位为居家看护(home),链接跳转用户协议全文页
 export default function PrivacyTerms({ navigation }: AppScreenProps) {
+  const openAgreement = () => navigation.navigate('privacy-agreement');
+  const openPolicy = () => navigation.navigate('privacy-policy');
   return (
-    <View style={st.overlay}>
+    <View style={st.page}>
       <View style={st.card}>
         <Text style={st.title}>Welcome to LIVHOME</Text>
 
         <Text style={st.body}>
-          Thank you for choosing LIVHOME. We are committed to providing an
-          intelligent and seamless experience for you and your smart home.
+          Thank you for choosing LIVHOME.{'\n'}
+          We are committed to providing an intelligent and seamless lifestyle experience for you
+          and your home.
         </Text>
 
-        <Text style={[st.body, { marginTop: 12 }]}>
-          Before using this app, please read and agree to our{' '}
-          <Text style={st.link}>User Agreement</Text> and{' '}
-          <Text style={st.link}>Privacy Policy</Text>. Your data will only be
-          used as necessary to deliver services.
+        <Text style={[st.body, { marginTop: 18 }]}>
+          Before using this app and its related services, please take a moment to read and agree
+          to our <Text style={st.link} onPress={openAgreement}>《User Agreement》</Text> and{' '}
+          <Text style={st.link} onPress={openPolicy}>《Privacy Policy》</Text>. We value your trust
+          and will protect your personal information in accordance with applicable laws and
+          regulations. Your data will only be used as necessary to deliver services, improve our
+          products, and enhance your overall experience.
         </Text>
 
-        <View style={st.actions}>
-          <Pressable
-            onPress={() => navigation.replace('Main', { screen: 'dev-home' })}
-            style={({ pressed }) => [st.btn, st.btnPri, pressed && { opacity: 0.85 }]}
-          >
-            <Text style={st.btnPriText}>Agree and continue</Text>
-          </Pressable>
+        <Text style={[st.body, { marginTop: 18 }]}>
+          By tapping “Agree and continue”, you confirm that you have read, understood, and accepted
+          all the terms of the User Agreement and Privacy Policy.
+        </Text>
 
-          <Pressable
-            onPress={() => navigation.goBack()}
-            style={({ pressed }) => [st.btn, st.btnSec, pressed && { opacity: 0.85 }]}
-          >
-            <Text style={st.btnSecText}>Disagree</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          style={({ pressed }) => [st.agreeBtn, pressed && { opacity: 0.88 }]}
+          onPress={() => navigation.replace('login')}
+        >
+          <Text style={st.agreeTxt}>Agree and continue</Text>
+        </Pressable>
+        <Pressable style={({ pressed }) => [st.disagreeBtn, pressed && { opacity: 0.7 }]}>
+          <Text style={st.disagreeTxt}>Disagree</Text>
+        </Pressable>
       </View>
     </View>
   );
 }
 
 const st = StyleSheet.create({
-  overlay: {
+  page: {
     flex: 1,
-    backgroundColor: 'rgba(20,20,22,.4)',
-    alignItems: 'center',
+    backgroundColor: colors.bgSecondary,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 20,
   },
   card: {
-    width: '100%',
-    maxWidth: 360,
     backgroundColor: colors.surface,
-    borderRadius: 26,
-    paddingHorizontal: 22,
-    paddingVertical: 26,
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 60,
-    shadowOffset: { width: 0, height: 24 },
-    elevation: 12,
+    borderRadius: 24,
+    paddingHorizontal: 26,
+    paddingTop: 30,
+    paddingBottom: 26,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '800',
     textAlign: 'center',
-    letterSpacing: -0.4,
-    color: colors.textPrimary,
-  },
-  body: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.textSecondary,
-    marginTop: 14,
-    lineHeight: 22,
-  },
-  link: {
-    color: colors.brand,
+    fontSize: 22,
     fontWeight: '700',
+    letterSpacing: -0.3,
+    color: colors.textPrimary,
+    marginBottom: 22,
   },
-  actions: {
-    marginTop: 20,
-    gap: 10,
-  },
-  btn: {
-    width: '100%',
-    height: 54,
+  body: { fontSize: 14, fontWeight: '400', lineHeight: 21, color: colors.textPrimary },
+  link: { color: colors.brand },
+  agreeBtn: {
+    marginTop: 30,
+    height: 50,
     borderRadius: 99,
+    backgroundColor: colors.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnPri: {
-    backgroundColor: colors.brand,
-  },
-  btnPriText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  btnSec: {
+  agreeTxt: { color: '#fff', fontSize: 16, fontWeight: '600' },
+  disagreeBtn: {
+    marginTop: 12,
+    height: 50,
+    borderRadius: 99,
     backgroundColor: colors.bgSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  btnSecText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
+  disagreeTxt: { color: colors.textTertiary, fontSize: 16, fontWeight: '500' },
 });

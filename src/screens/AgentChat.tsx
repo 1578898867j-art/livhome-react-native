@@ -392,12 +392,20 @@ export default function AgentChat({ navigation }: AppScreenProps) {
   const menuTop = Math.max(insets.top + 56, Math.min(convMenuY - 10, H - 200));
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
-      <Toolbar onNew={reset} onMenu={openDrawer} />
+    <SafeAreaView style={styles.screen} edges={[]}>
+      {/* 顶部渐变蒙版头(原型 agentTopBar:白 → 白52% → 透明),内容从其后淡出 */}
+      <LinearGradient
+        colors={[colors.bgPrimary, colors.bgPrimary, 'rgba(251,251,251,0)']}
+        locations={[0, 0.52, 1]}
+        style={[styles.topBarGrad, { paddingTop: insets.top + 8 }]}
+        pointerEvents="box-none"
+      >
+        <Toolbar onNew={reset} onMenu={openDrawer} />
+      </LinearGradient>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {mode === 'empty' ? (
           <>
-            <Pressable style={styles.center} onPress={() => Keyboard.dismiss()}>
+            <Pressable style={[styles.center, { paddingTop: insets.top + 44 }]} onPress={() => Keyboard.dismiss()}>
               <View style={{ marginBottom: 26 }}>
                 <SunBurst size={46} color="#C7C7CC" sw={2} />
               </View>
@@ -416,11 +424,11 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 style={styles.pillsScroll}
                 contentContainerStyle={styles.pillsRow}
               >
-                <Pressable style={[styles.cardOutline, { width: W * 0.75 }]} onPress={() => navigation.navigate('agent-history')}>
+                <Pressable style={[styles.cardOutline, { width: W * 0.75 }]} onPress={() => navigation.navigate('feedback')}>
                   <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.cardTitle}>Chat with support?</Text>
+                    <Text style={styles.cardTitle}>Contact us</Text>
                     <View style={styles.cardSubRow}>
-                      <Text style={styles.cardSub}>Message our team</Text>
+                      <Text style={styles.cardSub}>Feedback & support team</Text>
                       <Icon name="arrowUpRight" size={13} color={colors.textTertiary} sw={2} />
                     </View>
                   </View>
@@ -468,7 +476,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
             <View style={{ flex: 1 }}>
               <ScrollView
                 ref={scrollRef}
-                contentContainerStyle={styles.convContent}
+                contentContainerStyle={[styles.convContent, { paddingTop: insets.top + 64 }]}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
                 onScrollBeginDrag={() => Keyboard.dismiss()}
@@ -745,7 +753,8 @@ export default function AgentChat({ navigation }: AppScreenProps) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bgPrimary },
-  toolbar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 14 },
+  toolbar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 18 },
+  topBarGrad: { position: 'absolute', top: 0, left: 0, right: 0, zIndex: 40, paddingBottom: 44 },
   title: { flex: 1, textAlign: 'center', fontSize: 24, fontWeight: '600', letterSpacing: -0.5, color: colors.textPrimary },
 
   // empty
@@ -785,7 +794,7 @@ const styles = StyleSheet.create({
   micBtn: { width: 44, height: 44, borderRadius: 13, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
 
   // conversation
-  convContent: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 150 },
+  convContent: { paddingHorizontal: 18, paddingBottom: 150 },
   thinkingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 8 },
   thinkingText: { fontSize: 18, fontWeight: '600', letterSpacing: -0.2, color: colors.textPrimary },
   meRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 2, marginBottom: 22 },

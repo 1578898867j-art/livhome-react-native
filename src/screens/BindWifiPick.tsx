@@ -80,7 +80,7 @@ const st = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingTop: 10,
-    paddingBottom: 26,
+    paddingBottom: 40,
     shadowColor: '#000',
     shadowOpacity: 0.16,
     shadowRadius: 30,

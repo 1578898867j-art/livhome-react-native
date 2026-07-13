@@ -2,6 +2,7 @@ import type { ComponentType } from 'react';
 import type { AppScreenProps, ScreenName } from './types';
 
 import Login from '../screens/Login';
+import Splash from '../screens/Splash';
 import DevHome from '../screens/DevHome';
 import DevDetail from '../screens/DevDetail';
 import DevPlayback from '../screens/DevPlayback';
@@ -42,6 +43,8 @@ import EmailLogin from '../screens/EmailLogin';
 import AppleBind from '../screens/AppleBind';
 import PrivacyTerms from '../screens/PrivacyTerms';
 import PrivacyAgreement from '../screens/PrivacyAgreement';
+import PrivacyPolicy from '../screens/PrivacyPolicy';
+import HelpCenter from '../screens/HelpCenter';
 import BindFind from '../screens/BindFind';
 import BindNone from '../screens/BindNone';
 import BindPrep from '../screens/BindPrep';
@@ -91,9 +94,12 @@ const SCREENS = {
   'timezone': Timezone,
   'storage-settings': StorageSettings,
   'email-login': EmailLogin,
+  splash: Splash,
   'apple-bind': AppleBind,
   'privacy-terms': PrivacyTerms,
   'privacy-agreement': PrivacyAgreement,
+  'privacy-policy': PrivacyPolicy,
+  'help-center': HelpCenter,
   'bind-find': BindFind,
   'bind-none': BindNone,
   'bind-prep': BindPrep,

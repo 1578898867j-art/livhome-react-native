@@ -8,7 +8,8 @@ import {
   StyleProp,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, shadow } from '../theme';
 import { Icon } from './Icon';
 
@@ -24,18 +25,29 @@ export function Screen({
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
   contentStyle?: StyleProp<ViewStyle>;
 }) {
-  return (
-    <SafeAreaView style={s.screen} edges={edges}>
-      {scroll ? (
+  const insets = useSafeAreaInsets();
+  if (scroll) {
+    // 内容允许滚到状态栏后面,顶部用 白→透明 渐变蒙版让其淡出(全局统一效果)
+    return (
+      <SafeAreaView style={s.screen} edges={edges.filter((e) => e !== 'top')}>
         <ScrollView
-          contentContainerStyle={[{ paddingBottom: 28 }, contentStyle]}
+          contentContainerStyle={[{ paddingTop: insets.top, paddingBottom: 28 }, contentStyle]}
           showsVerticalScrollIndicator={false}
         >
           {children}
         </ScrollView>
-      ) : (
-        <View style={[{ flex: 1 }, contentStyle]}>{children}</View>
-      )}
+        <LinearGradient
+          colors={[colors.bgPrimary, colors.bgPrimary, 'rgba(251,251,251,0)']}
+          locations={[0, 0.55, 1]}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
+          pointerEvents="none"
+        />
+      </SafeAreaView>
+    );
+  }
+  return (
+    <SafeAreaView style={s.screen} edges={edges}>
+      <View style={[{ flex: 1 }, contentStyle]}>{children}</View>
     </SafeAreaView>
   );
 }
@@ -109,7 +121,7 @@ export function NavBar({
   action?: { label: string; onPress?: () => void; color?: string };
 }) {
   return (
-    <Row style={{ paddingHorizontal: 18, minHeight: 44, gap: 12 }}>
+    <Row style={{ paddingHorizontal: 18, minHeight: 44, gap: 12, paddingVertical: 8 }}>
       {onBack ? (
         <Tap onPress={onBack} hitSlop={8} style={s.iconbtn}>
           <Icon name="chevL" size={16} color={colors.textPrimary} sw={2} />
@@ -283,7 +295,7 @@ const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bgPrimary },
   row: { flexDirection: 'row', alignItems: 'center' },
   card: { backgroundColor: colors.surface, borderRadius: 20 },
-  hdr: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 6 },
+  hdr: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 8 },
   tHead: { fontSize: 18, fontWeight: '600', letterSpacing: -0.4, color: colors.textPrimary },
   tBody: { fontSize: 14, fontWeight: '500', color: colors.textSecondary, lineHeight: 21 },
   eyebrow: {

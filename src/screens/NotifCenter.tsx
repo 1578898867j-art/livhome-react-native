@@ -1,238 +1,296 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Image, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
-import { CamPreview } from '../components/CamPreview';
-import { colors, radius } from '../theme';
+import { SELICON, SELICON2 } from '../icons/protoIcons';
+import { CAMAVATAR } from '../assets/images';
+import { colors } from '../theme';
 
-const EDIT_ICON =
-  '<svg viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M2.75 6C2.75 4.20507 4.20507 2.75 6 2.75H12C12.4142 2.75 12.75 2.41421 12.75 2C12.75 1.58579 12.4142 1.25 12 1.25H6C3.37665 1.25 1.25 3.37665 1.25 6V18C1.25 20.6234 3.37665 22.75 6 22.75H18C20.6234 22.75 22.75 20.6234 22.75 18V12C22.75 11.5858 22.4142 11.25 22 11.25C21.5858 11.25 21.25 11.5858 21.25 12V18C21.25 19.7949 19.7949 21.25 18 21.25H6C4.20507 21.25 2.75 19.7949 2.75 18V6ZM16.419 2.67708C17.3218 1.77431 18.7855 1.77431 19.6883 2.67708L21.3229 4.31171C22.2257 5.21449 22.2257 6.67818 21.3229 7.58096L19.8736 9.03028C19.7598 8.97394 19.6401 8.91302 19.516 8.84767C18.6806 8.40786 17.6892 7.79057 16.9493 7.05069C16.2095 6.31082 15.5922 5.31945 15.1524 4.48403C15.087 4.35989 15.0261 4.24018 14.9697 4.12639L16.419 2.67708ZM15.8887 8.11135C16.7642 8.98687 17.8777 9.67594 18.7595 10.1444L13.06 15.8438C12.7064 16.1975 12.2475 16.4269 11.7523 16.4977L8.31963 16.9881C7.5568 17.097 6.90295 16.4432 7.01193 15.6804L7.50231 12.2477C7.57305 11.7525 7.80248 11.2936 8.15616 10.94L13.8556 5.24053C14.3241 6.12234 15.0131 7.23582 15.8887 8.11135Z" fill="currentColor"/></svg>';
+// 消息中心 —— 按 Figma 4527:581:Device/System 两级,日期分组,编辑态 Delete All,
+// 删除确认弹窗,清空后空态。设备消息缩略图用 App 内设备图(CAMAVATAR)。
+type Msg = { id: number; title: string; time: string; body: string; unread?: boolean };
+type DayGroup = { day: string; mon: string; msgs: Msg[] };
 
-type Alert = {
-  icon: string;
-  color: string;
-  soft: string;
-  title: string;
-  body: string;
-  time: string;
-  thumb: boolean;
-};
-
-const DEVICE: Alert[] = [
+const DEVICE_INIT: DayGroup[] = [
   {
-    icon: 'walk',
-    color: colors.brand,
-    soft: colors.brandSoft,
-    title: 'Motion Detected',
-    body: 'Movement detected in Living Room',
-    time: '09:41 · Living Room',
-    thumb: true,
+    day: '24', mon: 'Jan',
+    msgs: [
+      { id: 1, title: 'Message Title', time: '17:40:20', body: 'Living Room | Congratulations! Your registration was succes', unread: true },
+      { id: 2, title: 'Message Title', time: '17:40:20', body: 'Living Room | Congratulations! Your registration was succes' },
+    ],
   },
   {
-    icon: 'walk',
-    color: colors.success,
-    soft: colors.successSoft,
-    title: 'Activity detected',
-    body: 'Movement detected near the sofa',
-    time: '08:12 · Living Room',
-    thumb: true,
-  },
-  {
-    icon: 'speaker',
-    color: colors.warning,
-    soft: colors.warningSoft,
-    title: 'Sound Detected',
-    body: 'Loud sound detected',
-    time: 'Yesterday 22:03 · Backyard',
-    thumb: false,
+    day: '23', mon: 'Jan',
+    msgs: [{ id: 3, title: 'Message Title', time: '17:40:20', body: 'Backyard | Congratulations! Your registration was succes' }],
   },
 ];
 
-const SYSTEM: Alert[] = [
+const SYSTEM_INIT: DayGroup[] = [
   {
-    icon: 'spark',
-    color: colors.brand,
-    soft: colors.brandSoft,
-    title: 'Firmware updated',
-    body: 'Living Room updated to v2.4.1',
-    time: '10:00',
-    thumb: false,
+    day: '24', mon: 'Jan',
+    msgs: [
+      { id: 11, title: 'Message Title', time: '17:40:20', body: 'Congratulations! Your registration was successful, Welcome abo.' },
+      { id: 12, title: 'Message Title', time: '17:40:20', body: 'Congratulations! Your registration was successful, Welcome abo.' },
+    ],
   },
   {
-    icon: 'info',
-    color: colors.info,
-    soft: colors.infoSoft,
-    title: 'Welcome to LIVHOME',
-    body: 'Your account is ready. Add your first device.',
-    time: 'Jun 20',
-    thumb: false,
+    day: '22', mon: 'Jan',
+    msgs: [
+      { id: 13, title: 'Message Title', time: '17:40:20', body: 'Congratulations! Your registration was successful, Welcome abo.' },
+      { id: 14, title: 'Message Title', time: '17:40:20', body: 'Congratulations! Your registration was successful, Welcome abo.' },
+    ],
   },
 ];
 
 export default function NotifCenter({ navigation }: AppScreenProps) {
-  const [notifTab, setNotifTab] = useState<'device' | 'system'>('device');
-  const [editMode, setEditMode] = useState(false);
+  const [tab, setTab] = useState<'device' | 'system'>('device');
+  const [edit, setEdit] = useState(false);
+  const [checked, setChecked] = useState<number[]>([]);
+  const [deviceMsgs, setDeviceMsgs] = useState<DayGroup[]>(DEVICE_INIT);
+  const [systemMsgs, setSystemMsgs] = useState<DayGroup[]>(SYSTEM_INIT);
+  const [confirm, setConfirm] = useState<null | 'all' | 'sel'>(null);
 
-  const isDev = notifTab === 'device';
-  const list = isDev ? DEVICE : SYSTEM;
+  const groups = tab === 'device' ? deviceMsgs : systemMsgs;
+  const setGroups = tab === 'device' ? setDeviceMsgs : setSystemMsgs;
+  const empty = groups.every((g) => g.msgs.length === 0);
 
-  const Tab = (k: 'device' | 'system', label: string) => {
-    const active = notifTab === k;
-    return (
-      <Tap
-        onPress={() => setNotifTab(k)}
-        style={[st.tab, { backgroundColor: active ? colors.textPrimary : 'transparent' }]}
-      >
-        <Text style={[st.tabLabel, { color: active ? colors.textInverse : colors.textSecondary }]}>
-          {label}
-        </Text>
-      </Tap>
-    );
+  const toggleCheck = (id: number) =>
+    setChecked((c) => (c.indexOf(id) >= 0 ? c.filter((v) => v !== id) : c.concat(id)));
+
+  const exitEdit = () => {
+    setEdit(false);
+    setChecked([]);
+  };
+
+  const doDelete = () => {
+    if (confirm === 'all') {
+      setGroups((gs) => gs.map((g) => ({ ...g, msgs: [] })));
+    } else {
+      setGroups((gs) => gs.map((g) => ({ ...g, msgs: g.msgs.filter((m) => checked.indexOf(m.id) < 0) })));
+    }
+    setConfirm(null);
+    exitEdit();
   };
 
   return (
-    <Screen scroll={false}>
-      <View style={{ flex: 1 }}>
-        {/* Nav bar */}
-        <Row style={{ paddingHorizontal: 16, paddingVertical: 8, gap: 10 }}>
+    <Screen contentStyle={{ paddingBottom: 40 }}>
+      {/* nav:返回 + 居中标题 + 编辑态 Done */}
+      <Row style={st.nav}>
+        <View style={{ width: 44 }}>
           <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
+            <Icon name="chevL" size={16} color={colors.textPrimary} sw={2} />
           </Tap>
-          <Text style={st.navTitle}>Notification Center</Text>
-          <Tap style={st.iconbtnPlain} onPress={() => setEditMode((v) => !v)} hitSlop={8}>
-            {editMode ? (
-              <Icon name="x" size={17} color={colors.textPrimary} sw={2} />
-            ) : (
-              <SvgXml xml={EDIT_ICON} width={20} height={20} color={colors.textPrimary} />
-            )}
+        </View>
+        <Text style={st.navTitle}>Notification Center</Text>
+        {edit ? (
+          <Tap onPress={exitEdit} hitSlop={8} style={{ width: 44 }}>
+            <Text style={st.doneTxt} numberOfLines={1}>Done</Text>
           </Tap>
-        </Row>
-
-        {/* Tabs */}
-        <Row style={{ gap: 8, paddingHorizontal: 18, paddingTop: 6, paddingBottom: 12 }}>
-          {Tab('device', 'Device')}
-          {Tab('system', 'System')}
-        </Row>
-
-        {/* Body list */}
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 18, paddingBottom: editMode ? 110 : 40 }}
-          showsVerticalScrollIndicator={false}
-        >
-          <Row style={{ paddingHorizontal: 2, paddingTop: 6, paddingBottom: 12, alignItems: 'baseline' }}>
-            <Text style={st.dateNum}>24</Text>
-            <Text style={st.dateMon}>Jun</Text>
-          </Row>
-
-          {list.map((a, i) => (
-            <Tap
-              key={i}
-              onPress={() => navigation.navigate('notif-detail')}
-              style={st.card}
-            >
-              {a.thumb ? (
-                <View style={st.thumb}>
-                  <CamPreview box={false} style={st.thumbCam} />
-                </View>
-              ) : (
-                <View style={[st.iconWrap, { backgroundColor: a.soft }]}>
-                  <Icon name={a.icon} size={20} color={a.color} />
-                </View>
-              )}
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <View style={st.cardTop}>
-                  <Text style={st.cardTitle}>{a.title}</Text>
-                  {editMode && <View style={st.checkbox} />}
-                </View>
-                <Text style={st.cardBody}>{a.body}</Text>
-                <Text style={st.cardTime}>{a.time}</Text>
-              </View>
-            </Tap>
-          ))}
-        </ScrollView>
-
-        {/* Delete bar */}
-        {editMode && (
-          <View style={st.deleteBar}>
-            <Pressable
-              onPress={() => setEditMode(false)}
-              style={({ pressed }) => [st.deleteBtn, pressed && { opacity: 0.85 }]}
-            >
-              <Text style={st.deleteLabel}>Delete selected</Text>
-            </Pressable>
-          </View>
+        ) : (
+          <View style={{ width: 44 }} />
         )}
-      </View>
+      </Row>
+
+      {/* tabs + 编辑态 Delete All */}
+      <Row style={st.tabRow}>
+        <Tap style={[st.tabPill, tab === 'device' && st.tabPillOn]} onPress={() => { setTab('device'); exitEdit(); }}>
+          <Text style={[st.tabTxt, tab === 'device' && st.tabTxtOn]}>Device</Text>
+        </Tap>
+        <View>
+          <Tap style={[st.tabPill, tab === 'system' && st.tabPillOn]} onPress={() => { setTab('system'); exitEdit(); }}>
+            <Text style={[st.tabTxt, tab === 'system' && st.tabTxtOn]}>System</Text>
+          </Tap>
+          <View style={st.tabDot} />
+        </View>
+        <View style={{ flex: 1 }} />
+        {edit && !empty && (
+          <Tap style={st.delAllRow} onPress={() => setConfirm('all')}>
+            <Text style={st.delAllTxt}>Delete All</Text>
+            <View style={st.selCircle} />
+          </Tap>
+        )}
+      </Row>
+
+      {/* 空态(设计稿:No camera messages yet.) */}
+      {empty ? (
+        <View style={st.emptyWrap}>
+          <View style={st.emptyArt}>
+            <Icon name="mail" size={44} color={colors.textTertiary} sw={1.4} />
+          </View>
+          <Text style={st.emptyTitle}>
+            {tab === 'device' ? 'No camera messages yet.' : 'No system messages yet.'}
+          </Text>
+          <Text style={st.emptySub}>
+            When your camera detects an event, the notification will be displayed here.
+          </Text>
+        </View>
+      ) : (
+        groups.map((g, gi) => (
+          <View key={gi}>
+            {g.msgs.length > 0 && (
+              <Row style={st.dayRow}>
+                <Text style={st.dayNum}>{g.day}</Text>
+                <Text style={st.dayMon}> {g.mon}</Text>
+                <View style={{ flex: 1 }} />
+                {gi === 0 && !edit && (
+                  <Tap style={st.selBtn} onPress={() => setEdit(true)} hitSlop={8}>
+                    <SvgXml xml={SELICON} width={18} height={18} color={colors.textSecondary} />
+                  </Tap>
+                )}
+                {gi === 0 && edit && (
+                  <Tap style={[st.selBtn, { backgroundColor: colors.brandSoft }]} onPress={exitEdit} hitSlop={8}>
+                    <SvgXml xml={SELICON2} width={18} height={18} color={colors.brand} />
+                  </Tap>
+                )}
+              </Row>
+            )}
+            {g.msgs.map((m) => {
+              const on = checked.indexOf(m.id) >= 0;
+              return (
+                <Row key={m.id} style={{ marginHorizontal: 18, marginBottom: 16 }}>
+                  <Tap
+                    style={[st.card, { flex: 1 }]}
+                    onPress={() => (edit ? toggleCheck(m.id) : navigation.navigate('notif-detail'))}
+                  >
+                    {tab === 'device' && (
+                      <View style={st.devThumb}>
+                        <Image source={{ uri: CAMAVATAR }} style={st.devImg} resizeMode="contain" />
+                      </View>
+                    )}
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Row style={{ gap: 8 }}>
+                        <Text style={st.msgTitle}>{m.title}</Text>
+                        <View style={{ flex: 1 }} />
+                        <Text style={st.msgTime}>{m.time}</Text>
+                        {m.unread && <View style={st.unreadDot} />}
+                      </Row>
+                      <Text style={st.msgBody} numberOfLines={2}>{m.body}</Text>
+                    </View>
+                    {edit && (
+                      <Tap
+                        style={[st.selOverlay, on && { backgroundColor: colors.brand, borderWidth: 0 }]}
+                        onPress={() => toggleCheck(m.id)}
+                        hitSlop={6}
+                      >
+                        {on && <Icon name="check" size={12} color="#fff" sw={3} />}
+                      </Tap>
+                    )}
+                  </Tap>
+                </Row>
+              );
+            })}
+          </View>
+        ))
+      )}
+
+      {/* 编辑态:删除选中(有勾选时出现) */}
+      {edit && checked.length > 0 && (
+        <Tap style={st.delSelBtn} onPress={() => setConfirm('sel')}>
+          <Text style={st.delSelTxt}>Delete ({checked.length})</Text>
+        </Tap>
+      )}
+
+      {/* 删除确认弹窗(设计稿两种文案) */}
+      <Modal transparent visible={confirm !== null} animationType="fade" onRequestClose={() => setConfirm(null)}>
+        <Pressable style={st.ovl} onPress={() => setConfirm(null)}>
+          <Pressable style={st.dialog} onPress={(e) => e.stopPropagation()}>
+            <Text style={st.dialogTxt}>
+              {confirm === 'all'
+                ? 'Are you sure you want to delete all notification?'
+                : 'Are you sure you want to delete the notification?'}
+            </Text>
+            <View style={st.dialogBtns}>
+              <Tap style={st.dialogBtn} onPress={() => setConfirm(null)}>
+                <Text style={st.dialogCancel}>Cancel</Text>
+              </Tap>
+              <View style={st.dialogDivV} />
+              <Tap style={st.dialogBtn} onPress={doDelete}>
+                <Text style={st.dialogDelete}>Delete</Text>
+              </Tap>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Screen>
   );
 }
 
 const st = StyleSheet.create({
+  nav: { paddingHorizontal: 16, paddingVertical: 8, gap: 10 },
   iconbtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.bgSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center',
   },
-  iconbtnPlain: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
+  navTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: colors.textPrimary },
+  doneTxt: { fontSize: 15, fontWeight: '700', color: colors.brand, textAlign: 'right' },
+
+  tabRow: { paddingHorizontal: 18, marginTop: 8, gap: 8 },
+  tabPill: { paddingHorizontal: 16, height: 32, borderRadius: 16, backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
+  tabPillOn: { backgroundColor: colors.textPrimary },
+  tabTxt: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+  tabTxtOn: { color: '#fff' },
+  tabDot: { position: 'absolute', top: -1, right: -1, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.critical },
+  delAllRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  delAllTxt: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
+
+  dayRow: { paddingHorizontal: 18, marginTop: 8, marginBottom: 16, alignItems: 'baseline' },
+  dayNum: { fontSize: 22, fontWeight: '800', letterSpacing: -0.4, color: colors.textPrimary },
+  dayMon: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
+  selBtn: {
+    width: 32, height: 32, borderRadius: 16, backgroundColor: colors.bgSecondary,
+    alignItems: 'center', justifyContent: 'center', alignSelf: 'center',
   },
-  navTitle: { flex: 1, fontSize: 17, fontWeight: '600', textAlign: 'center', color: colors.textPrimary },
-  tab: { paddingVertical: 8, paddingHorizontal: 18, borderRadius: 999 },
-  tabLabel: { fontSize: 13, fontWeight: '700' },
-  dateNum: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5, color: colors.textPrimary },
-  dateMon: { fontSize: 13, fontWeight: '700', color: colors.textTertiary, marginLeft: 6 },
+
   card: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 12,
-    marginBottom: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.surface, borderRadius: 16, padding: 12,
+  },
+  devThumb: {
+    width: 44, height: 44, borderRadius: 12, backgroundColor: colors.bgSecondary,
+    alignItems: 'center', justifyContent: 'center', padding: 7, flexShrink: 0,
+  },
+  devImg: { width: '100%', height: '100%' },
+  msgTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
+  msgTime: { fontSize: 11, fontWeight: '500', color: colors.textTertiary },
+  unreadDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.critical },
+  msgBody: { marginTop: 4, fontSize: 12, fontWeight: '500', lineHeight: 17, color: colors.textSecondary },
+
+  selCircle: {
+    width: 22, height: 22, borderRadius: 11, borderWidth: 1.5,
+    borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  },
+  selOverlay: {
+    position: 'absolute', right: 12, top: '50%', marginTop: -11,
+    width: 22, height: 22, borderRadius: 11, borderWidth: 1.5,
+    borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center',
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
   },
-  thumb: { width: 64, height: 64, borderRadius: 12, overflow: 'hidden', flexShrink: 0 },
-  thumbCam: { height: 64 },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
+
+  emptyWrap: { alignItems: 'center', paddingTop: 90, paddingHorizontal: 40 },
+  emptyArt: {
+    width: 96, height: 96, borderRadius: 48, backgroundColor: colors.bgSecondary,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 22,
   },
-  cardTop: { flexDirection: 'row', alignItems: 'center' },
-  cardTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: colors.textPrimary },
-  checkbox: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: colors.borderStrong },
-  cardBody: { fontSize: 12, fontWeight: '500', color: colors.textTertiary, marginTop: 3, lineHeight: 17 },
-  cardTime: { fontSize: 11, fontWeight: '600', color: colors.textTertiary, marginTop: 5 },
-  deleteBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 34,
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
+  emptyTitle: { fontSize: 15, fontWeight: '700', color: colors.textPrimary },
+  emptySub: { marginTop: 8, fontSize: 12, fontWeight: '500', lineHeight: 18, color: colors.textTertiary, textAlign: 'center' },
+
+  delSelBtn: {
+    marginHorizontal: 18, marginTop: 16, height: 48, borderRadius: 99,
+    backgroundColor: colors.criticalSoft, alignItems: 'center', justifyContent: 'center',
   },
-  deleteBtn: {
-    width: '100%',
-    height: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.criticalSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
+  delSelTxt: { fontSize: 15, fontWeight: '700', color: colors.critical },
+
+  ovl: { flex: 1, backgroundColor: 'rgba(0,0,0,0.42)', alignItems: 'center', justifyContent: 'center', padding: 36 },
+  dialog: { width: '100%', maxWidth: 300, backgroundColor: colors.surface, borderRadius: 18, overflow: 'hidden' },
+  dialogTxt: {
+    paddingHorizontal: 22, paddingTop: 24, paddingBottom: 20,
+    fontSize: 14, fontWeight: '600', lineHeight: 21, color: colors.textPrimary, textAlign: 'center',
   },
-  deleteLabel: { fontSize: 15, fontWeight: '700', color: colors.critical },
+  dialogBtns: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border },
+  dialogBtn: { flex: 1, height: 48, alignItems: 'center', justifyContent: 'center' },
+  dialogDivV: { width: 1, backgroundColor: colors.border },
+  dialogCancel: { fontSize: 15, fontWeight: '500', color: colors.textSecondary },
+  dialogDelete: { fontSize: 15, fontWeight: '700', color: colors.critical },
 });

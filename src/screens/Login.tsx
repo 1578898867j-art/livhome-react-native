@@ -62,8 +62,13 @@ export default function Login({ navigation }: AppScreenProps) {
           {/* Legal */}
           <Text style={st.legal}>
             By continuing, you agree to our{' '}
-            <Text style={st.legalLink}>Terms of Service</Text> and{' '}
-            <Text style={st.legalLink}>Privacy Policy</Text>
+            <Text style={st.legalLink} onPress={() => navigation.navigate('privacy-agreement')}>
+              Terms of Service
+            </Text>{' '}
+            and{' '}
+            <Text style={st.legalLink} onPress={() => navigation.navigate('privacy-policy')}>
+              Privacy Policy
+            </Text>
           </Text>
         </View>
       </View>

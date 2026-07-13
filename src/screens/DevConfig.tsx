@@ -312,7 +312,7 @@ const st = StyleSheet.create({
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
     paddingHorizontal: 22,
-    paddingBottom: 24,
+    paddingBottom: 40,
   },
   grabberWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 8 },
   grabber: { width: 38, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong },

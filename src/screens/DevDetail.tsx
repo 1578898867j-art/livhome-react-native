@@ -2,6 +2,8 @@ import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, Tap, Row, Card } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS, MOVEICONS } from '../icons/protoSets';
@@ -73,6 +75,7 @@ function CamPreview({
 }
 
 export default function DevDetail({ navigation }: AppScreenProps) {
+  const insets = useSafeAreaInsets();
   const {
     clearChecked,
     cruising,
@@ -147,8 +150,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   ];
 
   return (
-    <Screen scroll={false}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+    <Screen scroll={false} edges={[]}>
+      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {/* nav row */}
         <Row style={{ paddingHorizontal: 16, paddingVertical: 8, gap: 10 }}>
           <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
@@ -216,6 +219,14 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           <PlaybackPanel onOpen={() => navigation.navigate('dev-playback')} />
         )}
       </ScrollView>
+
+      {/* 顶部渐变淡出蒙版(全局统一) */}
+      <LinearGradient
+        colors={[colors.bgPrimary, colors.bgPrimary, 'rgba(251,251,251,0)']}
+        locations={[0, 0.55, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
+        pointerEvents="none"
+      />
 
       {/* select-mode delete bar (covers the tab bar) */}
       {tab === 'messages' && msgSelect ? (
@@ -949,7 +960,7 @@ const st = StyleSheet.create({
   calCell: { width: `${100 / 7}%` as any, height: 44, alignItems: 'center', justifyContent: 'center' },
   calDay: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   calFootBtn: { flex: 1, height: 52, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
-  sheetWrap: { paddingHorizontal: 10, paddingBottom: 24 },
+  sheetWrap: { paddingHorizontal: 10, paddingBottom: 40 },
   sheetGroup: { backgroundColor: colors.surface, borderRadius: 16, overflow: 'hidden' },
   sheetTitle: {
     textAlign: 'center',

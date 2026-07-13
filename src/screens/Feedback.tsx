@@ -394,7 +394,7 @@ const st = StyleSheet.create({
   sheetWrap: {
     width: '100%',
     paddingHorizontal: 10,
-    paddingBottom: 12,
+    paddingBottom: 40,
   },
   sheetCard: {
     backgroundColor: colors.surface,
@@ -430,6 +430,7 @@ const st = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
+    paddingBottom: 24,
   },
   contactSheetTitle: {
     textAlign: 'center',

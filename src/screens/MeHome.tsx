@@ -20,7 +20,7 @@ const MENU: MeMenuRow[] = [
   { svg: ME_NOTIF, name: 'Notifications', target: 'notif-settings' },
   { svg: ME_ALBUM, name: 'Album', target: 'album' },
   { svg: ME_FEEDBACK, name: 'Feedback Center', target: 'feedback' },
-  { svg: ME_HELP, name: 'Help Center', target: null },
+  { svg: ME_HELP, name: 'Help Center', target: 'help-center' },
 ];
 
 type Overlay = null | 'avatar-sheet' | 'uploading' | 'upgrade';
@@ -339,7 +339,7 @@ const st = StyleSheet.create({
   sheetWrap: {
     width: '100%',
     paddingHorizontal: 10,
-    paddingBottom: 12,
+    paddingBottom: 40,
   },
   sheetCard: {
     backgroundColor: colors.surface,

@@ -26,7 +26,7 @@ function MainTabs() {
 
 export default function RootNavigator() {
   return (
-    <Stack.Navigator initialRouteName="login" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator initialRouteName="splash" screenOptions={{ headerShown: false }}>
       <Stack.Screen name="login" component={screenFor('login')} />
       <Stack.Screen name="Main" component={MainTabs} />
       {STACK_ROUTES.map((id) => (

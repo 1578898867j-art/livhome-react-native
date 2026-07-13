@@ -5,6 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 export const TAB_ROUTES = ['dev-home', 'agent-chat', 'me-home'] as const;
 
 export const STACK_ROUTES = [
+  'splash',
   'dev-detail', 'dev-playback', 'dev-download', 'dev-messages', 'dev-config', 'dev-settings', 'dev-info',
   'notif-center', 'notif-detail', 'notif-image', 'notif-settings', 'notif-frequency', 'alert-settings',
   'motion-detection', 'detection-area', 'sound-detection', 'line-crossing', 'trip-wire', 'geofence',
@@ -12,7 +13,7 @@ export const STACK_ROUTES = [
   'album', 'album-detail',
   'alarm-reminder', 'shutdown-list', 'shutdown-edit', 'shutdown-repeat',
   'edit-profile', 'settings', 'about', 'feedback', 'language', 'timezone', 'storage-settings',
-  'email-login', 'apple-bind', 'privacy-terms', 'privacy-agreement',
+  'email-login', 'apple-bind', 'privacy-terms', 'privacy-agreement', 'privacy-policy', 'help-center',
   'bind-find', 'bind-none', 'bind-prep', 'bind-wifi', 'bind-wifi-pick',
   'bind-connecting', 'bind-success', 'bind-fail', 'bind-qr',
 ] as const;

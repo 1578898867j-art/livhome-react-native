@@ -23,8 +23,12 @@ export default function Settings({ navigation }: AppScreenProps) {
             onPress={() => navigation.navigate('language')}
           />
           <SettingRow
-            name="Privacy & User Agreement"
+            name="User Agreement"
             onPress={() => navigation.navigate('privacy-agreement')}
+          />
+          <SettingRow
+            name="Privacy Policy"
+            onPress={() => navigation.navigate('privacy-policy')}
           />
           <SettingRow name="About" onPress={() => navigation.navigate('about')} last />
         </Card>
@@ -132,7 +136,7 @@ function ConfirmDialog({
 
 const st = StyleSheet.create({
   wrap: { flex: 1, paddingTop: 8 },
-  card: { marginHorizontal: 18, marginTop: 2 },
+  card: { marginHorizontal: 18, marginTop: 8 },
   bottom: {
     position: 'absolute',
     left: 0,

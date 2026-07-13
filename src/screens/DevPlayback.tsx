@@ -2,6 +2,7 @@ import type { AppScreenProps } from '../navigation/types';
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, DimensionValue, PanResponder } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 import { Modal, Pressable } from 'react-native';
 import { Screen, Tap, Row } from '../components/kit';
@@ -39,6 +40,7 @@ const pct = (v: number): DimensionValue => `${(v / 50) * 100}%`;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
 export default function DevPlayback({ navigation }: AppScreenProps) {
+  const insets = useSafeAreaInsets();
   // playhead position + active recording-event filters (mirrors S.pbHead / S.pbEvents)
   const [pbHead, setPbHead] = useState(23);
   const [pbEvents, setPbEvents] = useState<string[]>(['motion', 'sound']);
@@ -110,9 +112,9 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   };
 
   return (
-    <Screen scroll={false}>
+    <Screen scroll={false} edges={[]}>
       {/* nav row */}
-      <Row style={st.nav}>
+      <Row style={[st.nav, { marginTop: insets.top }]}>
         <Tap style={st.navIcon} onPress={() => navigation.goBack()} hitSlop={8}>
           <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
         </Tap>
@@ -281,7 +283,15 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         </Row>
       )}
 
-      {/* 日历选择(原型 pb-cal-open → msg-cal) */}
+            {/* 顶部渐变淡出蒙版(全局统一) */}
+      <LinearGradient
+        colors={[colors.bgPrimary, colors.bgPrimary, 'rgba(251,251,251,0)']}
+        locations={[0, 0.55, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
+        pointerEvents="none"
+      />
+
+{/* 日历选择(原型 pb-cal-open → msg-cal) */}
       <CalendarModal
         visible={calOpen}
         initM={pbM}
@@ -345,7 +355,7 @@ const st = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: 22,
     borderTopRightRadius: 22,
-    paddingBottom: 20,
+    paddingBottom: 40,
   },
   grabber: {
     width: 38,
