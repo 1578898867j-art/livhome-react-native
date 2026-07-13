@@ -39,8 +39,8 @@ export function Screen({
           {children}
         </ScrollView>
         <LinearGradient
-          colors={[bg, bg, `${bg}00`]}
-          locations={[0, 0.55, 1]}
+          colors={[bg, `${bg}B3`, `${bg}00`]}
+          locations={[0, 0.45, 1]}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
           pointerEvents="none"
         />
