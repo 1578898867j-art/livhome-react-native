@@ -88,15 +88,14 @@ export default function EmailLogin({ navigation }: AppScreenProps) {
         {/* CTA */}
         <View style={st.ctaWrap}>
           <Pressable
-            disabled={!valid}
-            onPress={() => navigation.replace('Main', { screen: 'dev-home' })}
+            onPress={() => navigation.replace('Main', { screen: 'agent-chat' })}
             style={({ pressed }) => [
               st.btn,
-              { backgroundColor: valid ? colors.brand : colors.bgSecondary },
-              valid && pressed && { opacity: 0.85 },
+              { backgroundColor: colors.brand },
+              pressed && { opacity: 0.85 },
             ]}
           >
-            <Text style={[st.btnText, { color: valid ? colors.textInverse : colors.textTertiary }]}>
+            <Text style={[st.btnText, { color: colors.textInverse }]}>
               Get Verification Code
             </Text>
           </Pressable>
