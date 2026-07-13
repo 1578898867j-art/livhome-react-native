@@ -1,7 +1,9 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { SELICON2 } from '../icons/protoIcons';
@@ -22,6 +24,7 @@ const GROUPS: Group[] = [
 ];
 
 export default function Album({ navigation }: AppScreenProps) {
+  const insets = useSafeAreaInsets();
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
 
@@ -37,7 +40,11 @@ export default function Album({ navigation }: AppScreenProps) {
   };
 
   return (
-    <Screen scroll contentStyle={{ paddingBottom: editMode ? 120 : 40 }}>
+    <Screen scroll={false} edges={[]}>
+      <ScrollView
+        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: editMode ? 140 : 40 }}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Nav row — 选择态按参考稿:左 ×,居中标题,右全选(蓝) */}
       {editMode ? (
         <Row style={st.nav}>
@@ -96,7 +103,17 @@ export default function Album({ navigation }: AppScreenProps) {
         ))}
       </View>
 
-      {/* 底部操作栏 — 参考稿:白底通栏,两个浅蓝圆角图标钮居中 */}
+      </ScrollView>
+
+      {/* 顶部渐变淡出蒙版(全局统一) */}
+      <LinearGradient
+        colors={[colors.bgPrimary, colors.bgPrimary, 'rgba(251,251,251,0)']}
+        locations={[0, 0.55, 1]}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
+        pointerEvents="none"
+      />
+
+      {/* 底部操作栏 — 钉在屏幕底部(滚动容器之外) */}
       {editMode && (
         <View style={st.actionBar}>
           <Tap style={st.barBtn}>
