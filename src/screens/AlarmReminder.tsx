@@ -144,7 +144,11 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
               label="Custom Voice"
               value={selName ?? 'Not added'}
               on={alarmVoice === 'custom'}
-              onPress={() => setSheet('cv')}
+              onPress={() => {
+                // 已有选用的录音:点击行即选中自定义语音;同时打开管理弹层
+                if (sel) setAlarmVoice('custom');
+                setSheet('cv');
+              }}
               last
             />
           </Card>
