@@ -1,5 +1,5 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, PanResponder } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,14 +39,15 @@ const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 const SCREEN_W = Dimensions.get('window').width;
 const TL_MARGIN = 18; // 与视频卡 marginHorizontal 一致
 const TL_W = SCREEN_W - TL_MARGIN * 2;
-const PPM = 7.8; // 每分钟像素(10min ≈ 78px,对齐设计稿刻度密度)
-const px = (v: number) => v * PPM;
+// 浏览态 1.3px/min(1 小时一格 ≈ 78px,滑动一屏约 5.5 小时);剪辑态放大到 7.8 保证把手可操作
+const PPM_BROWSE = 1.3;
+const PPM_CLIP = 7.8;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
 // 连续时间域:自 2026-04-21 00:00 起的分钟数,可一直滑到 04-23 06:50(今天当前时段)
 const DAY_MIN = 1440;
 const T_MAX = 2 * DAY_MIN + 6 * 60 + 50;
-const WIN = 90; // 渲染窗口半径(分钟)——只渲染可视区附近,支撑无限滑动
+const WIN = 360; // 渲染窗口半径(分钟)——只渲染可视区附近,支撑无限滑动
 const fmtHM = (m: number) => `${pad(Math.floor((m % DAY_MIN) / 60))}:${pad(Math.floor(m) % 60)}`;
 
 export default function DevPlayback({ navigation }: AppScreenProps) {
@@ -91,20 +92,51 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
     setClipMode(true);
   };
 
-  // ── NVR 式拖动:固定中线,滑动时间轴条带本体(左拖 = 时间前进)
+  // ── NVR 式拖动:固定中线,滑动时间轴条带本体(左拖 = 时间前进);松手带惯性
+  const ppm = clipMode ? PPM_CLIP : PPM_BROWSE;
+  const px = (v: number) => v * ppm;
+  const ppmRef = useRef(ppm);
+  ppmRef.current = ppm;
   const pbHeadRef = useRef(pbHead);
   pbHeadRef.current = pbHead;
   const dragStart = useRef(0);
+  const flingRaf = useRef<number | null>(null);
+  const stopFling = () => {
+    if (flingRaf.current != null) cancelAnimationFrame(flingRaf.current);
+    flingRaf.current = null;
+  };
+  useEffect(() => stopFling, []);
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
+        stopFling();
         dragStart.current = pbHeadRef.current;
       },
       onPanResponderMove: (_e, g) => {
-        const v = Math.max(0, Math.min(T_MAX, dragStart.current - g.dx / PPM));
+        const v = Math.max(0, Math.min(T_MAX, dragStart.current - g.dx / ppmRef.current));
         setPbHead(Math.round(v * 10) / 10);
+      },
+      onPanResponderRelease: (_e, g) => {
+        // 惯性:vx(px/ms)→ 分钟/秒,指数衰减
+        let vel = (-g.vx * 1000) / ppmRef.current;
+        if (Math.abs(vel) < 30) return;
+        let last = Date.now();
+        const step = () => {
+          const now = Date.now();
+          const dt = (now - last) / 1000;
+          last = now;
+          vel *= Math.pow(0.15, dt);
+          const next = Math.max(0, Math.min(T_MAX, pbHeadRef.current + vel * dt));
+          setPbHead(Math.round(next * 10) / 10);
+          if (Math.abs(vel) > 4 && next > 0 && next < T_MAX) {
+            flingRaf.current = requestAnimationFrame(step);
+          } else {
+            flingRaf.current = null;
+          }
+        };
+        flingRaf.current = requestAnimationFrame(step);
       },
     })
   ).current;
@@ -200,10 +232,15 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
 
       {/* 连续时间轴 — 拖动条带本体、固定中线读值;窗口化渲染支持跨天滑动,两侧渐隐蒙版 */}
       {(() => {
-        const winStart = Math.floor((pbHead - WIN) / 10) * 10;
-        const winEnd = winStart + WIN * 2 + 20;
+        const tickStep = clipMode ? 10 : 60;
+        const winStart = Math.floor((pbHead - WIN) / tickStep) * tickStep;
+        const winEnd = winStart + WIN * 2 + tickStep * 2;
         const ticks: number[] = [];
-        for (let m = Math.max(0, Math.ceil(winStart / 10) * 10); m <= Math.min(winEnd, T_MAX); m += 10) {
+        for (
+          let m = Math.max(0, Math.ceil(winStart / tickStep) * tickStep);
+          m <= Math.min(winEnd, T_MAX);
+          m += tickStep
+        ) {
           ticks.push(m);
         }
         const trackS = Math.max(winStart, 0);
