@@ -37,6 +37,8 @@ const EV_FILTERS = [
 const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const SCREEN_W = Dimensions.get('window').width;
+const TL_MARGIN = 18; // 与视频卡 marginHorizontal 一致
+const TL_W = SCREEN_W - TL_MARGIN * 2;
 const PPM = 7.8; // 每分钟像素(10min ≈ 78px,对齐设计稿刻度密度)
 const px = (v: number) => v * PPM;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
@@ -210,7 +212,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
                 st.strip,
                 {
                   width: px(winEnd - winStart),
-                  transform: [{ translateX: SCREEN_W / 2 - px(pbHead - winStart) }],
+                  transform: [{ translateX: TL_W / 2 - px(pbHead - winStart) }],
                 },
               ]}
             >
@@ -257,21 +259,6 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
               </View>
             </View>
             {!clipMode && <View pointerEvents="none" style={st.centerHead} />}
-            {/* 两侧剪切蒙版:条带滑入屏幕边缘时渐隐 */}
-            <LinearGradient
-              colors={[colors.bgPrimary, `${colors.bgPrimary}00`]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={st.edgeFadeL}
-              pointerEvents="none"
-            />
-            <LinearGradient
-              colors={[`${colors.bgPrimary}00`, colors.bgPrimary]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={st.edgeFadeR}
-              pointerEvents="none"
-            />
           </View>
         );
       })()}
@@ -477,7 +464,7 @@ const st = StyleSheet.create({
   filterTap: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   filterText: { fontSize: 14, fontWeight: '500' },
 
-  timelineWrap: { marginTop: 18, height: 106, overflow: 'hidden' },
+  timelineWrap: { marginHorizontal: TL_MARGIN, marginTop: 18, height: 106, overflow: 'hidden' },
   strip: { position: 'absolute', top: 0, left: 0, height: 106 },
   label: {
     position: 'absolute', top: 0, width: 44, textAlign: 'center',
@@ -491,11 +478,9 @@ const st = StyleSheet.create({
     borderColor: colors.border,
     overflow: 'hidden',
   },
-  edgeFadeL: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 36 },
-  edgeFadeR: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 36 },
   // 固定中线(读值指针)
   centerHead: {
-    position: 'absolute', left: SCREEN_W / 2 - 1.5, top: 26, height: 80, width: 3,
+    position: 'absolute', left: TL_W / 2 - 1.5, top: 26, height: 80, width: 3,
     borderRadius: 2, backgroundColor: colors.brand,
   },
 
