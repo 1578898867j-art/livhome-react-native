@@ -4,8 +4,9 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row, Card, Header, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
+import { addSchedule, useDraftDays } from '../features/devices/shutdownStore';
+import type { TM } from '../features/devices/shutdownStore';
 
-type TM = { h: number; m: number };
 type Which = 'off' | 'on';
 type Unit = 'h' | 'm';
 
@@ -23,8 +24,13 @@ function repeatLabel(days: boolean[]) {
 export default function ShutdownEdit({ navigation }: AppScreenProps) {
   const [edOff, setEdOff] = useState<TM>({ h: 22, m: 0 });
   const [edOn, setEdOn] = useState<TM>({ h: 7, m: 0 });
-  const [edDays] = useState<boolean[]>([true, true, true, true, true, true, true]);
+  const edDays = useDraftDays(); // Repeat 页的选择实时同步
   const [edErr] = useState(false);
+
+  const save = () => {
+    addSchedule({ off: edOff, on: edOn, days: edDays });
+    navigation.goBack();
+  };
 
   const adj = (which: Which, unit: Unit, dir: 1 | -1) => {
     const mod = unit === 'h' ? 24 : 60;
@@ -88,7 +94,7 @@ export default function ShutdownEdit({ navigation }: AppScreenProps) {
       </View>
 
       <View style={st.footer}>
-        <PrimaryBtn label="Save" onPress={() => navigation.goBack()} />
+        <PrimaryBtn label="Save" onPress={save} style={{ backgroundColor: colors.brand }} />
       </View>
     </Screen>
   );

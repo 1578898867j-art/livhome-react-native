@@ -1,22 +1,12 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row, Card, Header, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { MOONICON, SUNICON, ARROWBOX, TRASHICON } from '../icons/protoIcons';
 import { colors } from '../theme';
-
-type Sched = {
-  off: { h: number; m: number };
-  on: { h: number; m: number };
-  days: boolean[];
-};
-
-const INITIAL: Sched[] = [
-  { off: { h: 23, m: 0 }, on: { h: 7, m: 0 }, days: [true, true, true, true, true, true, true] },
-  { off: { h: 19, m: 0 }, on: { h: 20, m: 0 }, days: [false, true, true, true, true, true, false] },
-];
+import { removeSchedule, resetDraftDays, useSchedules } from '../features/devices/shutdownStore';
 
 const p2 = (n: number) => (n < 10 ? '0' : '') + n;
 
@@ -30,9 +20,13 @@ function repeatLabel(days: boolean[]) {
 }
 
 export default function ShutdownList({ navigation }: AppScreenProps) {
-  const [schedules, setSchedules] = useState<Sched[]>(INITIAL);
+  const schedules = useSchedules();
 
-  const del = (i: number) => setSchedules((prev) => prev.filter((_, idx) => idx !== i));
+  const del = (i: number) => removeSchedule(i);
+  const goAdd = () => {
+    resetDraftDays();
+    navigation.navigate('shutdown-edit');
+  };
 
   if (!schedules.length) {
     return (
@@ -44,7 +38,7 @@ export default function ShutdownList({ navigation }: AppScreenProps) {
             <Text style={st.emptyText}>No time set yet</Text>
           </View>
           <View style={st.footer}>
-            <PrimaryBtn label="Add" onPress={() => navigation.navigate('shutdown-edit')} style={st.addBtn} />
+            <PrimaryBtn label="Add" onPress={goAdd} style={st.addBtn} />
           </View>
         </View>
       </Screen>
@@ -100,7 +94,7 @@ export default function ShutdownList({ navigation }: AppScreenProps) {
           })}
         </ScrollView>
         <View style={st.footer}>
-          <PrimaryBtn label="Add Schedule" onPress={() => navigation.navigate('shutdown-edit')} style={st.addBtn} />
+          <PrimaryBtn label="Add Schedule" onPress={goAdd} style={st.addBtn} />
         </View>
       </View>
     </Screen>

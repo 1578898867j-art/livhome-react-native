@@ -1,8 +1,9 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row, Card, NavBar } from '../components/kit';
 import { colors } from '../theme';
+import { setDraftDays, useDraftDays } from '../features/devices/shutdownStore';
 
 const NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -17,10 +18,9 @@ function repeatLabel(days: boolean[]): string {
 }
 
 export default function ShutdownRepeat({ navigation }: AppScreenProps) {
-  const [days, setDays] = useState<boolean[]>([true, true, true, true, true, true, true]);
+  const days = useDraftDays();
 
-  const toggle = (i: number) =>
-    setDays((prev) => prev.map((v, idx) => (idx === i ? !v : v)));
+  const toggle = (i: number) => setDraftDays(days.map((v, idx) => (idx === i ? !v : v)));
 
   return (
     <Screen scroll={false}>
