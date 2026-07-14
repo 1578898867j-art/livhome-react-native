@@ -23,7 +23,7 @@ export type StackRouteName = (typeof STACK_ROUTES)[number];
 export type ScreenName = 'login' | MainTabName | StackRouteName;
 
 type ScreenParamList = {
-  [Route in ScreenName]: Route extends 'agent-chat' ? { conv?: boolean } | undefined : undefined;
+  [Route in ScreenName]: undefined;
 };
 
 export type MainTabParamList = Pick<ScreenParamList, MainTabName>;

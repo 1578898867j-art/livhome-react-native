@@ -5,6 +5,7 @@ import { screenFor } from './registry';
 import { STACK_ROUTES, TAB_ROUTES } from './types';
 import type { MainTabParamList, RootStackParamList } from './types';
 import TabBar from './TabBar';
+import { TabOverlayProvider } from './TabOverlay';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -12,15 +13,17 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 // Prototype tab order: Devices · Assistant (center) · Profile
 function MainTabs() {
   return (
-    <Tab.Navigator
-      initialRouteName="dev-home"
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => <TabBar {...props} />}
-    >
-      {TAB_ROUTES.map((id) => (
-        <Tab.Screen key={id} name={id} component={screenFor(id)} />
-      ))}
-    </Tab.Navigator>
+    <TabOverlayProvider>
+      <Tab.Navigator
+        initialRouteName="dev-home"
+        screenOptions={{ headerShown: false }}
+        tabBar={(props) => <TabBar {...props} />}
+      >
+        {TAB_ROUTES.map((id) => (
+          <Tab.Screen key={id} name={id} component={screenFor(id)} />
+        ))}
+      </Tab.Navigator>
+    </TabOverlayProvider>
   );
 }
 

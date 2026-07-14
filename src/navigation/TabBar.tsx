@@ -8,18 +8,15 @@ import { SunBurst } from '../components/SunLogo';
 
 // Custom tab bar mirroring the prototype's buildTab():
 //   Devices (filled house) · centered sun-burst (no label, larger) · Profile (filled user)
-const SIDE: Record<string, { label: string; icon: 'house' | 'user' }> = {
-  'dev-home': { label: 'Devices', icon: 'house' },
+const SIDE: Record<string, { label: string; icon: 'houseNav' | 'user' }> = {
+  'dev-home': { label: 'Devices', icon: 'houseNav' },
   'me-home': { label: 'Profile', icon: 'user' },
 };
 
 export default function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  // Assistant 会话态:隐藏 tab 栏,由 AgentChat 自己的压缩输入栏接管(对齐原型)
-  const focused = state.routes[state.index];
-  if (focused.name === 'agent-chat' && (focused.params as any)?.conv) return null;
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 12) + 6 }]} pointerEvents="box-none">
+    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 12) + 0 }]} pointerEvents="box-none">
       <View style={styles.pill}>
         {state.routes.map((route, i) => {
           const focused = state.index === i;
@@ -32,12 +29,12 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
           if (route.name === 'agent-chat') {
             return (
               <Pressable key={route.key} onPress={onPress} style={styles.center}>
-                <SunBurst size={42} color={colors.brand} sw={2.4} />
+                <SunBurst size={46} color={focused ? colors.brand : colors.textTertiary} sw={2.4} />
               </Pressable>
             );
           }
 
-          const meta = SIDE[route.name] ?? { label: route.name, icon: 'house' as const };
+          const meta = SIDE[route.name] ?? { label: route.name, icon: 'houseNav' as const };
           const tint = focused ? colors.brand : colors.textTertiary;
           return (
             <Pressable key={route.key} onPress={onPress} style={styles.side}>

@@ -19,6 +19,7 @@ Run the smallest relevant checks while working, then run all of these before han
 
 ```bash
 npm ci
+npm run lint
 npm run typecheck
 npm run check:api
 npx expo-doctor
@@ -51,6 +52,7 @@ Keep server state out of global UI stores. Add TanStack Query only when the firs
 
 ## Change Discipline
 
+- After every code edit, run `npm run lint` and fix all ESLint errors before continuing.
 - Read the target screen, its feature hook, route contract, and callers before editing.
 - Prefer deleting dead code or reusing existing primitives over adding abstractions.
 - Do not split files only to reduce line count; extract behavior when it creates a real API, testing, or ownership boundary.
