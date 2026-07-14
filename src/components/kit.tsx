@@ -183,8 +183,14 @@ export function SettingRow({
           <Icon name={icon} size={15} color={colors.textSecondary} />
         </View>
       )}
-      <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>{name}</Text>
-      {!!value && <Text style={{ fontSize: 14, fontWeight: '500', color: colors.textTertiary }}>{value}</Text>}
+      {/* 标题不换行;值单行、可截断 —— 长值(如 Daytime · 06:00–18:00)不再把标题挤成两行 */}
+      <Text numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary }}>{name}</Text>
+      <View style={{ flex: 1 }} />
+      {!!value && (
+        <Text numberOfLines={1} style={{ flexShrink: 1, fontSize: 14, fontWeight: '500', color: colors.textTertiary }}>
+          {value}
+        </Text>
+      )}
       <Icon name="chevR" size={15} color={colors.textTertiary} sw={2} />
       {!last && <View style={s.rowLine} />}
     </Tap>
