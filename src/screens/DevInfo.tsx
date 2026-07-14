@@ -2,6 +2,7 @@ import type { AppScreenProps } from '../navigation/types';
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Animated } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Tap, Row, Card, Header } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors, shadow } from '../theme';
@@ -45,8 +46,14 @@ export default function DevInfo({ navigation }: AppScreenProps) {
     <Screen contentStyle={{ paddingBottom: 54 }}>
       <Header title="Device Details" onBack={() => navigation.goBack()} />
 
-      {/* device summary card (brand gradient approximated with a solid brand fill) */}
-      <View style={st.hero}>
+      {/* device summary card — Figma HeroCard 渐变:1D6FF3 → 4B93FF(60%) → 78B0FF,左下→右上 */}
+      <LinearGradient
+        colors={['#1D6FF3', '#4B93FF', '#78B0FF']}
+        locations={[0, 0.6, 1]}
+        start={{ x: 0, y: 1 }}
+        end={{ x: 1, y: 0 }}
+        style={st.hero}
+      >
         <View style={{ width: 56, height: 56 }}>
           <SvgXml xml={DEVAVATAR} width={56} height={56} />
         </View>
@@ -68,7 +75,7 @@ export default function DevInfo({ navigation }: AppScreenProps) {
         <Tap style={st.editBtn} onPress={() => setEditing((e) => !e)} hitSlop={8}>
           <SvgXml xml={EDITAVATAR} width={36} height={36} />
         </Tap>
-      </View>
+      </LinearGradient>
 
       {/* Device version */}
       <View style={st.eyebrow}>
@@ -174,7 +181,7 @@ const st = StyleSheet.create({
     marginTop: 8,
     borderRadius: 22,
     padding: 20,
-    backgroundColor: '#2E7DF2',
+    overflow: 'hidden',
     ...shadow.md,
   },
   heroName: { fontSize: 22, fontWeight: '700', color: '#fff', marginTop: 14 },
