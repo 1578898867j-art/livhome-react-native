@@ -119,8 +119,10 @@ const POLICY: Blk[] = [
 
 export default function PrivacyPolicy({ navigation }: AppScreenProps) {
   return (
-    <Screen contentStyle={{ paddingBottom: 54 }}>
-      <Header title="Privacy Policy" onBack={() => navigation.goBack()} />
+    <Screen
+      header={<Header title="Privacy Policy" onBack={() => navigation.goBack()} />}
+      contentStyle={{ paddingBottom: 54 }}
+    >
       <View style={st.body}>
         {POLICY.map((b, i) => {
           if (b.t === 'h1') return <Text key={i} style={st.h1}>{b.text}</Text>;

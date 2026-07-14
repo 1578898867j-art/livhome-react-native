@@ -46,9 +46,11 @@ export default function BindConnecting({ navigation }: AppScreenProps) {
   const OFFSET = 36;
 
   return (
-    <Screen scroll={false}>
+    <Screen
+      scroll={false}
+      header={<Header title="Connecting" onBack={() => navigation.goBack()} />}
+    >
       <View style={st.wrap}>
-        <Header title="Connecting" onBack={() => navigation.goBack()} />
         <Stepper n={3} />
 
         {/* progress ring */}

@@ -119,18 +119,29 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   };
 
   return (
-    <Screen scroll={false} edges={[]}>
-      {/* nav row */}
-      <Row style={[st.nav, { marginTop: insets.top }]}>
-        <Tap style={st.navIcon} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
-        </Tap>
-        <Text style={st.navTitle}>Home Monitoring</Text>
-        <Tap style={st.navIcon} onPress={() => navigation.navigate('dev-settings')} hitSlop={8}>
-          <Icon name="gear" size={18} color={colors.textPrimary} />
-        </Tap>
-      </Row>
-
+    <Screen
+      scroll={false}
+      edges={[]}
+      header={
+        <View>
+          <Row style={[st.nav, { marginTop: insets.top }]}>
+            <Tap style={st.navIcon} onPress={() => navigation.goBack()} hitSlop={8}>
+              <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
+            </Tap>
+            <Text style={st.navTitle}>Home Monitoring</Text>
+            <Tap style={st.navIcon} onPress={() => navigation.navigate('dev-settings')} hitSlop={8}>
+              <Icon name="gear" size={18} color={colors.textPrimary} />
+            </Tap>
+          </Row>
+          <LinearGradient
+            colors={[colors.bgPrimary, 'rgba(251,251,251,0.3)', 'rgba(251,251,251,0)']}
+            locations={[0, 0.45, 1]}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
+            pointerEvents="none"
+          />
+        </View>
+      }
+    >
       {/* video + control cluster */}
       <View style={st.videoWrap}>
         <View style={st.video}>
@@ -318,15 +329,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         </Row>
       )}
 
-            {/* 顶部渐变淡出蒙版(全局统一) */}
-      <LinearGradient
-        colors={[colors.bgPrimary, 'rgba(251,251,251,0.3)', 'rgba(251,251,251,0)']}
-        locations={[0, 0.45, 1]}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
-        pointerEvents="none"
-      />
-
-{/* 日历选择(原型 pb-cal-open → msg-cal) */}
+      {/* 日历选择(原型 pb-cal-open → msg-cal) */}
       <CalendarModal
         visible={calOpen}
         initM={pbM}

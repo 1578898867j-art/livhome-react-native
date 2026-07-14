@@ -2,7 +2,6 @@ import type { AppScreenProps } from '../navigation/types';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, Tap, Row, Card } from '../components/kit';
 import { Icon } from '../components/Icon';
@@ -179,9 +178,9 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   ];
 
   return (
-    <Screen scroll={false} edges={[]}>
-      <ScrollView contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        {/* nav row */}
+    <Screen
+      scroll={false}
+      header={
         <Row style={{ paddingHorizontal: 16, paddingVertical: 8, gap: 10 }}>
           <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
             <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
@@ -191,7 +190,9 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             <Icon name="gear" size={18} color={colors.textPrimary} />
           </Tap>
         </Row>
-
+      }
+    >
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {/* player */}
         <View style={st.player}>
           <CamPreview live tag="Person · sofa" label="Living · 14:22:08">
@@ -264,14 +265,6 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           <PlaybackPanel onOpen={() => navigation.navigate('dev-playback')} />
         )}
       </ScrollView>
-
-      {/* 顶部渐变淡出蒙版(全局统一) */}
-      <LinearGradient
-        colors={[colors.bgPrimary, 'rgba(251,251,251,0.3)', 'rgba(251,251,251,0)']}
-        locations={[0, 0.45, 1]}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
-        pointerEvents="none"
-      />
 
       {/* select-mode delete bar (covers the tab bar) */}
       {tab === 'messages' && msgSelect ? (

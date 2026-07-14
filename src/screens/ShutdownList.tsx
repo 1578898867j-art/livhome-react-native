@@ -30,9 +30,11 @@ export default function ShutdownList({ navigation }: AppScreenProps) {
 
   if (!schedules.length) {
     return (
-      <Screen scroll={false}>
+      <Screen
+        scroll={false}
+        header={<Header title="Device off Time" onBack={() => navigation.goBack()} />}
+      >
         <View style={{ flex: 1 }}>
-          <Header title="Device off Time" onBack={() => navigation.goBack()} />
           <View style={st.empty}>
             <Icon name="timer" size={76} color={colors.borderStrong} sw={1.3} />
             <Text style={st.emptyText}>No time set yet</Text>
@@ -46,9 +48,11 @@ export default function ShutdownList({ navigation }: AppScreenProps) {
   }
 
   return (
-    <Screen scroll={false}>
+    <Screen
+      scroll={false}
+      header={<Header title="Device off Time" onBack={() => navigation.goBack()} />}
+    >
       <View style={{ flex: 1 }}>
-        <Header title="Device off Time" onBack={() => navigation.goBack()} />
         <ScrollView
           contentContainerStyle={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 100, gap: 14 }}
           showsVerticalScrollIndicator={false}

@@ -9,9 +9,11 @@ import {
   StyleSheet,
   TextInput,
   Pressable,
+  Alert,
 } from 'react-native';
 import { Screen, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { saveLoginState } from '../features/auth/session';
 import { colors, spacing } from '../theme';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -37,23 +39,40 @@ export default function EmailLogin({ navigation }: AppScreenProps) {
   const showErr = trimmed !== '' && !valid;
   const borderColor = showErr ? colors.critical : email ? colors.brand : colors.border;
 
+  const completeLogin = async () => {
+    try {
+      await saveLoginState();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main', params: { screen: 'agent-chat' } }],
+      });
+    } catch {
+      Alert.alert('Unable to sign in', 'The login state could not be saved. Please try again.');
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Screen scroll={false} contentStyle={[st.page, keyboardShown && st.pageKeyboard]}>
-        {/* close / back */}
-        <Row style={st.topRow}>
-          <Pressable
-            style={({ pressed }) => [st.iconbtn, pressed && { opacity: 0.55 }]}
-            hitSlop={8}
-            onPress={() => navigation.goBack()}
-          >
-            <Icon name="x" size={18} color={colors.textPrimary} sw={2} />
-          </Pressable>
-        </Row>
-
+      <Screen
+        scroll={false}
+        contentStyle={[st.page, keyboardShown && st.pageKeyboard]}
+        header={
+          <View style={st.headerInset}>
+            <Row style={st.topRow}>
+              <Pressable
+                style={({ pressed }) => [st.iconbtn, pressed && { opacity: 0.55 }]}
+                hitSlop={8}
+                onPress={() => navigation.goBack()}
+              >
+                <Icon name="x" size={18} color={colors.textPrimary} sw={2} />
+              </Pressable>
+            </Row>
+          </View>
+        }
+      >
         {/* content */}
         <View style={st.body}>
           <Text style={st.title}>Add a Contact Email</Text>
@@ -88,7 +107,7 @@ export default function EmailLogin({ navigation }: AppScreenProps) {
         {/* CTA */}
         <View style={st.ctaWrap}>
           <Pressable
-            onPress={() => navigation.replace('Main', { screen: 'agent-chat' })}
+            onPress={() => void completeLogin()}
             style={({ pressed }) => [
               st.btn,
               { backgroundColor: colors.brand },
@@ -106,7 +125,8 @@ export default function EmailLogin({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  page: { paddingTop: 6, paddingBottom: 54 },
+  headerInset: { paddingTop: 6 },
+  page: { paddingBottom: 54 },
   pageKeyboard: { paddingBottom: spacing.md },
   topRow: { paddingHorizontal: 18, paddingVertical: 8 },
   iconbtn: {

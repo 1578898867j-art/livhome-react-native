@@ -88,8 +88,10 @@ const FAQ: Cat[] = [
 export default function HelpCenter({ navigation }: AppScreenProps) {
   const [open, setOpen] = useState<string | null>(null);
   return (
-    <Screen contentStyle={{ paddingBottom: 40 }}>
-      <Header title="Help Center" onBack={() => navigation.goBack()} />
+    <Screen
+      header={<Header title="Help Center" onBack={() => navigation.goBack()} />}
+      contentStyle={{ paddingBottom: 40 }}
+    >
       {FAQ.map((cat, ci) => (
         <View key={ci}>
           <Eyebrow>{cat.title}</Eyebrow>

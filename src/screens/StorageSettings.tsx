@@ -22,10 +22,8 @@ export default function StorageSettings({ navigation }: AppScreenProps) {
   const close = () => setOverlay(null);
 
   return (
-    <Screen>
+    <Screen header={<Header title="Storage Card" onBack={() => navigation.goBack()} />}>
       <View style={{ paddingTop: 8 }}>
-        <Header title="Storage Card" onBack={() => navigation.goBack()} />
-
         <Card style={{ marginHorizontal: 18, marginTop: 8 }}>
           {/* Card Status */}
           <View style={st.row}>

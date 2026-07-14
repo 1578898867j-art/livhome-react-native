@@ -32,15 +32,18 @@ export default function AgentHistory({ navigation }: AppScreenProps) {
   const openChat = () => navigation.navigate('Main', { screen: 'agent-chat' });
 
   return (
-    <Screen contentStyle={st.page}>
-      {/* Header row: back + title */}
-      <View style={st.navRow}>
-        <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
-        </Tap>
-        <Text style={st.navTitle}>Conversations</Text>
-      </View>
-
+    <Screen
+      bg={colors.bgSecondary}
+      contentStyle={st.page}
+      header={
+        <View style={st.navRow}>
+          <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
+            <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
+          </Tap>
+          <Text style={st.navTitle}>Conversations</Text>
+        </View>
+      }
+    >
       <View style={st.body}>
         {/* New Conversation button */}
         <Tap style={st.newBtn} onPress={openChat}>
@@ -65,7 +68,7 @@ export default function AgentHistory({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  page: { backgroundColor: colors.bgSecondary, paddingBottom: 54, flexGrow: 1 },
+  page: { paddingBottom: 54, flexGrow: 1 },
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',

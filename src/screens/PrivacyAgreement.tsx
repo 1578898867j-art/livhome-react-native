@@ -66,8 +66,10 @@ const AGREEMENT: Blk[] = [
 
 export default function PrivacyAgreement({ navigation }: AppScreenProps) {
   return (
-    <Screen contentStyle={{ paddingBottom: 54 }}>
-      <Header title="Terms of Service" onBack={() => navigation.goBack()} />
+    <Screen
+      header={<Header title="Terms of Service" onBack={() => navigation.goBack()} />}
+      contentStyle={{ paddingBottom: 54 }}
+    >
       <View style={st.body}>
         {AGREEMENT.map((b, i) => {
           if (b.t === 'h1') return <Text key={i} style={st.h1}>{b.text}</Text>;

@@ -24,9 +24,10 @@ const CELL = 14;
 
 export default function BindQR({ navigation }: AppScreenProps) {
   return (
-    <Screen scroll={false}>
-      <Header title="QR Pairing" onBack={() => navigation.goBack()} />
-
+    <Screen
+      scroll={false}
+      header={<Header title="QR Pairing" onBack={() => navigation.goBack()} />}
+    >
       <View style={st.intro}>
         <Text style={st.title}>Scan the QR code</Text>
         <Text style={st.sub}>

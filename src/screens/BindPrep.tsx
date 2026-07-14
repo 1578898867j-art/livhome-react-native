@@ -35,13 +35,17 @@ function PrepItem({ n, title, desc, first }: { n: string; title: string; desc: s
 
 export default function BindPrep({ navigation }: AppScreenProps) {
   return (
-    <Screen scroll={false}>
-      <View style={{ flex: 1 }}>
+    <Screen
+      scroll={false}
+      header={
         <Header
           title="Before you start"
           sub="Most failures are network or power related · ~60s"
           onBack={() => navigation.goBack()}
         />
+      }
+    >
+      <View style={{ flex: 1 }}>
         <BStepper n={1} />
 
         <View style={st.listWrap}>

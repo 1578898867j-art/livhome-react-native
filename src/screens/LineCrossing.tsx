@@ -9,10 +9,8 @@ export default function LineCrossing({ navigation }: AppScreenProps) {
   const [lineSens, setLineSens] = useState(1);
 
   return (
-    <Screen>
+    <Screen header={<Header title="Trip Wire Detection" onBack={() => navigation.goBack()} />}>
       <View style={{ paddingTop: 4, paddingBottom: 24 }}>
-        <Header title="Trip Wire Detection" onBack={() => navigation.goBack()} />
-
         <Eyebrow>Alarm</Eyebrow>
         <Card style={st.card}>
           <ToggleRow name="Trip Wire Detection" on={lineOn} onToggle={() => setLineOn((v) => !v)} last />

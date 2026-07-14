@@ -105,9 +105,10 @@ export default function ShutdownEdit({ navigation }: AppScreenProps) {
   );
 
   return (
-    <Screen scroll={false}>
-      <Header title="Device off Time" onBack={() => navigation.goBack()} />
-
+    <Screen
+      scroll={false}
+      header={<Header title="Device off Time" onBack={() => navigation.goBack()} />}
+    >
       <View style={st.body}>
         {timeCard('Turn Off Time', 'off', edOff)}
         {timeCard('Turn On Time', 'on', edOn)}

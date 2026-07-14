@@ -91,9 +91,8 @@ export default function Timezone({ navigation }: AppScreenProps) {
   }
 
   return (
-    <Screen>
+    <Screen header={<Header title="Device Time Zone" onBack={() => navigation.goBack()} />}>
       <View style={{ paddingTop: 8 }}>
-        <Header title="Device Time Zone" onBack={() => navigation.goBack()} />
         <Hint>Select a city close to your location.</Hint>
 
         <View style={st.searchWrap}>

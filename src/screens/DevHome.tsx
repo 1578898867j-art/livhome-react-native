@@ -103,20 +103,22 @@ export default function DevHome({ navigation }: AppScreenProps) {
   );
 
   return (
-    <Screen contentStyle={{ paddingBottom: 108 }}>
-      {/* header */}
-      <Row style={st.header}>
-        <Text style={st.title}>Devices</Text>
-        <View style={{ flex: 1 }} />
-        <Tap style={st.iconbtn} onPress={go('notif-center')}>
-          <Icon name="bell" size={18} color={colors.textPrimary} />
-          <View style={st.badge} />
-        </Tap>
-        <Tap style={st.iconbtn} onPress={go('bind-find')}>
-          <Icon name="plus" size={18} color={colors.textPrimary} sw={2} />
-        </Tap>
-      </Row>
-
+    <Screen
+      header={
+        <Row style={st.header}>
+          <Text style={st.title}>Devices</Text>
+          <View style={{ flex: 1 }} />
+          <Tap style={st.iconbtn} onPress={go('notif-center')}>
+            <Icon name="bell" size={18} color={colors.textPrimary} />
+            <View style={st.badge} />
+          </Tap>
+          <Tap style={st.iconbtn} onPress={go('bind-find')}>
+            <Icon name="plus" size={18} color={colors.textPrimary} sw={2} />
+          </Tap>
+        </Row>
+      }
+      contentStyle={{ paddingBottom: 108 }}
+    >
       <View style={{ paddingHorizontal: 18, gap: 16 }}>
         <DevCard name="Living Room" status="Living room · synced 12s ago" prev={{ tag: 'Person · sofa', label: 'Living · 14:22' }} />
         <DevCard name="Backyard" status="Online · synced 2 min ago" prev={{ tag: 'No motion', label: 'Backyard · 14:20' }} />
@@ -147,7 +149,7 @@ const st = StyleSheet.create({
     backgroundColor: colors.critical,
   },
 
-  card: { backgroundColor: colors.surface, borderRadius: 24, overflow: 'hidden' },
+  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: 24, overflow: 'hidden' },
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 16, paddingTop: 14, paddingBottom: 12 },
   cardHeadRow: { gap: 10, padding: 16, paddingTop: 14, paddingBottom: 12 },
   avatar: {

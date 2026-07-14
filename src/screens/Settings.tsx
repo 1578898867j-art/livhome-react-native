@@ -1,7 +1,8 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Modal } from 'react-native';
+import { Alert, View, Text, StyleSheet, Pressable, Modal } from 'react-native';
 import { Screen, NavBar, Card, SettingRow } from '../components/kit';
+import { clearLoginState } from '../features/auth/session';
 import { colors } from '../theme';
 
 type Overlay = null | 'logout' | 'delete' | 'unbind';
@@ -11,11 +12,26 @@ export default function Settings({ navigation }: AppScreenProps) {
 
   const close = () => setOverlay(null);
 
-  return (
-    <Screen scroll={false}>
-      <View style={st.wrap}>
-        <NavBar title="Setting" onBack={() => navigation.goBack()} />
+  const logOut = async () => {
+    try {
+      await clearLoginState();
+      close();
+      navigation.reset({ index: 0, routes: [{ name: 'splash' }] });
+    } catch {
+      Alert.alert('Unable to log out', 'The login state could not be cleared. Please try again.');
+    }
+  };
 
+  return (
+    <Screen
+      scroll={false}
+      header={
+        <View style={st.headerInset}>
+          <NavBar title="Setting" onBack={() => navigation.goBack()} />
+        </View>
+      }
+    >
+      <View style={st.wrap}>
         <Card style={st.card}>
           <SettingRow
             name="Language"
@@ -55,10 +71,7 @@ export default function Settings({ navigation }: AppScreenProps) {
           cancelLabel="Cancel"
           confirmLabel="Log Out"
           onCancel={close}
-          onConfirm={() => {
-            close();
-            navigation.navigate('login');
-          }}
+          onConfirm={() => void logOut()}
         />
       )}
 
@@ -135,7 +148,8 @@ function ConfirmDialog({
 }
 
 const st = StyleSheet.create({
-  wrap: { flex: 1, paddingTop: 8 },
+  headerInset: { paddingTop: 8 },
+  wrap: { flex: 1 },
   card: { marginHorizontal: 18, marginTop: 8 },
   bottom: {
     position: 'absolute',

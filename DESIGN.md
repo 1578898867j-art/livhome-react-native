@@ -190,6 +190,7 @@ Do not scale font sizes with viewport width. Keep dynamic text from resizing sur
 ## Layout
 
 - Use `Screen` from `src/components/kit.tsx` for safe-area handling and the standard scroll behavior.
+- Pass the screen-level return or close control, title, and optional right action through `Screen`'s `header` slot. The header stays fixed outside the scrolling body; tabs, filters, search, dates, and other secondary controls remain in the body unless the product flow explicitly requires otherwise.
 - Start with `spacing.md` horizontal page padding. Use `spacing.xs` through `spacing.xl` before introducing one-off gaps.
 - Keep camera previews and media at a stable aspect ratio so loading labels and overlays cannot shift the layout.
 - Use unframed sections for page structure. Use cards for individual grouped items, settings groups, repeated entities, dialogs, and true tool surfaces.
@@ -213,7 +214,7 @@ Depth is functional. Prefer surface contrast and spacing. Use the shared `shadow
 
 Reuse `src/components/kit.tsx` before creating local versions of the same behavior.
 
-- `Screen` owns the screen background, safe area, scrolling, and default bottom space.
+- `Screen` owns the screen background, safe area, fixed screen-level header slot, scrolling body, and default bottom space.
 - `Header` and `NavBar` own compact screen-level navigation and titles.
 - `Card` groups one coherent item or settings section with the standard surface and radius.
 - `PrimaryBtn` is a 54-unit dark pill button for the main decision in an area.
@@ -222,6 +223,7 @@ Reuse `src/components/kit.tsx` before creating local versions of the same behavi
 - `Eyebrow` and `Hint` provide compact supporting hierarchy; they must not replace clear labels.
 - `Tap` uses the shared pressed-opacity response. New interactive wrappers need an equivalent visible pressed state.
 - Full-screen transient surfaces opened from a tab screen use `TabOverlay` so they cover bottom navigation without unmounting or visually shifting it.
+- Activating the currently selected bottom tab collapses the capsule into a 72-unit icon-only circle. Devices and Assistant anchor left, Profile anchors right, and one activation of the circle expands the full navigation again. Sending a non-empty typed Assistant message also collapses an expanded capsule; voice and suggestion actions do not. When Assistant is collapsed, its composer shares the circle's row, leaves the standard gap clear, and returns to its original size and position with the expanded capsule. Preserve immediate navigation for unselected tabs and reduced-motion behavior.
 
 Use icons for familiar tools and actions. Every icon-only control needs an accessibility label and a stable touch target of at least 44 by 44 units where layout permits. Do not use rounded text rectangles when a standard icon communicates the action more clearly.
 

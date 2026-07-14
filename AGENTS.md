@@ -15,16 +15,22 @@ SDK 54 is intentional because the current App Store version of Expo Go on physic
 
 ## Required Checks
 
-Run the smallest relevant checks while working, then run all of these before handoff:
+Run checks once after a logical batch of changes, not after every individual edit.
+
+For ordinary TypeScript or TSX changes, run:
 
 ```bash
-npm ci
 npm run lint
 npm run typecheck
-npm run check:api
-npx expo-doctor
-npx expo export --platform all --clear
 ```
+
+- Markdown-only changes require no npm checks; inspect the diff and run `git diff --check`.
+- Run `npm run check:api` only when `src/api/client.ts` or `scripts/check-api-client.mjs` changes.
+- Run `npx expo-doctor` only after dependency, Expo app config, or native configuration changes, during an SDK upgrade, or while diagnosing an Expo environment problem.
+- Run `npm ci` only for a fresh or clean install, CI validation, or explicit lockfile validation after dependencies change. Do not run it when dependencies are unchanged.
+- Run `npx expo export --platform all --clear` only for release or CI validation, or when changes may affect bundling, module resolution, platform assets, or Expo configuration.
+
+Never run `npm ci` or a clear Expo export in this checkout while Metro is running. Before either command, check for an active Metro listener. Do not stop or restart a user-owned development server without explicit direction; leave the restart to the user unless they ask otherwise.
 
 Do not commit generated export directories, `.expo/`, `node_modules/`, logs, or local `.env` files.
 
@@ -52,7 +58,7 @@ Keep server state out of global UI stores. Add TanStack Query only when the firs
 
 ## Change Discipline
 
-- After every code edit, run `npm run lint` and fix all ESLint errors before continuing.
+- Follow the change-scoped checks above; do not rerun the full validation set after every individual edit.
 - Read the target screen, its feature hook, route contract, and callers before editing.
 - Prefer deleting dead code or reusing existing primitives over adding abstractions.
 - Do not split files only to reduce line count; extract behavior when it creates a real API, testing, or ownership boundary.

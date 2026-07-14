@@ -35,8 +35,7 @@ export default function BindNone({ navigation }: AppScreenProps) {
   const goPrep = () => navigation.navigate('bind-prep');
 
   return (
-    <Screen>
-      <Header title="Add Device" onBack={() => navigation.goBack()} />
+    <Screen header={<Header title="Add Device" onBack={() => navigation.goBack()} />}>
       <Stepper n={1} />
 
       {/* empty-state icon */}

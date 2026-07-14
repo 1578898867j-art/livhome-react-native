@@ -22,7 +22,8 @@
         {
           "backgroundColor": "#FBFBFB"
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }

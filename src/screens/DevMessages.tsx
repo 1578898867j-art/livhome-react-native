@@ -49,9 +49,7 @@ export default function DevMessages({ navigation }: AppScreenProps) {
   const [active, setActive] = useState(0);
 
   return (
-    <Screen>
-      <Header title="Notification Details" onBack={() => navigation.goBack()} />
-
+    <Screen header={<Header title="Notification Details" onBack={() => navigation.goBack()} />}>
       {/* date group heading */}
       <Row style={st.dateRow}>
         <Text style={st.dateNum}>

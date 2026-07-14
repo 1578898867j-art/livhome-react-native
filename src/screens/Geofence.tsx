@@ -9,9 +9,7 @@ export default function Geofence({ navigation }: AppScreenProps) {
   const [geofenceOn, setGeofenceOn] = useState(true);
 
   return (
-    <Screen>
-      <Header title="Geofence" onBack={() => navigation.goBack()} />
-
+    <Screen header={<Header title="Geofence" onBack={() => navigation.goBack()} />}>
       {/* Master toggle */}
       <Card style={st.card}>
         <Row style={{ gap: 12 }}>

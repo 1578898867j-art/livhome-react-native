@@ -2,6 +2,7 @@ import { navigateTo } from '../navigation/types';
 import type { AppScreenProps, StackRouteName } from '../navigation/types';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Tap, Row } from '../components/kit';
@@ -28,6 +29,8 @@ type Overlay = null | 'avatar-sheet' | 'uploading' | 'upgrade';
 export default function MeHome({ navigation }: AppScreenProps) {
   const [overlay, setOverlay] = useState<Overlay>(null);
   const uploadTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const insets = useSafeAreaInsets();
+  const manageBottomInset = Math.max(insets.bottom, 12) + 72 + 30;
 
   useEffect(
     () => () => {
@@ -48,20 +51,22 @@ export default function MeHome({ navigation }: AppScreenProps) {
   return (
     // 注意:scroll 模式下 contentStyle 的 paddingTop 会覆盖 kit Screen 的
     // insets.top(状态栏让位),header 会被顶到蒙版底下 —— 不要在这里传 paddingTop
-    <Screen contentStyle={{ paddingBottom: 120 }}>
-      {/* header */}
-      <Row style={st.topRow}>
-        <Text style={st.title}>Me</Text>
-        <View style={{ flex: 1 }} />
-        <Tap
-          style={st.gearBtn}
-          onPress={() => navigation.navigate('settings')}
-          hitSlop={8}
-        >
-          <Icon name="gear" size={19} color={colors.textPrimary} />
-        </Tap>
-      </Row>
-
+    <Screen
+      header={
+        <Row style={st.topRow}>
+          <Text style={st.title}>Me</Text>
+          <View style={{ flex: 1 }} />
+          <Tap
+            style={st.gearBtn}
+            onPress={() => navigation.navigate('settings')}
+            hitSlop={8}
+          >
+            <Icon name="gear" size={19} color={colors.textPrimary} />
+          </Tap>
+        </Row>
+      }
+      contentStyle={[st.content, { paddingBottom: manageBottomInset }]}
+    >
       {/* user card */}
       <Tap style={st.userCard} onPress={() => navigation.navigate('edit-profile')}>
         <Row style={{ gap: 12, minHeight: 60 }}>
@@ -79,11 +84,11 @@ export default function MeHome({ navigation }: AppScreenProps) {
             <Text style={st.name}>Jon Alishon</Text>
             <Text style={st.email}>jon.a@livhome.app</Text>
             <View style={st.badge}>
-              <Text style={st.badgeText}>STANDARD</Text>
+              <Text style={st.badgeText}>FREE</Text>
             </View>
           </View>
           <Tap style={st.upgradeBtn} onPress={() => setOverlay('upgrade')}>
-            <Icon name="spark" size={12} color="#fff" />
+            <Icon name="sparkles" size={14} color={colors.textInverse} sw={1.7} />
             <Text style={st.upgradeText}>Upgrade</Text>
           </Tap>
         </Row>
@@ -110,12 +115,6 @@ export default function MeHome({ navigation }: AppScreenProps) {
         })}
       </View>
 
-      {/* footer */}
-      <Text style={st.footer}>
-        LIVHOME has learned 32 behavior patterns in this home.{'\n'}
-        Your 50 feedbacks raised triage accuracy by{' '}
-        <Text style={st.footerHighlight}>+12%</Text>。
-      </Text>
       <Tap style={st.manageBtn}>
         <Text style={st.manageText}>Manage or cancel subscription</Text>
       </Tap>
@@ -182,6 +181,7 @@ export default function MeHome({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
+  content: { flexGrow: 1 },
   topRow: {
     paddingHorizontal: 18,
     paddingTop: 8,
@@ -247,10 +247,10 @@ const st = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: colors.brandSoft,
+    backgroundColor: colors.bgSecondary,
   },
   badgeText: {
-    color: colors.brand,
+    color: colors.textSecondary,
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 0.4,
@@ -306,22 +306,9 @@ const st = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
   },
-  footer: {
-    paddingHorizontal: 18,
-    paddingTop: 22,
-    textAlign: 'center',
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textTertiary,
-    lineHeight: 19,
-  },
-  footerHighlight: {
-    color: colors.success,
-    fontWeight: '700',
-  },
   manageBtn: {
     alignSelf: 'center',
-    marginTop: 14,
+    marginTop: 'auto',
     paddingVertical: 8,
     paddingHorizontal: 14,
   },

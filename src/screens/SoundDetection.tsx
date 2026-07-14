@@ -9,9 +9,7 @@ export default function SoundDetection({ navigation }: AppScreenProps) {
   const [soundSens, setSoundSens] = useState(1);
 
   return (
-    <Screen>
-      <Header title="Sound Detection" onBack={() => navigation.goBack()} />
-
+    <Screen header={<Header title="Sound Detection" onBack={() => navigation.goBack()} />}>
       <Eyebrow>Alarm</Eyebrow>
       <Card style={{ marginHorizontal: 18 }}>
         <ToggleRow name="Sound Detection" on={soundOn} onToggle={() => setSoundOn(v => !v)} last />

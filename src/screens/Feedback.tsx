@@ -45,10 +45,11 @@ export default function Feedback({ navigation }: AppScreenProps) {
   };
 
   return (
-    <Screen scroll={false}>
+    <Screen
+      scroll={false}
+      header={<NavBar title="My Feedback" onBack={() => navigation.goBack()} />}
+    >
       <View style={st.container}>
-        <NavBar title="My Feedback" onBack={() => navigation.goBack()} />
-
         <View style={st.body}>
           <Text style={st.h1}>Report an Issue</Text>
 
@@ -124,11 +125,11 @@ export default function Feedback({ navigation }: AppScreenProps) {
           {/* Contact Support */}
           <Card style={st.supportCard}>
             <Text style={st.supportTitle}>Contact Support</Text>
-            <Text style={st.supportSub}>Questions? Contact us below:</Text>
+            <Text style={[st.supportSub, st.supportDivider]}>Questions? Contact us below:</Text>
             <Tap style={[st.supportLink, st.supportDivider]}>
               <Text style={st.supportLinkTxt}>LivhomeTeam@explorex-ai.com</Text>
             </Tap>
-            <Tap style={[st.supportLink, st.supportDivider]}>
+            <Tap style={st.supportLink}>
               <Text style={st.supportLinkTxt}>WhatsApp Live Chat</Text>
             </Tap>
           </Card>
@@ -371,9 +372,10 @@ const st = StyleSheet.create({
     fontWeight: '500',
     color: colors.textSecondary,
     marginTop: 5,
+    paddingBottom: 10,
   },
-  supportLink: { paddingVertical: 15 },
-  supportDivider: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 0 },
+  supportLink: { paddingVertical: 10 },
+  supportDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
   supportLinkTxt: { textAlign: 'center', fontSize: 14, fontWeight: '700', color: colors.brand },
   submitWrap: { paddingHorizontal: 18 },
   submitBtn: {

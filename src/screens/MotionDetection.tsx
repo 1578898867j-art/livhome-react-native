@@ -9,9 +9,7 @@ export default function MotionDetection({ navigation }: AppScreenProps) {
   const [motionSens, setMotionSens] = useState(1);
 
   return (
-    <Screen>
-      <Header title="Motion Detection" onBack={() => navigation.goBack()} />
-
+    <Screen header={<Header title="Motion Detection" onBack={() => navigation.goBack()} />}>
       <Eyebrow>Alarm</Eyebrow>
       <Card style={st.card}>
         <ToggleRow

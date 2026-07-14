@@ -43,9 +43,10 @@ export default function DevInfo({ navigation }: AppScreenProps) {
   const toggleTip = (key: TipKey) => setTip((t) => (t === key ? null : key));
 
   return (
-    <Screen contentStyle={{ paddingBottom: 54 }}>
-      <Header title="Device Details" onBack={() => navigation.goBack()} />
-
+    <Screen
+      header={<Header title="Device Details" onBack={() => navigation.goBack()} />}
+      contentStyle={{ paddingBottom: 54 }}
+    >
       {/* device summary card — Figma HeroCard 渐变:1D6FF3 → 4B93FF(60%) → 78B0FF,左下→右上 */}
       <LinearGradient
         colors={['#1D6FF3', '#4B93FF', '#78B0FF']}

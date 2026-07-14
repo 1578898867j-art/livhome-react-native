@@ -1,6 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row, Card, NavBar } from '../components/kit';
 import { colors } from '../theme';
 import { setDraftDays, useDraftDays } from '../features/devices/shutdownStore';
@@ -23,13 +23,16 @@ export default function ShutdownRepeat({ navigation }: AppScreenProps) {
   const toggle = (i: number) => setDraftDays(days.map((v, idx) => (idx === i ? !v : v)));
 
   return (
-    <Screen scroll={false}>
-      <NavBar
-        title="Device off Time"
-        onBack={() => navigation.goBack()}
-        action={{ label: 'Done', onPress: () => navigation.goBack() }}
-      />
-
+    <Screen
+      scroll={false}
+      header={
+        <NavBar
+          title="Device off Time"
+          onBack={() => navigation.goBack()}
+          action={{ label: 'Done', onPress: () => navigation.goBack() }}
+        />
+      }
+    >
       <Card style={st.card}>
         {/* prototype: .eyebrow with text-align:center; font-size:11px */}
         <Text style={st.eyebrow}>Repeat</Text>

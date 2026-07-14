@@ -1,9 +1,8 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
-import { Tap } from '../components/kit';
+import { Screen, Tap } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { CamPreview } from '../components/CamPreview';
 import { NT_DOWNLOAD } from '../icons/notifIcons';
@@ -30,21 +29,24 @@ export default function NotifImage({ navigation }: AppScreenProps) {
   };
 
   return (
-    <SafeAreaView style={st.root} edges={['top', 'bottom']}>
-      {/* top bar:返回 + 居中 日期/时刻 */}
-      <View style={st.bar}>
-        <View style={st.barSlot}>
-          <Tap style={st.backBtn} onPress={() => navigation.goBack()} hitSlop={10}>
-            <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
-          </Tap>
+    <Screen
+      scroll={false}
+      edges={['top', 'bottom']}
+      header={
+        <View style={st.bar}>
+          <View style={st.barSlot}>
+            <Tap style={st.backBtn} onPress={() => navigation.goBack()} hitSlop={10}>
+              <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
+            </Tap>
+          </View>
+          <View style={st.barCenter}>
+            <Text style={st.date}>2025.12.9</Text>
+            <Text style={st.time}>00:52</Text>
+          </View>
+          <View style={st.barSlot} />
         </View>
-        <View style={st.barCenter}>
-          <Text style={st.date}>2025.12.9</Text>
-          <Text style={st.time}>00:52</Text>
-        </View>
-        <View style={st.barSlot} />
-      </View>
-
+      }
+    >
       {/* 通栏图片,剩余空间内垂直居中 */}
       <View style={st.imageWrap}>
         <CamPreview box={false} style={st.cam} />
@@ -64,13 +66,11 @@ export default function NotifImage({ navigation }: AppScreenProps) {
           <SvgXml xml={NT_DOWNLOAD} width={24} height={24} color={colors.brand} />
         </Tap>
       </View>
-    </SafeAreaView>
+    </Screen>
   );
 }
 
 const st = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bgPrimary },
-
   bar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, height: 56 },
   barSlot: { width: 60, justifyContent: 'center' },
   backBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
