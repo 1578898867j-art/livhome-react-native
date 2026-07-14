@@ -44,9 +44,9 @@ const PPM_BROWSE = 1.3;
 const PPM_CLIP = 7.8;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
-// 时间域:仅当天(2026-04-23)00:00 → 06:50(当前时段),不跨天
+// 时间域:单天。今天(2026-04-23)只到 06:50 当前时段;过去日期为完整 24h
 const DAY_MIN = 1440;
-const T_MAX = 6 * 60 + 50;
+const TODAY_MAX = 6 * 60 + 50;
 const WIN = 360; // 渲染窗口半径(分钟)——只渲染可视区附近,支撑无限滑动
 const fmtHM = (m: number) => `${pad(Math.floor((m % DAY_MIN) / 60))}:${pad(Math.floor(m) % 60)}`;
 
@@ -74,9 +74,14 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   const [clipS, setClipS] = useState(15);
   const [clipE, setClipE] = useState(31);
 
+  // 选中日期(日历):今天只到当前时段,过去日期覆盖全天
+  const isToday = pbM === CAL_TODAY.m && pbD === CAL_TODAY.d;
+  const dayMax = isToday ? TODAY_MAX : DAY_MIN;
+  const dayMaxRef = useRef(dayMax);
+  dayMaxRef.current = dayMax;
   const tm = pbHead % DAY_MIN;
   const ss = Math.round((pbHead - Math.floor(pbHead)) * 60);
-  const stamp = `2026-04-23 ${pad(Math.floor(tm / 60))}:${pad(Math.floor(tm % 60))}:${pad(ss)}`;
+  const stamp = `2026-${pad(pbM + 1)}-${pad(pbD)} ${pad(Math.floor(tm / 60))}:${pad(Math.floor(tm % 60))}:${pad(ss)}`;
 
   const evtOn = (sg: Seg) => sg.t === 'evt' && !!sg.ev && pbEvents.indexOf(sg.ev) >= 0;
   const filterActive = pbEvents.length < EVFILTER_COUNT;
@@ -87,7 +92,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
 
   const enterClip = () => {
     setClipS(Math.max(0, pbHead - 8));
-    setClipE(Math.min(T_MAX, pbHead + 8));
+    setClipE(Math.min(dayMax, pbHead + 8));
     setClipMode(true);
   };
 
@@ -114,7 +119,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         dragStart.current = pbHeadRef.current;
       },
       onPanResponderMove: (_e, g) => {
-        const v = Math.max(0, Math.min(T_MAX, dragStart.current - g.dx / ppmRef.current));
+        const v = Math.max(0, Math.min(dayMaxRef.current, dragStart.current - g.dx / ppmRef.current));
         setPbHead(Math.round(v * 10) / 10);
       },
       onPanResponderRelease: (_e, g) => {
@@ -127,9 +132,9 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           const dt = (now - last) / 1000;
           last = now;
           vel *= Math.pow(0.15, dt);
-          const next = Math.max(0, Math.min(T_MAX, pbHeadRef.current + vel * dt));
+          const next = Math.max(0, Math.min(dayMaxRef.current, pbHeadRef.current + vel * dt));
           setPbHead(Math.round(next * 10) / 10);
-          if (Math.abs(vel) > 4 && next > 0 && next < T_MAX) {
+          if (Math.abs(vel) > 4 && next > 0 && next < dayMaxRef.current) {
             flingRaf.current = requestAnimationFrame(step);
           } else {
             flingRaf.current = null;
@@ -206,10 +211,10 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           <SvgXml xml={CALICON} width={19} height={19} color={colors.textSecondary} />
           {/* 日期 + 当前时刻:跟随时间轴拖动实时变化 */}
           <Text style={st.dateText}>
-            Apr 23
+            {MONTHS_ABBR[pbM]} {pbD}
             <Text style={st.dateTime}> {pad(Math.floor(tm / 60))}:{pad(Math.floor(tm % 60))}</Text>
           </Text>
-          <Text style={st.todayText}>| Today</Text>
+          {isToday && <Text style={st.todayText}>| Today</Text>}
         </Tap>
         <View style={{ flex: 1 }} />
         {!clipMode && (
@@ -237,19 +242,19 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         const ticks: number[] = [];
         for (
           let m = Math.max(0, Math.ceil(winStart / tickStep) * tickStep);
-          m <= Math.min(winEnd, T_MAX);
+          m <= Math.min(winEnd, dayMax);
           m += tickStep
         ) {
           ticks.push(m);
         }
         const trackS = Math.max(winStart, 0);
-        const trackE = Math.min(winEnd, T_MAX);
+        const trackE = Math.min(winEnd, dayMax);
         const tiles: { s: number; e: number; evt: boolean }[] = [];
         for (let h = Math.max(0, Math.floor(winStart / 60)); h <= Math.floor(winEnd / 60); h++) {
           for (const sg of PBSEGS) {
             const ts = h * 60 + sg.s;
-            const te = Math.min(h * 60 + sg.e, T_MAX);
-            if (te < winStart || ts > winEnd || ts >= T_MAX) continue;
+            const te = Math.min(h * 60 + sg.e, dayMax);
+            if (te < winStart || ts > winEnd || ts >= dayMax) continue;
             tiles.push({ s: ts, e: te, evt: evtOn(sg) });
           }
         }
@@ -374,6 +379,8 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         onConfirm={(m, d) => {
           setPbM(m);
           setPbD(d);
+          const today = m === CAL_TODAY.m && d === CAL_TODAY.d;
+          setPbHead(today ? 6 * 60 + 23 : 12 * 60); // 今天回到当前时段,过去日期定位正午
           setCalOpen(false);
         }}
       />
