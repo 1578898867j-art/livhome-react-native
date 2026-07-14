@@ -15,9 +15,6 @@ const SIDE: Record<string, { label: string; icon: 'houseNav' | 'user' }> = {
 
 export default function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  // Assistant 会话态:隐藏 tab 栏,由 AgentChat 自己的压缩输入栏接管(对齐原型)
-  const focused = state.routes[state.index];
-  if (focused.name === 'agent-chat' && (focused.params as any)?.conv) return null;
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 12) + 0 }]} pointerEvents="box-none">
       <View style={styles.pill}>

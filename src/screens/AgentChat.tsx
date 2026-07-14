@@ -1,4 +1,5 @@
 import type { AppScreenProps } from '../navigation/types';
+import { TabOverlay } from '../navigation/TabOverlay';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -20,7 +21,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SvgXml } from 'react-native-svg';
-import { Icon, IconFill } from '../components/Icon';
+import { Icon } from '../components/Icon';
 import { SunBurst } from '../components/SunLogo';
 import { colors } from '../theme';
 import { CAREPICS } from '../assets/images';
@@ -30,6 +31,7 @@ import { CONVERSATION_GROUPS, useAssistantPrototype } from '../features/assistan
 const W = Dimensions.get('window').width;
 const H = Dimensions.get('window').height;
 const DRAWER_W = Math.round(W * 0.78);
+const INPUT_BOTTOM_OFFSET = 114;
 
 const PANEL_ICON =
   '<svg width="26" height="26" viewBox="0 0 24 24" fill="none">' +
@@ -277,10 +279,6 @@ export default function AgentChat({ navigation }: AppScreenProps) {
     setSpeak(null);
     if (wasActive) send(); // 松手发送(demo:触发一次会话)
   };
-  // 会话态或说话浮层出现时:隐藏导航 tab 栏
-  useEffect(() => {
-    navigation.setParams({ conv: mode === 'conv' || speak !== null });
-  }, [mode, speak, navigation]);
   const [kb, setKb] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
 
@@ -416,7 +414,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
               </Text>
             </Pressable>
 
-            <View style={[styles.bottomWrap, { paddingBottom: kb ? 14 : 114 }]}>
+            <View style={[styles.bottomWrap, { paddingBottom: kb ? 14 : INPUT_BOTTOM_OFFSET }]}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -546,7 +544,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 pointerEvents={scrollBtnActive ? 'auto' : 'none'}
                 style={[
                   styles.scrollDownWrap,
-                  { bottom: (kb ? 10 : Math.max(insets.bottom, 12) + 6) + 65 + 20, opacity: scrollBtnAnim },
+                  { bottom: (kb ? 10 : INPUT_BOTTOM_OFFSET) + 65 + 20, opacity: scrollBtnAnim },
                 ]}
               >
                 <Pressable hitSlop={6} onPress={() => scrollRef.current?.scrollToEnd({ animated: true })}>
@@ -554,19 +552,13 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 </Pressable>
               </Animated.View>
 
-              {/* input bar with home shortcut — 渐变蒙版盖在滚动内容上,文字自然淡出 */}
+              {/* 输入栏渐变蒙版盖在滚动内容上,文字自然淡出 */}
               <LinearGradient
                 colors={['rgba(251,251,251,0)', colors.bgPrimary, colors.bgPrimary]}
                 locations={[0, 0.45, 1]}
-                style={[styles.convBarGrad, { paddingBottom: kb ? 10 : Math.max(insets.bottom, 12) + 6 }]}
+                style={[styles.convBarGrad, { paddingBottom: kb ? 10 : INPUT_BOTTOM_OFFSET }]}
               >
                 <View style={styles.convBar}>
-                  <Pressable
-                    style={[styles.homeBtn, { backgroundColor: colors.bgPrimary }]}
-                    onPress={() => navigation.navigate('Main', { screen: 'dev-home' })}
-                  >
-                    <IconFill name="house" size={26} color={colors.brand} />
-                  </Pressable>
                   {voiceMode ? (
                     <VoiceRow
                       onKeyboard={() => setVoiceMode(false)}
@@ -597,12 +589,17 @@ export default function AgentChat({ navigation }: AppScreenProps) {
         )}
       </KeyboardAvoidingView>
 
-      {/* 长按说话浮层(盖住整屏,含隐藏后的 tab 区域) */}
-      {speak !== null && <VoiceOverlay state={speak} anim={waveAnim} />}
+      {/* 长按说话浮层 */}
+      {speak !== null && (
+        <TabOverlay>
+          <VoiceOverlay state={speak} anim={waveAnim} />
+        </TabOverlay>
+      )}
 
       {/* chat drawer overlay(zIndex 高于顶部渐变栏的 40,盖住 Assistant 标题) */}
       {drawerOpen && (
-        <View style={[StyleSheet.absoluteFill, { zIndex: 60 }]}>
+        <TabOverlay>
+          <View style={[StyleSheet.absoluteFill, { zIndex: 60 }]}>
           <Animated.View style={[styles.drawerBackdrop, { opacity: drawerAnim }]}>
             <Pressable style={{ flex: 1 }} onPress={closeDrawer} />
           </Animated.View>
@@ -745,7 +742,8 @@ export default function AgentChat({ navigation }: AppScreenProps) {
               </View>
             </View>
           )}
-        </View>
+          </View>
+        </TabOverlay>
       )}
     </SafeAreaView>
   );
@@ -789,12 +787,12 @@ const styles = StyleSheet.create({
   voiceHint: { fontSize: 15, fontWeight: '600', marginBottom: 34 },
   waveRow: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 26 },
   waveBar: { width: 3.5, height: 22, borderRadius: 2 },
-  input: { flex: 1, fontSize: 16, fontWeight: '500', color: colors.textPrimary },
+  input: { flex: 1, alignSelf: 'stretch', fontSize: 16, fontWeight: '500', color: colors.textPrimary },
   sendBtn: { width: 44, height: 44, borderRadius: 13, backgroundColor: colors.textPrimary, alignItems: 'center', justifyContent: 'center' },
   micBtn: { width: 44, height: 44, borderRadius: 13, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
 
   // conversation
-  convContent: { paddingHorizontal: 18, paddingBottom: 150 },
+  convContent: { paddingHorizontal: 18, paddingBottom: 220 },
   thinkingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 8 },
   thinkingText: { fontSize: 18, fontWeight: '600', letterSpacing: -0.2, color: colors.textPrimary },
   meRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 2, marginBottom: 22 },
@@ -809,8 +807,7 @@ const styles = StyleSheet.create({
   ansActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
   ansBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
   convBarGrad: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 34 },
-  convBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16 },
-  homeBtn: { width: 65, height: 65, borderRadius: 18, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  convBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18 },
 
   // scroll-to-bottom
   scrollDownWrap: { position: 'absolute', bottom: 8, alignSelf: 'center' },

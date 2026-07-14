@@ -221,6 +221,7 @@ Reuse `src/components/kit.tsx` before creating local versions of the same behavi
 - `SettingRow`, `ToggleRow`, `RadioRow`, `Toggle`, and `Segmented` are the standard settings controls.
 - `Eyebrow` and `Hint` provide compact supporting hierarchy; they must not replace clear labels.
 - `Tap` uses the shared pressed-opacity response. New interactive wrappers need an equivalent visible pressed state.
+- Full-screen transient surfaces opened from a tab screen use `TabOverlay` so they cover bottom navigation without unmounting or visually shifting it.
 
 Use icons for familiar tools and actions. Every icon-only control needs an accessibility label and a stable touch target of at least 44 by 44 units where layout permits. Do not use rounded text rectangles when a standard icon communicates the action more clearly.
 
