@@ -23,28 +23,17 @@ export default function MotionDetection({ navigation }: AppScreenProps) {
       </Card>
 
       {motionOn && (
-        <>
-          <Card style={st.sensCard}>
-            <Segmented
-              opts={['Low', 'Medium', 'High']}
-              active={motionSens}
-              onSelect={setMotionSens}
-            />
-            <Text style={st.hint}>
-              You will receive an alarm when large object movement is detected (family members
-              walking).
-            </Text>
-          </Card>
-
-          <Eyebrow>Area settings</Eyebrow>
-          <Card style={st.card}>
-            <SettingRow
-              name="Detection Area"
-              onPress={() => navigation.navigate('detection-area')}
-              last
-            />
-          </Card>
-        </>
+        <Card style={st.sensCard}>
+          <Segmented
+            opts={['Low', 'Medium', 'High']}
+            active={motionSens}
+            onSelect={setMotionSens}
+          />
+          <Text style={st.hint}>
+            You will receive an alarm when large object movement is detected (family members
+            walking).
+          </Text>
+        </Card>
       )}
     </Screen>
   );
