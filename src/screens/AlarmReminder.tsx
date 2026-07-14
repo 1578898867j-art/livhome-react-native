@@ -147,10 +147,11 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
               label="Custom Voice"
               value={selName ?? 'Not added'}
               on={alarmVoice === 'custom'}
-              // 点行:有录音则直接选中(立即可见);没录音才进弹层去录
-              onPress={() => (sel ? setAlarmVoice('custom') : setSheet('cv'))}
-              // 点右侧值/箭头:打开管理弹层
-              onValuePress={() => setSheet('cv')}
+              // 点击 = 立即选中 + 弹出管理弹层
+              onPress={() => {
+                setAlarmVoice('custom');
+                setSheet('cv');
+              }}
               last
             />
           </Card>
