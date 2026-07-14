@@ -184,6 +184,33 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
         title="Custom Voice"
         desc="Support up to 3 custom voice recordings."
         onClose={closeSheet}
+        overlay={
+          delId != null ? (
+            <Pressable style={st.ovl} onPress={() => setDelId(null)}>
+              <Pressable style={st.delCard} onPress={(e) => e.stopPropagation()}>
+                <Text style={st.delTitle}>Delete Recording</Text>
+                <Text style={st.delDesc}>
+                  Are you sure you want to delete "{recs.find((r) => r.id === delId)?.name}"? This
+                  action cannot be undone.
+                </Text>
+                <Row style={{ gap: 12, marginTop: 20 }}>
+                  <Pressable
+                    style={[st.delBtn, { backgroundColor: colors.bgSecondary }]}
+                    onPress={() => setDelId(null)}
+                  >
+                    <Text style={[st.delBtnTxt, { color: colors.textSecondary }]}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[st.delBtn, { backgroundColor: colors.critical }]}
+                    onPress={confirmDelete}
+                  >
+                    <Text style={[st.delBtnTxt, { color: '#fff' }]}>Delete</Text>
+                  </Pressable>
+                </Row>
+              </Pressable>
+            </Pressable>
+          ) : null
+        }
       >
         {recording ? (
           <View style={{ alignItems: 'center', paddingTop: 14, paddingBottom: 6 }}>
@@ -304,26 +331,6 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
         )}
       </BottomSheet>
 
-      {/* 删除录音确认(原型 cv-del) */}
-      <Modal transparent visible={delId != null} animationType="fade" onRequestClose={() => setDelId(null)}>
-        <Pressable style={st.ovl} onPress={() => setDelId(null)}>
-          <Pressable style={st.delCard} onPress={(e) => e.stopPropagation()}>
-            <Text style={st.delTitle}>Delete Recording</Text>
-            <Text style={st.delDesc}>
-              Are you sure you want to delete "{recs.find((r) => r.id === delId)?.name}"? This action
-              cannot be undone.
-            </Text>
-            <Row style={{ gap: 12, marginTop: 20 }}>
-              <Pressable style={[st.delBtn, { backgroundColor: colors.bgSecondary }]} onPress={() => setDelId(null)}>
-                <Text style={[st.delBtnTxt, { color: colors.textSecondary }]}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[st.delBtn, { backgroundColor: colors.critical }]} onPress={confirmDelete}>
-                <Text style={[st.delBtnTxt, { color: '#fff' }]}>Delete</Text>
-              </Pressable>
-            </Row>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </Screen>
   );
 }

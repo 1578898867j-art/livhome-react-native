@@ -10,12 +10,16 @@ export function BottomSheet({
   desc,
   onClose,
   children,
+  overlay,
 }: {
   visible: boolean;
   title: string;
   desc?: string;
   onClose: () => void;
   children: React.ReactNode;
+  // 渲染在同一个 Modal 里、盖在面板之上的浮层(如删除确认)。
+  // iOS 下两个平级 Modal 无法同时展示,必须走这里。
+  overlay?: React.ReactNode;
 }) {
   const [mounted, setMounted] = useState(visible);
   const [sheetH, setSheetH] = useState(0);
@@ -65,6 +69,7 @@ export function BottomSheet({
           </View>
         </Animated.View>
       </View>
+      {overlay}
     </Modal>
   );
 }
