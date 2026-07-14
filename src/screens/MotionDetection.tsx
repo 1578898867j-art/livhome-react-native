@@ -34,19 +34,15 @@ export default function MotionDetection({ navigation }: AppScreenProps) {
             </Text>
           </Card>
 
-          {/* 区域设置:仅 Medium 档隐藏,Low / High 保留 */}
-          {motionSens !== 1 && (
-            <>
-              <Eyebrow>Area settings</Eyebrow>
-              <Card style={st.card}>
-                <SettingRow
-                  name="Detection Area"
-                  onPress={() => navigation.navigate('detection-area')}
-                  last
-                />
-              </Card>
-            </>
-          )}
+          {/* 所有灵敏度档位都显示;行标题固定为 Detection Area */}
+          <Eyebrow>Area settings</Eyebrow>
+          <Card style={st.card}>
+            <SettingRow
+              name="Detection Area"
+              onPress={() => navigation.navigate('detection-area')}
+              last
+            />
+          </Card>
         </>
       )}
     </Screen>
