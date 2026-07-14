@@ -1,5 +1,12 @@
 import type { AppScreenProps } from '../navigation/types';
-import { TabOverlay } from '../navigation/TabOverlay';
+import {
+  TAB_BAR_COLLAPSED_SIZE,
+  TAB_BAR_CONTROL_GAP,
+  TAB_BAR_HORIZONTAL_INSET,
+  TAB_BAR_MIN_BOTTOM_INSET,
+  TabOverlay,
+  useTabShell,
+} from '../navigation/TabOverlay';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
@@ -32,6 +39,10 @@ const W = Dimensions.get('window').width;
 const H = Dimensions.get('window').height;
 const DRAWER_W = Math.round(W * 0.78);
 const INPUT_BOTTOM_OFFSET = 114;
+const INPUT_HEIGHT = 65;
+const INPUT_HORIZONTAL_INSET = 18;
+const COLLAPSED_INPUT_LEFT =
+  TAB_BAR_HORIZONTAL_INSET + TAB_BAR_COLLAPSED_SIZE + TAB_BAR_CONTROL_GAP;
 
 const PANEL_ICON =
   '<svg width="26" height="26" viewBox="0 0 24 24" fill="none">' +
@@ -236,6 +247,7 @@ function VoiceOverlay({ state, anim }: { state: 'active' | 'cancel'; anim: Anima
 
 export default function AgentChat({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
+  const { collapsedTab, setCollapsedTab } = useTabShell();
   const {
     conversations: convs,
     deleteConversation,
@@ -280,6 +292,13 @@ export default function AgentChat({ navigation }: AppScreenProps) {
     if (wasActive) send(); // 松手发送(demo:触发一次会话)
   };
   const [kb, setKb] = useState(false);
+  const compactInput = collapsedTab === 'agent-chat' && !kb;
+  const collapsedInputBottom =
+    Math.max(insets.bottom, TAB_BAR_MIN_BOTTOM_INSET) +
+    (TAB_BAR_COLLAPSED_SIZE - INPUT_HEIGHT) / 2;
+  const emptyInputBottom = kb ? 14 : compactInput ? collapsedInputBottom : INPUT_BOTTOM_OFFSET;
+  const conversationInputBottom = kb ? 10 : compactInput ? collapsedInputBottom : INPUT_BOTTOM_OFFSET;
+  const inputLeft = compactInput ? COLLAPSED_INPUT_LEFT : INPUT_HORIZONTAL_INSET;
   const scrollRef = useRef<ScrollView>(null);
 
   // Chat drawer + conversation list state (mirrors prototype chat-drawer overlay).
@@ -308,6 +327,15 @@ export default function AgentChat({ navigation }: AppScreenProps) {
   function send() {
     Keyboard.dismiss();
     sendAssistant();
+  }
+
+  function sendText() {
+    if (!draft.trim()) return;
+    const shouldCollapseNavigation = collapsedTab === null;
+    send();
+    if (shouldCollapseNavigation) {
+      requestAnimationFrame(() => setCollapsedTab('agent-chat'));
+    }
   }
 
   function reset() {
@@ -414,7 +442,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
               </Text>
             </Pressable>
 
-            <View style={[styles.bottomWrap, { paddingBottom: kb ? 14 : INPUT_BOTTOM_OFFSET }]}>
+            <View style={[styles.bottomWrap, { paddingBottom: emptyInputBottom }]}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -452,19 +480,20 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                   onSpeakMove={moveSpeak}
                   onSpeakEnd={endSpeak}
                   speaking={speak !== null}
+                  style={compactInput ? styles.emptyInputCollapsed : undefined}
                 />
               ) : (
-                <View style={styles.inputRow}>
+                <View style={[styles.inputRow, compactInput && styles.emptyInputCollapsed]}>
                   <TextInput
                     value={draft}
                     onChangeText={setDraft}
                     placeholder="Ask anything..."
                     placeholderTextColor={colors.textTertiary}
                     style={styles.input}
-                    onSubmitEditing={send}
+                    onSubmitEditing={sendText}
                     returnKeyType="send"
                   />
-                  <MicOrSend draft={draft} onSend={send} onVoice={() => setVoiceMode(true)} />
+                  <MicOrSend draft={draft} onSend={sendText} onVoice={() => setVoiceMode(true)} />
                 </View>
               )}
             </View>
@@ -544,7 +573,12 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 pointerEvents={scrollBtnActive ? 'auto' : 'none'}
                 style={[
                   styles.scrollDownWrap,
-                  { bottom: (kb ? 10 : INPUT_BOTTOM_OFFSET) + 65 + 20, opacity: scrollBtnAnim },
+                  {
+                    left: inputLeft,
+                    right: INPUT_HORIZONTAL_INSET,
+                    bottom: conversationInputBottom + INPUT_HEIGHT + 20,
+                    opacity: scrollBtnAnim,
+                  },
                 ]}
               >
                 <Pressable hitSlop={6} onPress={() => scrollRef.current?.scrollToEnd({ animated: true })}>
@@ -552,13 +586,17 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 </Pressable>
               </Animated.View>
 
-              {/* 输入栏渐变蒙版盖在滚动内容上,文字自然淡出 */}
+              {/* Fixed bottom fade follows the composer in both expanded and collapsed navigation states. */}
               <LinearGradient
                 colors={['rgba(251,251,251,0)', colors.bgPrimary, colors.bgPrimary]}
                 locations={[0, 0.45, 1]}
-                style={[styles.convBarGrad, { paddingBottom: kb ? 10 : INPUT_BOTTOM_OFFSET }]}
+                pointerEvents="box-none"
+                style={[styles.convBarWrap, { paddingBottom: conversationInputBottom }]}
               >
-                <View style={styles.convBar}>
+                <View
+                  style={[styles.convBar, compactInput && styles.convBarCollapsed]}
+                  pointerEvents="box-none"
+                >
                   {voiceMode ? (
                     <VoiceRow
                       onKeyboard={() => setVoiceMode(false)}
@@ -576,10 +614,10 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                         placeholder="Ask anything..."
                         placeholderTextColor={colors.textTertiary}
                         style={styles.input}
-                        onSubmitEditing={send}
+                        onSubmitEditing={sendText}
                         returnKeyType="send"
                       />
-                      <MicOrSend draft={draft} onSend={send} onVoice={() => setVoiceMode(true)} />
+                      <MicOrSend draft={draft} onSend={sendText} onVoice={() => setVoiceMode(true)} />
                     </View>
                   )}
                 </View>
@@ -759,7 +797,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 30, overflow: 'hidden' },
   greeting: { fontSize: 24, fontWeight: '800', letterSpacing: -0.4, color: colors.textPrimary, textAlign: 'center' },
   greetingSub: { marginTop: 18, fontSize: 16, fontWeight: '400', color: colors.textTertiary, textAlign: 'center', lineHeight: 24, maxWidth: 360 },
-  bottomWrap: { paddingHorizontal: 18, gap: 10, backgroundColor: colors.bgPrimary },
+  bottomWrap: { paddingHorizontal: INPUT_HORIZONTAL_INSET, gap: 10, backgroundColor: colors.bgPrimary },
   pillsScroll: { marginHorizontal: -18 },
   pillsRow: { gap: 12, paddingLeft: 18, paddingRight: 18 },
   cardOutline: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 16 },
@@ -771,7 +809,8 @@ const styles = StyleSheet.create({
   avatar: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: colors.surface, marginLeft: -8, backgroundColor: colors.bgSecondary },
 
   // shared input
-  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 18, minHeight: 65, paddingLeft: 16, paddingRight: 8 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, borderWidth: 1, borderColor: colors.border, borderRadius: 18, minHeight: INPUT_HEIGHT, paddingLeft: 16, paddingRight: 8 },
+  emptyInputCollapsed: { marginLeft: COLLAPSED_INPUT_LEFT - INPUT_HORIZONTAL_INSET },
   holdTextWrap: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   holdText: { fontSize: 17, fontWeight: '600', color: colors.textPrimary },
   voiceOvl: {
@@ -806,11 +845,12 @@ const styles = StyleSheet.create({
   li: { flex: 1, fontSize: 16, fontWeight: '500', lineHeight: 24, color: colors.textPrimary },
   ansActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
   ansBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
-  convBarGrad: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingTop: 34 },
-  convBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18 },
+  convBarWrap: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  convBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: INPUT_HORIZONTAL_INSET },
+  convBarCollapsed: { paddingLeft: COLLAPSED_INPUT_LEFT },
 
   // scroll-to-bottom
-  scrollDownWrap: { position: 'absolute', bottom: 8, alignSelf: 'center' },
+  scrollDownWrap: { position: 'absolute', alignItems: 'center' },
 
   // chat drawer
   drawerBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(20,20,22,0.35)' },

@@ -82,25 +82,27 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
   const hasUnread = (gs: DayGroup[]) => gs.some((g) => g.msgs.some((m) => m.unread));
 
   return (
-    <Screen contentStyle={{ paddingBottom: 40 }} bg={colors.bgSecondary}>
-      {/* nav:返回 + 居中标题 + 编辑态 Done。行高固定 50,左右槽等宽 60,
-          Done 出现/消失不改变任何布局 */}
-      <Row style={st.nav}>
-        <View style={st.navSlot}>
-          <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Icon name="chevL" size={16} color={colors.textPrimary} sw={2} />
-          </Tap>
-        </View>
-        <Text style={st.navTitle} numberOfLines={1}>Notification Center</Text>
-        {edit ? (
-          <Tap onPress={exitEdit} hitSlop={8} style={[st.navSlot, st.navSlotR]}>
-            <Text style={st.doneTxt} numberOfLines={1}>Done</Text>
-          </Tap>
-        ) : (
-          <View style={st.navSlot} />
-        )}
-      </Row>
-
+    <Screen
+      contentStyle={{ paddingBottom: 40 }}
+      bg={colors.bgSecondary}
+      header={
+        <Row style={st.nav}>
+          <View style={st.navSlot}>
+            <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
+              <Icon name="chevL" size={16} color={colors.textPrimary} sw={2} />
+            </Tap>
+          </View>
+          <Text style={st.navTitle} numberOfLines={1}>Notification Center</Text>
+          {edit ? (
+            <Tap onPress={exitEdit} hitSlop={8} style={[st.navSlot, st.navSlotR]}>
+              <Text style={st.doneTxt} numberOfLines={1}>Done</Text>
+            </Tap>
+          ) : (
+            <View style={st.navSlot} />
+          )}
+        </Row>
+      }
+    >
       {/* tabs + 编辑态 Delete All */}
       <Row style={st.tabRow}>
         <View>

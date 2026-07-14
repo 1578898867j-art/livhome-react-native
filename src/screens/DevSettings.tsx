@@ -18,9 +18,10 @@ export default function DevSettings({ navigation }: AppScreenProps) {
   };
 
   return (
-    <Screen scroll={false}>
-      <Header title="Settings" onBack={() => navigation.goBack()} />
-
+    <Screen
+      scroll={false}
+      header={<Header title="Settings" onBack={() => navigation.goBack()} />}
+    >
       <Eyebrow>Basic settings</Eyebrow>
       <Card style={st.card}>
         <SettingRow icon="info" name="Device Details" onPress={() => navigation.navigate('dev-info')} />

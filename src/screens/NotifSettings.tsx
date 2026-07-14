@@ -15,9 +15,7 @@ export default function NotifSettings({ navigation }: AppScreenProps) {
   const [motionOn, setMotionOn] = useState(true);
 
   return (
-    <Screen>
-      <Header title="Notifications" onBack={() => navigation.goBack()} />
-
+    <Screen header={<Header title="Notifications" onBack={() => navigation.goBack()} />}>
       <Card style={{ marginHorizontal: 18, marginTop: 8 }}>
         <ToggleRow
           name="Notifications"

@@ -25,9 +25,10 @@ function CauseRow({ text, first }: { text: string; first?: boolean }) {
 
 export default function BindFail({ navigation }: AppScreenProps) {
   return (
-    <Screen scroll={false}>
-      <Header title="Connection failed" onBack={() => navigation.goBack()} />
-
+    <Screen
+      scroll={false}
+      header={<Header title="Connection failed" onBack={() => navigation.goBack()} />}
+    >
       <View style={st.iconWrap}>
         <View style={st.iconCircle}>
           <Icon name="x" size={32} color={colors.critical} sw={2.4} />

@@ -12,9 +12,14 @@ export default function BindSuccess({ navigation }: AppScreenProps) {
   const [room, setRoom] = useState('Living');
 
   return (
-    <Screen scroll={false} contentStyle={{ paddingTop: 8 }}>
-      <Header title="Add Device" onBack={() => navigation.goBack()} />
-
+    <Screen
+      scroll={false}
+      header={
+        <View style={{ paddingTop: 8 }}>
+          <Header title="Add Device" onBack={() => navigation.goBack()} />
+        </View>
+      }
+    >
       {/* stepper — 4 of 4 */}
       <View style={st.stepper}>
         {[1, 2, 3, 4].map((i) => (

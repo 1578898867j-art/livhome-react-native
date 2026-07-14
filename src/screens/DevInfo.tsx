@@ -42,9 +42,10 @@ export default function DevInfo({ navigation }: AppScreenProps) {
   const toggleTip = (key: TipKey) => setTip((t) => (t === key ? null : key));
 
   return (
-    <Screen contentStyle={{ paddingBottom: 54 }}>
-      <Header title="Device Details" onBack={() => navigation.goBack()} />
-
+    <Screen
+      header={<Header title="Device Details" onBack={() => navigation.goBack()} />}
+      contentStyle={{ paddingBottom: 54 }}
+    >
       {/* device summary card (brand gradient approximated with a solid brand fill) */}
       <View style={st.hero}>
         <View style={{ width: 56, height: 56 }}>

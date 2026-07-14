@@ -44,9 +44,7 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
   const cvSel: string | null = null;
 
   return (
-    <Screen>
-      <Header title="Alarm Reminder" onBack={() => navigation.goBack()} />
-
+    <Screen header={<Header title="Alarm Reminder" onBack={() => navigation.goBack()} />}>
       <Eyebrow>Alarm settings</Eyebrow>
       <Card style={st.card}>
         <ToggleRow name="Alarm Notification" on={notifOn} onToggle={() => setNotifOn((v) => !v)} />

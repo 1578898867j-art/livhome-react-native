@@ -47,10 +47,8 @@ export default function NotifFrequency({ navigation }: AppScreenProps) {
   };
 
   return (
-    <Screen>
+    <Screen header={<Header title="Notification Frequency" onBack={() => navigation.goBack()} />}>
       <View style={st.page}>
-        <Header title="Notification Frequency" onBack={() => navigation.goBack()} />
-
         <Eyebrow>Select notification frequency</Eyebrow>
 
         <Card style={st.card}>

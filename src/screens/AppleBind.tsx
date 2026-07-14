@@ -1,21 +1,38 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput } from 'react-native';
+import { Alert, View, Text, StyleSheet, TextInput } from 'react-native';
 import { Screen, Tap, Row, Eyebrow, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { saveLoginState } from '../features/auth/session';
 import { colors } from '../theme';
 
 export default function AppleBind({ navigation }: AppScreenProps) {
   const [email, setEmail] = useState('');
 
-  return (
-    <Screen scroll={false} contentStyle={st.page}>
-      <Row style={st.topBar}>
-        <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Icon name="x" size={18} color={colors.textPrimary} sw={2} />
-        </Tap>
-      </Row>
+  const completeLogin = async () => {
+    try {
+      await saveLoginState();
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main', params: { screen: 'agent-chat' } }],
+      });
+    } catch {
+      Alert.alert('Unable to sign in', 'The login state could not be saved. Please try again.');
+    }
+  };
 
+  return (
+    <Screen
+      scroll={false}
+      contentStyle={st.page}
+      header={
+        <Row style={st.topBar}>
+          <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
+            <Icon name="x" size={18} color={colors.textPrimary} sw={2} />
+          </Tap>
+        </Row>
+      }
+    >
       <View style={st.body}>
         <Text style={st.title}>Add a Contact Email</Text>
         <Text style={st.sub}>Please enter your email to continue</Text>
@@ -42,7 +59,7 @@ export default function AppleBind({ navigation }: AppScreenProps) {
       <View style={st.footer}>
         <PrimaryBtn
           label="Get Verification Code"
-          onPress={() => navigation.replace('Main', { screen: 'dev-home' })}
+          onPress={() => void completeLogin()}
         />
       </View>
     </Screen>

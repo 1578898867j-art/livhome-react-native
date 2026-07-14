@@ -2,8 +2,6 @@ import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { SELICON2 } from '../icons/protoIcons';
@@ -24,7 +22,6 @@ const GROUPS: Group[] = [
 ];
 
 export default function Album({ navigation }: AppScreenProps) {
-  const insets = useSafeAreaInsets();
   const [editMode, setEditMode] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [groups, setGroups] = useState<Group[]>(GROUPS);
@@ -52,35 +49,37 @@ export default function Album({ navigation }: AppScreenProps) {
   };
 
   return (
-    <Screen scroll={false} edges={[]}>
+    <Screen
+      scroll={false}
+      header={
+        editMode ? (
+          <Row style={st.nav}>
+            <Tap onPress={exitEdit} hitSlop={10} style={st.xBtn}>
+              <Icon name="x" size={20} color={colors.textPrimary} sw={2.2} />
+            </Tap>
+            <Text style={st.titleCenter}>Album</Text>
+            <Tap onPress={() => setSelected(allOn ? [] : allKeys)} hitSlop={10} style={st.xBtn}>
+              <SvgXml xml={SELICON2} width={20} height={20} color={colors.brand} />
+            </Tap>
+          </Row>
+        ) : (
+          <Row style={st.nav}>
+            <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
+              <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
+            </Tap>
+            <Text style={st.title}>Album</Text>
+            <Tap onPress={() => setEditMode(true)} hitSlop={8}>
+              <Text style={st.action}>Select</Text>
+            </Tap>
+          </Row>
+        )
+      }
+    >
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top, paddingBottom: editMode ? 140 : 40 }}
+        contentContainerStyle={{ paddingBottom: editMode ? 140 : 40 }}
         showsVerticalScrollIndicator={false}
       >
-      {/* Nav row — 选择态按参考稿:左 ×,居中标题,右全选(蓝) */}
-      {editMode ? (
-        <Row style={st.nav}>
-          <Tap onPress={exitEdit} hitSlop={10} style={st.xBtn}>
-            <Icon name="x" size={20} color={colors.textPrimary} sw={2.2} />
-          </Tap>
-          <Text style={st.titleCenter}>Album</Text>
-          <Tap onPress={() => setSelected(allOn ? [] : allKeys)} hitSlop={10} style={st.xBtn}>
-            <SvgXml xml={SELICON2} width={20} height={20} color={colors.brand} />
-          </Tap>
-        </Row>
-      ) : (
-        <Row style={st.nav}>
-          <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
-          </Tap>
-          <Text style={st.title}>Album</Text>
-          <Tap onPress={() => setEditMode(true)} hitSlop={8}>
-            <Text style={st.action}>Select</Text>
-          </Tap>
-        </Row>
-      )}
-
-      <View style={{ paddingHorizontal: 18 }}>
+        <View style={{ paddingHorizontal: 18 }}>
         {groups.map((g) => (
           <View key={g.title}>
             <Text style={st.groupTitle}>{g.title}</Text>
@@ -113,17 +112,8 @@ export default function Album({ navigation }: AppScreenProps) {
             </View>
           </View>
         ))}
-      </View>
-
+        </View>
       </ScrollView>
-
-      {/* 顶部渐变淡出蒙版(全局统一) */}
-      <LinearGradient
-        colors={[colors.bgPrimary, 'rgba(251,251,251,0.3)', 'rgba(251,251,251,0)']}
-        locations={[0, 0.45, 1]}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top + 26, zIndex: 20 }}
-        pointerEvents="none"
-      />
 
       {/* 底部操作栏 — 钉在屏幕底部(滚动容器之外) */}
       {editMode && (

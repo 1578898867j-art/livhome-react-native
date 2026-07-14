@@ -123,9 +123,10 @@ export default function DevConfig({ navigation }: AppScreenProps) {
   const closeSheet = () => setSheet(null);
 
   return (
-    <Screen contentStyle={st.wrap}>
-      <Header title="Device Settings" onBack={() => navigation.goBack()} />
-
+    <Screen
+      header={<Header title="Device Settings" onBack={() => navigation.goBack()} />}
+      contentStyle={st.wrap}
+    >
       <Eyebrow>Basic settings</Eyebrow>
       <Card style={st.card}>
         <SettingRow

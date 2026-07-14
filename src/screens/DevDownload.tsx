@@ -11,16 +11,19 @@ export default function DevDownload({ navigation }: AppScreenProps) {
   const done = p >= 100;
 
   return (
-    <Screen scroll={false} contentStyle={st.page}>
-      {/* nav bar */}
-      <Row style={st.nav}>
-        <Tap style={st.navBtn} onPress={() => navigation.goBack()} hitSlop={8}>
-          <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
-        </Tap>
-        <Text style={st.navTitle}>Video Download</Text>
-        <View style={{ width: 34 }} />
-      </Row>
-
+    <Screen
+      scroll={false}
+      contentStyle={st.page}
+      header={
+        <Row style={st.nav}>
+          <Tap style={st.navBtn} onPress={() => navigation.goBack()} hitSlop={8}>
+            <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
+          </Tap>
+          <Text style={st.navTitle}>Video Download</Text>
+          <View style={{ width: 34 }} />
+        </Row>
+      }
+    >
       {/* progress card */}
       <Card style={st.card}>
         <Text style={st.pct}>{p}%</Text>

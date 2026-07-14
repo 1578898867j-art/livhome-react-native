@@ -66,8 +66,10 @@ export default function BindFind({ navigation }: AppScreenProps) {
   });
 
   return (
-    <Screen scroll={false}>
-      <Header title="Add Device" onBack={() => navigation.goBack()} />
+    <Screen
+      scroll={false}
+      header={<Header title="Add Device" onBack={() => navigation.goBack()} />}
+    >
       <Stepper active={1} />
 
       <View style={st.headBlock}>

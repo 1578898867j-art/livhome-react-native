@@ -67,13 +67,16 @@ export default function TripWire({ navigation }: AppScreenProps) {
   const goBack = () => navigation.goBack();
 
   return (
-    <Screen scroll={false}>
-      <NavBar
-        title="Trip Wire"
-        onBack={goBack}
-        action={{ label: 'Done', onPress: goBack }}
-      />
-
+    <Screen
+      scroll={false}
+      header={
+        <NavBar
+          title="Trip Wire"
+          onBack={goBack}
+          action={{ label: 'Done', onPress: goBack }}
+        />
+      }
+    >
       {/* camera frame with line + endpoints */}
       <View style={st.frame} onLayout={onFrameLayout}>
         <Svg

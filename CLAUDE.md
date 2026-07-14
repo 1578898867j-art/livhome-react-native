@@ -9,7 +9,8 @@ For each task:
 3. Put HTTP behavior in `src/api`, DTOs in `src/contracts`, and reusable feature behavior in `src/features`.
 4. Never call `fetch` from a screen or invent backend fields without updating `docs/API_CONTRACT.md`.
 5. Preserve the existing visual design and avoid speculative state frameworks or component abstractions.
-6. After every code edit, run `npm run lint`; also run `npm run typecheck` and the checks required by `AGENTS.md` before reporting completion.
+6. Follow the change-scoped validation rules in `AGENTS.md`. For ordinary TypeScript or TSX work, run `npm run lint` and `npm run typecheck` once after implementation, not after every individual edit.
+7. Run `check:api`, `expo-doctor`, `npm ci`, and a clear Expo export only when their triggers in `AGENTS.md` apply. Never run `npm ci` or a clear Expo export while Metro is running.
 
 When a contract is unclear, leave a named open decision in `docs/API_CONTRACT.md` instead of silently choosing a protocol.
 <!-- DESIGN_MD_INSTRUCTIONS_START -->

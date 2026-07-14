@@ -52,13 +52,16 @@ export default function DetectionArea({ navigation }: AppScreenProps) {
   );
 
   return (
-    <Screen scroll={false}>
-      <NavBar
-        title="Detection Area"
-        onBack={() => navigation.goBack()}
-        action={{ label: 'Done', onPress: () => navigation.goBack() }}
-      />
-
+    <Screen
+      scroll={false}
+      header={
+        <NavBar
+          title="Detection Area"
+          onBack={() => navigation.goBack()}
+          action={{ label: 'Done', onPress: () => navigation.goBack() }}
+        />
+      }
+    >
       {/* Camera preview (dark synthetic base, no photo) with tappable grid + dot overlay */}
       <View style={st.previewWrap}>
         <View style={st.preview}>
@@ -230,7 +233,7 @@ const st = StyleSheet.create({
 
   toast: {
     position: 'absolute',
-    top: 118,
+    top: 68,
     alignSelf: 'center',
     zIndex: 90,
     backgroundColor: 'rgba(20,20,22,0.9)',

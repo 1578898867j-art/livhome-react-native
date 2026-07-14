@@ -10,9 +10,15 @@ export default function BindWifi({ navigation }: AppScreenProps) {
   const filled = password.length > 0;
 
   return (
-    <Screen scroll={false} contentStyle={st.page}>
-      <Header title="Wi-Fi Setup" onBack={() => navigation.goBack()} />
-
+    <Screen
+      scroll={false}
+      contentStyle={st.page}
+      header={
+        <View style={st.headerInset}>
+          <Header title="Wi-Fi Setup" onBack={() => navigation.goBack()} />
+        </View>
+      }
+    >
       {/* step indicator (bStepper(2) of 4) */}
       <Row style={st.stepper}>
         {[1, 2, 3, 4].map((i) => (
@@ -79,7 +85,8 @@ export default function BindWifi({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  page: { paddingTop: 6, paddingBottom: 40 },
+  headerInset: { paddingTop: 6 },
+  page: { paddingBottom: 40 },
   stepper: { justifyContent: 'center', gap: 6, paddingVertical: 8, paddingTop: 8 },
   stepBar: { width: 20, height: 3, borderRadius: 2 },
   fields: { paddingTop: 18 },

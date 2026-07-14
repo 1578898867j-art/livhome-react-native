@@ -40,18 +40,21 @@ export default function NotifDetail({ navigation }: AppScreenProps) {
   );
 
   return (
-    <Screen bg={colors.bgSecondary} contentStyle={{ paddingBottom: 40 }}>
-      {/* nav:返回 + 居中标题(行高固定 50) */}
-      <Row style={st.nav}>
-        <View style={st.navSlot}>
-          <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
-            <Icon name="chevL" size={16} color={colors.textPrimary} sw={2} />
-          </Tap>
-        </View>
-        <Text style={st.navTitle} numberOfLines={1}>Notification Details</Text>
-        <View style={st.navSlot} />
-      </Row>
-
+    <Screen
+      bg={colors.bgSecondary}
+      contentStyle={{ paddingBottom: 40 }}
+      header={
+        <Row style={st.nav}>
+          <View style={st.navSlot}>
+            <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
+              <Icon name="chevL" size={16} color={colors.textPrimary} sw={2} />
+            </Tap>
+          </View>
+          <Text style={st.navTitle} numberOfLines={1}>Notification Details</Text>
+          <View style={st.navSlot} />
+        </Row>
+      }
+    >
       {/* 日期 + All Read */}
       <Row style={st.dayRow}>
         <Text style={st.dayNum}>24</Text>

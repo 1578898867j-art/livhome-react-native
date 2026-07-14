@@ -4,9 +4,7 @@ import { Screen, Header, Eyebrow, Card, SettingRow } from '../components/kit';
 
 export default function AlertSettings({ navigation }: AppScreenProps) {
   return (
-    <Screen>
-      <Header title="Alarm Settings" onBack={() => navigation.goBack()} />
-
+    <Screen header={<Header title="Alarm Settings" onBack={() => navigation.goBack()} />}>
       <Eyebrow>Detection type</Eyebrow>
       <Card style={{ marginHorizontal: 18 }}>
         <SettingRow name="Motion Detection" onPress={() => navigation.navigate('motion-detection')} />

@@ -2,12 +2,34 @@ import type { AppScreenProps } from '../navigation/types';
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SunLogo } from '../components/SunLogo';
+import { hasLoginState } from '../features/auth/session';
 
 // 启动页(Figma 4514:254):白底居中 App logo,短暂停留后进入欢迎/隐私同意页
 export default function Splash({ navigation }: AppScreenProps) {
   useEffect(() => {
-    const t = setTimeout(() => navigation.replace('privacy-terms'), 1400);
-    return () => clearTimeout(t);
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const routeFromSession = async () => {
+      const loggedIn = await hasLoginState();
+      if (cancelled) return;
+
+      if (loggedIn) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main', params: { screen: 'agent-chat' } }],
+        });
+        return;
+      }
+
+      timer = setTimeout(() => navigation.replace('privacy-terms'), 1400);
+    };
+
+    void routeFromSession();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
   }, [navigation]);
 
   return (

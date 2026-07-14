@@ -16,18 +16,38 @@ import { Icon } from './Icon';
 /* ---- Screen shell (replaces the phone frame; full-bleed) ---- */
 export function Screen({
   children,
+  header,
   scroll = true,
   edges = ['top'],
   contentStyle,
   bg = colors.bgPrimary,
 }: {
   children: React.ReactNode;
+  header?: React.ReactNode;
   scroll?: boolean;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
   contentStyle?: StyleProp<ViewStyle>;
   bg?: string; // 页面底色(如消息中心的灰底),默认全局 bgPrimary
 }) {
   const insets = useSafeAreaInsets();
+  if (header) {
+    return (
+      <SafeAreaView style={[s.screen, { backgroundColor: bg }]} edges={edges}>
+        {header}
+        {scroll ? (
+          <ScrollView
+            style={s.screenBody}
+            contentContainerStyle={[{ paddingBottom: 28 }, contentStyle]}
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </ScrollView>
+        ) : (
+          <View style={[s.screenBody, contentStyle]}>{children}</View>
+        )}
+      </SafeAreaView>
+    );
+  }
   if (scroll) {
     // 内容允许滚到状态栏后面,顶部用 底色→透明 渐变蒙版让其淡出(全局统一效果)
     return (
@@ -295,6 +315,7 @@ export const t = {
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bgPrimary },
+  screenBody: { flex: 1 },
   row: { flexDirection: 'row', alignItems: 'center' },
   card: { backgroundColor: colors.surface, borderRadius: 20 },
   hdr: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, paddingTop: 8, paddingBottom: 8 },

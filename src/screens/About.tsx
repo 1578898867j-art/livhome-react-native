@@ -8,9 +8,10 @@ import { colors } from '../theme';
 
 export default function About({ navigation }: AppScreenProps) {
   return (
-    <Screen contentStyle={{ paddingBottom: 54 }}>
-      <Header title="About" onBack={() => navigation.goBack()} />
-
+    <Screen
+      header={<Header title="About" onBack={() => navigation.goBack()} />}
+      contentStyle={{ paddingBottom: 54 }}
+    >
       {/* app logo + name — SunLogo already is the blue rounded square */}
       <View style={st.hero}>
         <SunLogo size={76} />

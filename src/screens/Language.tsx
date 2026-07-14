@@ -11,14 +11,19 @@ export default function Language({ navigation }: AppScreenProps) {
   const [selected, setSelected] = useState('English');
 
   return (
-    <Screen scroll={false}>
+    <Screen
+      scroll={false}
+      header={
+        <View style={st.headerInset}>
+          <NavBar
+            title="Language"
+            onBack={() => navigation.goBack()}
+            action={{ label: 'Done', onPress: () => navigation.goBack() }}
+          />
+        </View>
+      }
+    >
       <View style={st.wrap}>
-        <NavBar
-          title="Language"
-          onBack={() => navigation.goBack()}
-          action={{ label: 'Done', onPress: () => navigation.goBack() }}
-        />
-
         <View style={st.searchWrap}>
           <Row style={st.search}>
             <Icon name="search" size={16} color={colors.textTertiary} />
@@ -43,7 +48,8 @@ export default function Language({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  wrap: { flex: 1, paddingTop: 8 },
+  headerInset: { paddingTop: 8 },
+  wrap: { flex: 1 },
   searchWrap: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 12 },
   search: {
     height: 44,
