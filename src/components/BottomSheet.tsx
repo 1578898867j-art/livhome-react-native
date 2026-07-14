@@ -69,7 +69,12 @@ export function BottomSheet({
           </View>
         </Animated.View>
       </View>
-      {overlay}
+      {/* 浮层必须绝对铺满:否则会作为兄弟节点和面板平分屏幕高度,把面板挤到上半屏 */}
+      {overlay != null && (
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+          {overlay}
+        </View>
+      )}
     </Modal>
   );
 }
