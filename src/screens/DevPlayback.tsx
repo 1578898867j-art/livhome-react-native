@@ -162,8 +162,10 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
       <Row style={st.dateRow}>
         <Tap style={st.dateTap} onPress={() => setCalOpen(true)}>
           <SvgXml xml={CALICON} width={19} height={19} color={colors.textSecondary} />
+          {/* 日期 + 当前时刻:跟随时间轴拖动实时变化 */}
           <Text style={st.dateText}>
             Apr {21 + headDay}
+            <Text style={st.dateTime}> {pad(Math.floor(tm / 60))}:{pad(Math.floor(tm % 60))}</Text>
           </Text>
           {headDay === 2 && <Text style={st.todayText}>| Today</Text>}
         </Tap>
@@ -460,6 +462,7 @@ const st = StyleSheet.create({
   dateRow: { paddingHorizontal: 18, paddingTop: 20 },
   dateTap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dateText: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  dateTime: { fontSize: 16, fontWeight: '600', color: colors.textSecondary, fontVariant: ['tabular-nums'] },
   todayText: { fontSize: 16, fontWeight: '500', color: colors.textTertiary },
   filterTap: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   filterText: { fontSize: 14, fontWeight: '500' },
