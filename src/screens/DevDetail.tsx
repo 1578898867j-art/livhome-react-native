@@ -271,7 +271,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                 style={st.tabItem}
                 onPress={() => setTab(b.key)}
               >
-                <SvgXml xml={TABICONS[b.key]} width={26} height={26} color={col} />
+                <SvgXml xml={TABICONS[b.key]} width={22} height={22} color={col} />
                 <Text style={{ fontSize: 11, fontWeight: on ? '700' : '500', color: col }}>
                   {b.label}
                 </Text>
