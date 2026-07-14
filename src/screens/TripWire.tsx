@@ -35,12 +35,19 @@ export default function TripWire({ navigation }: AppScreenProps) {
     frame.current.h = e.nativeEvent.layout.height;
   };
 
-  const makeResponder = (pt: Pt, set: (p: Pt) => void) =>
+  // 端点坐标用 ref 镜像;PanResponder 只创建一次 —— 每次渲染重建会在手势中途
+  // 换掉实例,move 事件全部丢失(之前拖不动的原因)
+  const twARef = useRef(twA);
+  const twBRef = useRef(twB);
+  twARef.current = twA;
+  twBRef.current = twB;
+
+  const makeResponder = (ptRef: React.MutableRefObject<Pt>, set: (p: Pt) => void) =>
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
-        start.current = { x: pt.x, y: pt.y };
+        start.current = { x: ptRef.current.x, y: ptRef.current.y };
       },
       onPanResponderMove: (
         _e: GestureResponderEvent,
@@ -52,11 +59,8 @@ export default function TripWire({ navigation }: AppScreenProps) {
       },
     });
 
-  const panA = useRef(makeResponder(twA, setTwA));
-  const panB = useRef(makeResponder(twB, setTwB));
-  // keep responders reading latest points
-  panA.current = makeResponder(twA, setTwA);
-  panB.current = makeResponder(twB, setTwB);
+  const panA = useRef(makeResponder(twARef, setTwA)).current;
+  const panB = useRef(makeResponder(twBRef, setTwB)).current;
 
   const dirs: { key: Dir; label: string }[] = [
     { key: 'both', label: 'A ⇄ B' },
@@ -96,11 +100,13 @@ export default function TripWire({ navigation }: AppScreenProps) {
         <Label pt={twB} ch="B" />
 
         <View
-          {...panA.current.panHandlers}
+          {...panA.panHandlers}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           style={[st.dot, { left: `${twA.x}%`, top: `${twA.y}%` }]}
         />
         <View
-          {...panB.current.panHandlers}
+          {...panB.panHandlers}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
           style={[st.dot, { left: `${twB.x}%`, top: `${twB.y}%` }]}
         />
       </View>
