@@ -372,7 +372,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
       {saveToast != null && (
         <View style={[st.saveToast, { bottom: Math.max(insets.bottom, 12) + 86 }]}>
           <View style={st.saveThumb}>
-            <CamPreview height={44} showBox={false} tag="" />
+            <CamPreview height={64} showBox={false} tag="" />
           </View>
           <Text style={st.saveTxt} numberOfLines={1}>
             {saveToast === 'photo' ? 'Photo saved to album' : 'Video saved to album'}{' '}
@@ -936,15 +936,16 @@ const st = StyleSheet.create({
     marginTop: 12, paddingHorizontal: 10,
     fontSize: 13, fontWeight: '600', color: colors.textPrimary,
   },
+  // 保存成功弹窗 —— 1:1 对齐设计稿切片:胶囊(radius=高/2)、112×64 圆角缩略图、17 号文案
   saveToast: {
     position: 'absolute', left: 16, right: 16, zIndex: 60,
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: '#F5F8FE', borderRadius: 24, padding: 10, paddingRight: 16,
-    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: 6 },
+    flexDirection: 'row', alignItems: 'center', gap: 18,
+    backgroundColor: '#F4F7FE', borderRadius: 44, padding: 12, paddingRight: 20,
+    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 18, shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
-  saveThumb: { width: 72, borderRadius: 12, overflow: 'hidden' },
-  saveTxt: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  saveThumb: { width: 112, height: 64, borderRadius: 12, overflow: 'hidden' },
+  saveTxt: { flex: 1, fontSize: 17, fontWeight: '600', color: colors.textPrimary },
   saveLink: { color: colors.brand, fontWeight: '600' },
 
   presetPopupBtn: {
