@@ -494,8 +494,14 @@ function ControlsPanel({
             <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary }}>Back</Text>
           </Tap>
         </Row>
-        {/* 原型 devPresetView:横向滚动,添加卡 + 预置位卡(缩略图/选中描边/右上删除/名称) */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+        {/* Figma 1655:1625:白底卡 124/122×143,图 99 高、名称白条、右上 22 半透明 ×;
+            横滑区左右出血到屏幕边缘(marginHorizontal 抵消父级 padding,不做剪切蒙版) */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ marginHorizontal: -18 }}
+          contentContainerStyle={{ gap: 10, paddingHorizontal: 18 }}
+        >
           <Tap style={st.addCard} onPress={onAdd}>
             <View style={st.addIcon}>
               <Icon name="plus" size={20} color={colors.brand} sw={2.2} />
@@ -503,14 +509,16 @@ function ControlsPanel({
             <Text style={st.addTxt}>{'Add Preset\nPosition'}</Text>
           </Tap>
           {presets.map((name, i) => (
-            <Tap key={name + i} style={{ width: 114 }} onPress={() => onView(i)}>
-              <View style={[st.presetThumb, activePreset === i && st.presetThumbSel]}>
-                <CamPreview height={99} showBox={false} tag="" />
-                <Tap style={st.presetDel} onPress={() => onDelete(i)} hitSlop={6}>
-                  <Icon name="x" size={12} color="#fff" sw={2.6} />
-                </Tap>
-              </View>
+            <Tap
+              key={name + i}
+              style={[st.presetCard, activePreset === i && st.presetCardSel]}
+              onPress={() => onView(i)}
+            >
+              <CamPreview height={99} showBox={false} tag="" />
               <Text style={st.presetName} numberOfLines={1}>{name}</Text>
+              <Tap style={st.presetDel} onPress={() => onDelete(i)} hitSlop={6}>
+                <Icon name="x" size={12} color="#fff" sw={2.6} />
+              </Tap>
             </Tap>
           ))}
         </ScrollView>
@@ -873,29 +881,31 @@ const st = StyleSheet.create({
   ctrlActionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 
   presetTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
-  presetThumb: {
-    width: 114, height: 99, borderRadius: 12, overflow: 'hidden',
-    backgroundColor: colors.bgSecondary,
+  presetCard: {
+    width: 122, height: 143, borderRadius: 14, overflow: 'hidden',
+    backgroundColor: colors.surface,
   },
-  presetThumbSel: { borderWidth: 2, borderColor: colors.brand },
+  presetCardSel: { borderWidth: 2, borderColor: colors.brand },
   presetDel: {
     position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11,
-    backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center',
   },
   presetName: {
-    marginTop: 6, fontSize: 12, fontWeight: '600', color: colors.textPrimary, textAlign: 'center',
+    marginTop: 12, paddingHorizontal: 10,
+    fontSize: 13, fontWeight: '600', color: colors.textPrimary,
   },
   presetPopupBtn: {
     width: '100%', height: 54, borderRadius: 99, marginTop: 18,
     backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center',
   },
   addCard: {
-    width: 114,
-    height: 132,
+    width: 124,
+    height: 143,
+    backgroundColor: colors.surface,
     borderWidth: 1,
     borderStyle: 'dashed',
     borderColor: colors.borderStrong,
-    borderRadius: 16,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
