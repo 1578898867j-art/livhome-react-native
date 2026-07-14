@@ -4,6 +4,8 @@ import { View, Text, StyleSheet, Modal, Pressable, TextInput } from 'react-nativ
 import { Screen, Tap, Card, Header, Eyebrow, Row, ToggleRow, SettingRow } from '../components/kit';
 import { BottomSheet } from '../components/BottomSheet';
 import { Icon } from '../components/Icon';
+import { SvgXml } from 'react-native-svg';
+import { CONV_EDIT, CONV_TRASH } from '../icons/protoIcons';
 import { colors } from '../theme';
 
 // 原型 ALARM_PERIODS
@@ -259,7 +261,7 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
                             setMenuId(null);
                           }}
                         >
-                          <Icon name="edit" size={14} color={colors.textPrimary} />
+                          <SvgXml xml={CONV_EDIT} width={16} height={16} color={colors.textPrimary} />
                           <Text style={st.recMenuTxt}>Rename</Text>
                         </Tap>
                         <View style={st.recMenuDiv} />
@@ -270,7 +272,7 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
                             setMenuId(null);
                           }}
                         >
-                          <Icon name="trash" size={14} color={colors.critical} />
+                          <SvgXml xml={CONV_TRASH} width={16} height={16} color={colors.critical} />
                           <Text style={[st.recMenuTxt, { color: colors.critical }]}>Delete</Text>
                         </Tap>
                       </View>
