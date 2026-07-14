@@ -1,7 +1,7 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
-import { Screen, Header, Eyebrow, Card, ToggleRow, Segmented } from '../components/kit';
+import { Screen, Header, Eyebrow, Card, ToggleRow, Segmented, SettingRow } from '../components/kit';
 import { colors } from '../theme';
 
 export default function MotionDetection({ navigation }: AppScreenProps) {
@@ -23,17 +23,33 @@ export default function MotionDetection({ navigation }: AppScreenProps) {
       </Card>
 
       {motionOn && (
-        <Card style={st.sensCard}>
-          <Segmented
-            opts={['Low', 'Medium', 'High']}
-            active={motionSens}
-            onSelect={setMotionSens}
-          />
-          <Text style={st.hint}>
-            You will receive an alarm when large object movement is detected (family members
-            walking).
-          </Text>
-        </Card>
+        <>
+          <Card style={st.sensCard}>
+            <Segmented
+              opts={['Low', 'Medium', 'High']}
+              active={motionSens}
+              onSelect={setMotionSens}
+            />
+            <Text style={st.hint}>
+              You will receive an alarm when large object movement is detected (family members
+              walking).
+            </Text>
+          </Card>
+
+          {/* 区域设置:仅 Medium 档隐藏,Low / High 保留 */}
+          {motionSens !== 1 && (
+            <>
+              <Eyebrow>Area settings</Eyebrow>
+              <Card style={st.card}>
+                <SettingRow
+                  name="Detection Area"
+                  onPress={() => navigation.navigate('detection-area')}
+                  last
+                />
+              </Card>
+            </>
+          )}
+        </>
       )}
     </Screen>
   );
