@@ -25,14 +25,11 @@ export default function LineCrossing({ navigation }: AppScreenProps) {
               </Text>
             </Card>
 
-            {lineSens !== 1 && (
-              <>
-                <Eyebrow>Area settings</Eyebrow>
-                <Card style={st.card}>
-                  <SettingRow name="Trip Wire" onPress={() => navigation.navigate('trip-wire')} last />
-                </Card>
-              </>
-            )}
+            {/* 所有灵敏度档位都显示;行标题固定为 Trip Wire */}
+            <Eyebrow>Area settings</Eyebrow>
+            <Card style={st.card}>
+              <SettingRow name="Trip Wire" onPress={() => navigation.navigate('trip-wire')} last />
+            </Card>
           </>
         )}
       </View>
