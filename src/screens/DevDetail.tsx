@@ -940,7 +940,7 @@ const st = StyleSheet.create({
   saveToast: {
     position: 'absolute', left: 16, right: 16, zIndex: 60,
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: '#F4F7FE', borderRadius: 20, padding: 8, paddingRight: 14,
+    backgroundColor: colors.surface, borderRadius: 20, padding: 8, paddingRight: 14,
     shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 18, shadowOffset: { width: 0, height: 6 },
     elevation: 8,
   },
