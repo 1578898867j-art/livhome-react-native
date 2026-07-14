@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { colors } from '../theme';
 import { IconFill } from '../components/Icon';
@@ -17,6 +18,13 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 12) + 0 }]} pointerEvents="box-none">
+      {/* 底部渐变蒙版:内容滑到 tab 栏后淡出成页面底色(与顶部蒙版同配方镜像) */}
+      <LinearGradient
+        colors={[`${colors.bgPrimary}00`, `${colors.bgPrimary}4D`, colors.bgPrimary]}
+        locations={[0, 0.45, 1]}
+        style={styles.fade}
+        pointerEvents="none"
+      />
       <View style={styles.pill}>
         {state.routes.map((route, i) => {
           const focused = state.index === i;
@@ -61,6 +69,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 10,
   },
+  fade: { position: 'absolute', left: 0, right: 0, top: -30, bottom: 0 },
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
