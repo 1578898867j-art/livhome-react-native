@@ -1,6 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Modal, Pressable, Animated, Easing } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Screen, Header, Eyebrow, Card, Row, Tap, SettingRow, ToggleRow } from '../components/kit';
 import { Icon } from '../components/Icon';
@@ -14,6 +14,8 @@ const NV_LABELS: Record<string, string> = { auto: 'Auto', on: 'On', off: 'Off' }
 type SheetKey = null | 'idle' | 'flip' | 'nv' | 'af' | 'vol';
 
 /* ---- bottom sheet shell — port of cfgSheet() ---- */
+// 交互:遮罩原地淡入淡出,白色面板单独从屏幕底部滑入/滑出。
+// (Modal 自带的 slide 会把遮罩连同内容整体滑动,观感是"幕布"在动 —— 不用)
 function CfgSheet({
   visible,
   title,
@@ -27,18 +29,54 @@ function CfgSheet({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const [mounted, setMounted] = useState(visible);
+  const [sheetH, setSheetH] = useState(0);
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 300,
+        easing: Easing.bezier(0.22, 1, 0.36, 1),
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: true,
+      }).start(() => setMounted(false));
+    }
+  }, [visible, anim]);
+
+  if (!mounted) return null;
   return (
-    <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
-      <Pressable style={st.ovl} onPress={onClose}>
-        <Pressable style={st.sheet} onPress={() => {}}>
-          <View style={st.grabberWrap}>
-            <View style={st.grabber} />
+    <Modal transparent visible animationType="none" onRequestClose={onClose}>
+      <Animated.View style={[StyleSheet.absoluteFillObject, st.backdrop, { opacity: anim }]}>
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+      </Animated.View>
+      <View style={st.ovl} pointerEvents="box-none">
+        <Animated.View
+          onLayout={(e) => setSheetH(e.nativeEvent.layout.height)}
+          style={{
+            transform: [
+              { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [sheetH || 600, 0] }) },
+            ],
+          }}
+        >
+          <View style={st.sheet}>
+            <View style={st.grabberWrap}>
+              <View style={st.grabber} />
+            </View>
+            <Text style={st.sheetTitle}>{title}</Text>
+            {!!desc && <Text style={st.sheetDesc}>{desc}</Text>}
+            {children}
           </View>
-          <Text style={st.sheetTitle}>{title}</Text>
-          {!!desc && <Text style={st.sheetDesc}>{desc}</Text>}
-          {children}
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -305,7 +343,8 @@ const st = StyleSheet.create({
   card: { marginHorizontal: 18 },
 
   /* sheet shell */
-  ovl: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  backdrop: { backgroundColor: 'rgba(0,0,0,0.4)' },
+  ovl: { flex: 1, justifyContent: 'flex-end' },
   sheet: {
     width: '100%',
     backgroundColor: colors.surface,
