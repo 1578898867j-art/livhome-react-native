@@ -1,6 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Screen, Tap, Row, Card, Header, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
@@ -21,6 +21,53 @@ function repeatLabel(days: boolean[]) {
   return 'Custom';
 }
 
+const ITEM_H = 48;
+
+// 可滑动滚轮列:snap 到行高,中间灰色胶囊为选中高亮
+function WheelCol({ count, value, onChange }: { count: number; value: number; onChange: (v: number) => void }) {
+  const ref = useRef<ScrollView>(null);
+  const [active, setActive] = useState(value);
+
+  const settle = (y: number) => {
+    const i = Math.min(count - 1, Math.max(0, Math.round(y / ITEM_H)));
+    setActive(i);
+    onChange(i);
+  };
+
+  return (
+    <View style={st.wheelColWrap}>
+      <View style={st.wheelHighlight} pointerEvents="none" />
+      <ScrollView
+        ref={ref}
+        style={{ height: ITEM_H * 3, alignSelf: 'stretch' }}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={ITEM_H}
+        decelerationRate="fast"
+        bounces={false}
+        contentContainerStyle={{ paddingVertical: ITEM_H }}
+        contentOffset={{ x: 0, y: value * ITEM_H }}
+        onLayout={() => ref.current?.scrollTo({ y: value * ITEM_H, animated: false })}
+        scrollEventThrottle={16}
+        onScroll={(e) => {
+          const i = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
+          if (i !== active && i >= 0 && i < count) setActive(i);
+        }}
+        onMomentumScrollEnd={(e) => settle(e.nativeEvent.contentOffset.y)}
+        onScrollEndDrag={(e) => {
+          // 缓慢拖动松手(无惯性)时也落位
+          if (e.nativeEvent.velocity && Math.abs(e.nativeEvent.velocity.y) < 0.05) settle(e.nativeEvent.contentOffset.y);
+        }}
+      >
+        {Array.from({ length: count }, (_, v) => (
+          <View key={v} style={st.wheelItem}>
+            <Text style={[v === active ? st.wheelCur : st.wheelSide, st.mono]}>{p2(v)}</Text>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 export default function ShutdownEdit({ navigation }: AppScreenProps) {
   const [edOff, setEdOff] = useState<TM>({ h: 22, m: 0 });
   const [edOn, setEdOn] = useState<TM>({ h: 7, m: 0 });
@@ -32,29 +79,16 @@ export default function ShutdownEdit({ navigation }: AppScreenProps) {
     navigation.goBack();
   };
 
-  const adj = (which: Which, unit: Unit, dir: 1 | -1) => {
-    const mod = unit === 'h' ? 24 : 60;
+  const setUnit = (which: Which, unit: Unit, v: number) => {
     const set = which === 'off' ? setEdOff : setEdOn;
-    set((t) => ({ ...t, [unit]: ((t[unit] + dir) % mod + mod) % mod }));
+    set((t) => ({ ...t, [unit]: v }));
   };
-
-  const wheelCol = (which: Which, cur: number, unit: Unit, mod: number) => (
-    <View style={st.wheelCol}>
-      <Tap onPress={() => adj(which, unit, -1)}>
-        <Text style={[st.wheelSide, st.mono]}>{p2((cur + mod - 1) % mod)}</Text>
-      </Tap>
-      <Text style={[st.wheelCur, st.mono]}>{p2(cur)}</Text>
-      <Tap onPress={() => adj(which, unit, 1)}>
-        <Text style={[st.wheelSide, st.mono]}>{p2((cur + 1) % mod)}</Text>
-      </Tap>
-    </View>
-  );
 
   const wheel = (which: Which, t: TM) => (
     <Row style={st.wheelRow}>
-      {wheelCol(which, t.h, 'h', 24)}
+      <WheelCol count={24} value={t.h} onChange={(v) => setUnit(which, 'h', v)} />
       <Text style={st.colon}>:</Text>
-      {wheelCol(which, t.m, 'm', 60)}
+      <WheelCol count={60} value={t.m} onChange={(v) => setUnit(which, 'm', v)} />
     </Row>
   );
 
@@ -109,24 +143,22 @@ const st = StyleSheet.create({
   timeValue: { fontSize: 14, fontWeight: '700', color: colors.brand },
 
   wheelRow: { justifyContent: 'center', gap: 14, paddingVertical: 6 },
-  wheelCol: { flex: 1, alignItems: 'center' },
+  wheelColWrap: { flex: 1, alignItems: 'center', height: 48 * 3 },
+  wheelItem: { height: 48, alignItems: 'center', justifyContent: 'center' },
+  wheelHighlight: {
+    position: 'absolute', top: 48, alignSelf: 'center',
+    width: 78, height: 48, borderRadius: 12, backgroundColor: colors.bgSecondary,
+  },
   wheelSide: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.textTertiary,
     opacity: 0.45,
-    paddingVertical: 6,
   },
   wheelCur: {
     fontSize: 26,
     fontWeight: '800',
     color: colors.textPrimary,
-    backgroundColor: colors.bgSecondary,
-    borderRadius: 12,
-    paddingVertical: 9,
-    width: 78,
-    textAlign: 'center',
-    overflow: 'hidden',
   },
   colon: { fontSize: 26, fontWeight: '800', color: colors.textPrimary, alignSelf: 'center', paddingTop: 2 },
 
