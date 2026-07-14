@@ -224,7 +224,7 @@ export default function DevConfig({ navigation }: AppScreenProps) {
 
       <View style={{ height: 54 }} />
 
-      {/* Idle Time — selecting an option applies and closes (per prototype) */}
+      {/* Idle Time — 与其他弹层一致:点选只切换选中,Done 确认关闭 */}
       <CfgSheet
         visible={sheet === 'idle'}
         title="Idle Time"
@@ -236,15 +236,10 @@ export default function DevConfig({ navigation }: AppScreenProps) {
             key={v}
             label={`${v} minutes`}
             on={idleTime === v}
-            onPress={() => {
-              setIdleTime(v);
-              closeSheet();
-            }}
+            onPress={() => setIdleTime(v)}
           />
         ))}
-        <Pressable onPress={closeSheet} style={({ pressed }) => [st.cancelBtn, pressed && { opacity: 0.85 }]}>
-          <Text style={st.cancelBtnTxt}>Cancel</Text>
-        </Pressable>
+        <DoneBtn onPress={closeSheet} />
       </CfgSheet>
 
       {/* Image Flip 180° */}
@@ -392,16 +387,6 @@ const st = StyleSheet.create({
     marginTop: 18,
   },
   doneBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  cancelBtn: {
-    width: '100%',
-    height: 50,
-    borderRadius: 99,
-    backgroundColor: colors.bgSecondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  cancelBtnTxt: { color: colors.textSecondary, fontSize: 16, fontWeight: '700' },
 
   /* flip cards */
   flipCard: {
