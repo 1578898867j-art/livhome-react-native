@@ -137,7 +137,7 @@ function InfoRow({
   onTip?: () => void;
 }) {
   const showTip = !!tipKey && !!tipOpen;
-  const showDivider = !(last && !showTip);
+  const showDivider = !last; // 最后一行永不画分隔线(展开提示卡时也不画)
   return (
     <View>
       <Row style={st.infoRow}>
