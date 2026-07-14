@@ -58,7 +58,8 @@ export default function Album({ navigation }: AppScreenProps) {
               <Icon name="x" size={20} color={colors.textPrimary} sw={2.2} />
             </Tap>
             <Text style={st.titleCenter}>Album</Text>
-            <Tap onPress={() => setSelected(allOn ? [] : allKeys)} hitSlop={10} style={st.xBtn}>
+            {/* 取消全选时默认保留第一张(左上角) */}
+            <Tap onPress={() => setSelected(allOn ? allKeys.slice(0, 1) : allKeys)} hitSlop={10} style={st.xBtn}>
               <SvgXml xml={SELICON2} width={20} height={20} color={colors.brand} />
             </Tap>
           </Row>
