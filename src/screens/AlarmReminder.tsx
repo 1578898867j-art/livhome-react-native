@@ -20,12 +20,14 @@ function AvRow({
   value,
   on,
   onPress,
+  onValuePress,
   last,
 }: {
   label: string;
   value?: string;
   on: boolean;
   onPress?: () => void;
+  onValuePress?: () => void;
   last?: boolean;
 }) {
   return (
@@ -36,10 +38,11 @@ function AvRow({
       </View>
       <Text style={st.avLabel}>{label}</Text>
       {!!value && (
-        <>
+        // 值区域单独可点(打开管理弹层),不与"选中"动作混在一起
+        <Tap onPress={onValuePress ?? onPress} hitSlop={8} style={st.avValueTap}>
           <Text style={st.avValue}>{value}</Text>
           <Icon name="chevR" size={15} color={colors.textTertiary} sw={2} />
-        </>
+        </Tap>
       )}
     </Tap>
   );
@@ -144,11 +147,10 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
               label="Custom Voice"
               value={selName ?? 'Not added'}
               on={alarmVoice === 'custom'}
-              onPress={() => {
-                // 已有选用的录音:点击行即选中自定义语音;同时打开管理弹层
-                if (sel) setAlarmVoice('custom');
-                setSheet('cv');
-              }}
+              // 点行:有录音则直接选中(立即可见);没录音才进弹层去录
+              onPress={() => (sel ? setAlarmVoice('custom') : setSheet('cv'))}
+              // 点右侧值/箭头:打开管理弹层
+              onValuePress={() => setSheet('cv')}
               last
             />
           </Card>
@@ -340,6 +342,7 @@ const st = StyleSheet.create({
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.brand },
   avLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   avValue: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
+  avValueTap: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 54, marginRight: -4, paddingRight: 4 },
 
   sheetRadioRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
