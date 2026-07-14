@@ -1,6 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Modal, Pressable, Dimensions } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, Tap, Row, Card } from '../components/kit';
@@ -17,6 +17,9 @@ import type {
 } from '../features/devices/useDeviceDetailPrototype';
 
 const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// 预设位网格:一排 3 个(面板左右 padding 18,列间距 10)
+const PRESET_W = Math.floor((Dimensions.get('window').width - 18 * 2 - 10 * 2) / 3);
 
 // Prototype MSGFILTERS map — keys match the message icon keys.
 const MSGFILTERS: Record<string, string> = {
@@ -538,14 +541,8 @@ function ControlsPanel({
             <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary }}>Back</Text>
           </Tap>
         </Row>
-        {/* Figma 1655:1625:白底卡 124/122×143,图 99 高、名称白条、右上 22 半透明 ×;
-            横滑区左右出血到屏幕边缘(marginHorizontal 抵消父级 padding,不做剪切蒙版) */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ marginHorizontal: -18 }}
-          contentContainerStyle={{ gap: 10, paddingHorizontal: 18 }}
-        >
+        {/* Figma 1655:1625 卡片样式;上下换行排列,一排最多 3 个 */}
+        <View style={st.presetGrid}>
           <Tap style={st.addCard} onPress={onAdd}>
             <View style={st.addIcon}>
               <Icon name="plus" size={20} color={colors.brand} sw={2.2} />
@@ -565,7 +562,7 @@ function ControlsPanel({
               </Tap>
             </Tap>
           ))}
-        </ScrollView>
+        </View>
       </View>
     );
   }
@@ -925,8 +922,9 @@ const st = StyleSheet.create({
   ctrlActionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 
   presetTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   presetCard: {
-    width: 122, height: 143, borderRadius: 14, overflow: 'hidden',
+    width: PRESET_W, height: 143, borderRadius: 14, overflow: 'hidden',
     backgroundColor: colors.surface,
   },
   presetCardSel: { borderWidth: 2, borderColor: colors.brand },
@@ -954,7 +952,7 @@ const st = StyleSheet.create({
     backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center',
   },
   addCard: {
-    width: 124,
+    width: PRESET_W,
     height: 143,
     backgroundColor: colors.surface,
     borderWidth: 1,
