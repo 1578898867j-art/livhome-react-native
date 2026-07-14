@@ -44,16 +44,16 @@ const PPM_BROWSE = 1.3;
 const PPM_CLIP = 7.8;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
-// 连续时间域:自 2026-04-21 00:00 起的分钟数,可一直滑到 04-23 06:50(今天当前时段)
+// 时间域:仅当天(2026-04-23)00:00 → 06:50(当前时段),不跨天
 const DAY_MIN = 1440;
-const T_MAX = 2 * DAY_MIN + 6 * 60 + 50;
+const T_MAX = 6 * 60 + 50;
 const WIN = 360; // 渲染窗口半径(分钟)——只渲染可视区附近,支撑无限滑动
 const fmtHM = (m: number) => `${pad(Math.floor((m % DAY_MIN) / 60))}:${pad(Math.floor(m) % 60)}`;
 
 export default function DevPlayback({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   // playhead position + active recording-event filters (mirrors S.pbHead / S.pbEvents)
-  const [pbHead, setPbHead] = useState(2 * DAY_MIN + 6 * 60 + 23); // 04-23 06:23
+  const [pbHead, setPbHead] = useState(6 * 60 + 23); // 06:23
   const [pbEvents, setPbEvents] = useState<string[]>(['motion', 'sound']);
   // date (mirrors S.pbM/pbD; TODAY = 2026-04-23) + overlays
   const [pbM, setPbM] = useState(3);
@@ -74,10 +74,9 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   const [clipS, setClipS] = useState(15);
   const [clipE, setClipE] = useState(31);
 
-  const headDay = Math.floor(pbHead / DAY_MIN); // 0=Apr21 1=Apr22 2=Apr23
   const tm = pbHead % DAY_MIN;
   const ss = Math.round((pbHead - Math.floor(pbHead)) * 60);
-  const stamp = `2026-04-${pad(21 + headDay)} ${pad(Math.floor(tm / 60))}:${pad(Math.floor(tm % 60))}:${pad(ss)}`;
+  const stamp = `2026-04-23 ${pad(Math.floor(tm / 60))}:${pad(Math.floor(tm % 60))}:${pad(ss)}`;
 
   const evtOn = (sg: Seg) => sg.t === 'evt' && !!sg.ev && pbEvents.indexOf(sg.ev) >= 0;
   const filterActive = pbEvents.length < EVFILTER_COUNT;
@@ -207,10 +206,10 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           <SvgXml xml={CALICON} width={19} height={19} color={colors.textSecondary} />
           {/* 日期 + 当前时刻:跟随时间轴拖动实时变化 */}
           <Text style={st.dateText}>
-            Apr {21 + headDay}
+            Apr 23
             <Text style={st.dateTime}> {pad(Math.floor(tm / 60))}:{pad(Math.floor(tm % 60))}</Text>
           </Text>
-          {headDay === 2 && <Text style={st.todayText}>| Today</Text>}
+          <Text style={st.todayText}>| Today</Text>
         </Tap>
         <View style={{ flex: 1 }} />
         {!clipMode && (
