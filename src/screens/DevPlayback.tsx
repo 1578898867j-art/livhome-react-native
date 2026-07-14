@@ -1,6 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, DimensionValue, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, PanResponder } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
@@ -36,7 +36,9 @@ const EV_FILTERS = [
 ];
 const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const pct = (v: number): DimensionValue => `${(v / 50) * 100}%`;
+const SCREEN_W = Dimensions.get('window').width;
+const PPM = 7.8; // 每分钟像素(10min ≈ 78px,对齐设计稿刻度密度)
+const px = (v: number) => v * PPM;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
 export default function DevPlayback({ navigation }: AppScreenProps) {
@@ -79,26 +81,21 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
     setClipMode(true);
   };
 
-  // ── draggable playhead: PanResponder over the track, x → 0..50
-  const trackRef = useRef<View>(null);
-  const trackX = useRef(0);
-  const trackW = useRef(1);
-  const measureTrack = () => {
-    trackRef.current?.measureInWindow((x, _y, w) => {
-      trackX.current = x;
-      trackW.current = w || 1;
-    });
-  };
-  const seekTo = (pageX: number) => {
-    const p = Math.max(0, Math.min(1, (pageX - trackX.current) / trackW.current));
-    setPbHead(Math.round(p * 50 * 10) / 10);
-  };
+  // ── NVR 式拖动:固定中线,滑动时间轴条带本体(左拖 = 时间前进)
+  const pbHeadRef = useRef(pbHead);
+  pbHeadRef.current = pbHead;
+  const dragStart = useRef(0);
   const pan = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (e) => seekTo(e.nativeEvent.pageX),
-      onPanResponderMove: (e) => seekTo(e.nativeEvent.pageX),
+      onPanResponderGrant: () => {
+        dragStart.current = pbHeadRef.current;
+      },
+      onPanResponderMove: (_e, g) => {
+        const v = Math.max(0, Math.min(50, dragStart.current - g.dx / PPM));
+        setPbHead(Math.round(v * 10) / 10);
+      },
     })
   ).current;
 
@@ -178,39 +175,36 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         )}
       </Row>
 
-      {/* 24h timeline */}
-      <View style={st.timelineWrap}>
-        <Row style={st.labelRow}>
-          {TIME_LABELS.map((l) => (
-            <Text key={l} style={st.label}>
-              {l}
-            </Text>
-          ))}
-        </Row>
+      {/* 24h timeline — 拖动时间轴本体,固定中线读值;全宽出血、两侧无剪切蒙版 */}
+      <View style={st.timelineWrap} {...(clipMode ? {} : pan.panHandlers)}>
         <View
-          ref={trackRef}
-          onLayout={measureTrack}
-          style={st.track}
-          {...(clipMode ? {} : pan.panHandlers)}
+          pointerEvents={clipMode ? 'auto' : 'none'}
+          style={[
+            st.strip,
+            { width: px(50), transform: [{ translateX: SCREEN_W / 2 - px(pbHead) }] },
+          ]}
         >
-          {clipMode ? (
-            <>
-              {/* trim bar: rails + kept span + green start / red end handles */}
-              <View style={st.clipRail} pointerEvents="none" />
-              <View
-                style={[st.clipSpan, { left: pct(clipS), width: pct(clipE - clipS) }]}
-                pointerEvents="none"
-              />
-              <View style={[st.clipHandle, { left: pct(clipS), backgroundColor: '#22C55E' }]}>
-                <SvgXml xml={CLIPGRIP} width={17} height={17} />
-              </View>
-              <View style={[st.clipHandle, { left: pct(clipE), backgroundColor: '#EF4444' }]}>
-                <SvgXml xml={CLIPGRIP} width={17} height={17} />
-              </View>
-            </>
-          ) : (
-            <>
-              {PBSEGS.map((sg, i) => (
+          {TIME_LABELS.map((l, i) => (
+            <Text key={l} style={[st.label, { left: px(i * 10) - 22 }]}>{l}</Text>
+          ))}
+          <View style={st.stripTrack}>
+            {clipMode ? (
+              <>
+                {/* trim bar: rails + kept span + green start / red end handles */}
+                <View style={st.clipRail} pointerEvents="none" />
+                <View
+                  style={[st.clipSpan, { left: px(clipS), width: px(clipE - clipS) }]}
+                  pointerEvents="none"
+                />
+                <View style={[st.clipHandle, { left: px(clipS), backgroundColor: '#22C55E' }]}>
+                  <SvgXml xml={CLIPGRIP} width={17} height={17} />
+                </View>
+                <View style={[st.clipHandle, { left: px(clipE), backgroundColor: '#EF4444' }]}>
+                  <SvgXml xml={CLIPGRIP} width={17} height={17} />
+                </View>
+              </>
+            ) : (
+              PBSEGS.map((sg, i) => (
                 <View
                   key={i}
                   pointerEvents="none"
@@ -218,16 +212,16 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
                     position: 'absolute',
                     top: 0,
                     bottom: 0,
-                    left: pct(sg.s),
-                    width: pct(sg.e - sg.s),
+                    left: px(sg.s),
+                    width: px(sg.e - sg.s),
                     backgroundColor: evtOn(sg) ? colors.brand : PB_REG,
                   }}
                 />
-              ))}
-              <View pointerEvents="none" style={[st.playhead, { left: pct(pbHead) }]} />
-            </>
-          )}
+              ))
+            )}
+          </View>
         </View>
+        {!clipMode && <View pointerEvents="none" style={st.centerHead} />}
       </View>
 
       {/* legend (hidden while trimming) */}
@@ -431,25 +425,24 @@ const st = StyleSheet.create({
   filterTap: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   filterText: { fontSize: 14, fontWeight: '500' },
 
-  timelineWrap: { paddingHorizontal: 18, marginTop: 18 },
-  labelRow: { justifyContent: 'space-between', height: 18, marginBottom: 8 },
-  label: { fontSize: 12, fontWeight: '500', color: colors.textTertiary },
-  track: {
-    position: 'relative',
-    height: 80,
+  timelineWrap: { marginTop: 18, height: 106, overflow: 'hidden' },
+  strip: { position: 'absolute', top: 0, left: 0, height: 106 },
+  label: {
+    position: 'absolute', top: 0, width: 44, textAlign: 'center',
+    fontSize: 12, fontWeight: '500', color: colors.textTertiary,
+  },
+  stripTrack: {
+    position: 'absolute', top: 26, left: 0, right: 0, height: 80,
     borderRadius: 10,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
   },
-  playhead: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 3,
-    marginLeft: -1.5,
-    backgroundColor: colors.brand,
+  // 固定中线(读值指针)
+  centerHead: {
+    position: 'absolute', left: SCREEN_W / 2 - 1.5, top: 26, height: 80, width: 3,
+    borderRadius: 2, backgroundColor: colors.brand,
   },
 
   // clip trim bar
