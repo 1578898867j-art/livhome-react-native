@@ -235,7 +235,8 @@ const st = StyleSheet.create({
   navSlotR: { alignItems: 'flex-end', paddingRight: 6 },
   iconbtn: {
     width: 34, height: 34, borderRadius: 17,
-    backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center',
+    // 灰底页上用白色圆底,否则与背景同色不可见
+    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
   navTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: colors.textPrimary },
   doneTxt: { fontSize: 16, fontWeight: '600', color: colors.brand },
