@@ -17,7 +17,7 @@ type MeMenuRow = {
 
 // Icons are the prototype's own SVGs, rendered at 18px in text-secondary.
 const MENU: MeMenuRow[] = [
-  { svg: ME_NOTIF, name: 'Notifications', target: 'notif-settings' },
+  { svg: ME_NOTIF, name: 'Notifications', target: 'notif-center' },
   { svg: ME_ALBUM, name: 'Album', target: 'album' },
   { svg: ME_FEEDBACK, name: 'Feedback Center', target: 'feedback' },
   { svg: ME_HELP, name: 'Help Center', target: 'help-center' },
