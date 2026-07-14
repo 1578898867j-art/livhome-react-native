@@ -1,5 +1,5 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -104,6 +104,29 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [delConfirm, setDelConfirm] = useState(false);
   const [presetPopup, setPresetPopup] = useState(false);
+  // 拍照/录像保存提示条(截图为瞬时动作,不保持常亮)
+  const [saveToast, setSaveToast] = useState<null | 'photo' | 'video'>(null);
+  const [snapFlash, setSnapFlash] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+      if (flashTimer.current) clearTimeout(flashTimer.current);
+    },
+    [],
+  );
+  const showSaveToast = (kind: 'photo' | 'video') => {
+    setSaveToast(kind);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setSaveToast(null), 2600);
+  };
+  const snap = () => {
+    setSnapFlash(true);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    flashTimer.current = setTimeout(() => setSnapFlash(false), 260);
+    showSaveToast('photo');
+  };
   const [msgM, setMsgM] = useState(3);
   const [msgD, setMsgD] = useState(23);
   // calendar picker (prototype msg-cal overlay; TODAY = 2026-04-23)
@@ -182,8 +205,15 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           <Row style={{ gap: 8, padding: 12, backgroundColor: colors.surface }}>
             <PhotoBtn icon="speaker" on={ctl.ctlSpk} onPress={() => toggleCtl('ctlSpk')} />
             <PhotoBtn icon="mic" on={ctl.ctlMic} onPress={() => toggleCtl('ctlMic')} />
-            <PhotoBtn icon="record" on={ctl.ctlRec} onPress={() => toggleCtl('ctlRec')} />
-            <PhotoBtn icon="camera" on={ctl.ctlSnap} onPress={() => toggleCtl('ctlSnap')} />
+            <PhotoBtn
+              icon="record"
+              on={ctl.ctlRec}
+              onPress={() => {
+                if (ctl.ctlRec) showSaveToast('video');
+                toggleCtl('ctlRec');
+              }}
+            />
+            <PhotoBtn icon="camera" on={snapFlash} onPress={snap} />
           </Row>
         </View>
 
@@ -341,6 +371,27 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* 拍照/录像已保存提示条(参考稿:缩略图 + 文案 + Tap to view) */}
+      {saveToast != null && (
+        <View style={[st.saveToast, { bottom: Math.max(insets.bottom, 12) + 86 }]}>
+          <View style={st.saveThumb}>
+            <CamPreview height={44} showBox={false} tag="" />
+          </View>
+          <Text style={st.saveTxt} numberOfLines={1}>
+            {saveToast === 'photo' ? 'Photo saved to album' : 'Video saved to album'}{' '}
+            <Text
+              style={st.saveLink}
+              onPress={() => {
+                setSaveToast(null);
+                navigation.navigate('album');
+              }}
+            >
+              Tap to view
+            </Text>
+          </Text>
+        </View>
+      )}
 
       {/* 巡航前置条件弹窗(原型 preset-popup):预置位不足 2 个 */}
       <Modal visible={presetPopup} transparent animationType="fade" onRequestClose={() => setPresetPopup(false)}>
@@ -894,6 +945,17 @@ const st = StyleSheet.create({
     marginTop: 12, paddingHorizontal: 10,
     fontSize: 13, fontWeight: '600', color: colors.textPrimary,
   },
+  saveToast: {
+    position: 'absolute', left: 16, right: 16, zIndex: 60,
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: '#F5F8FE', borderRadius: 24, padding: 10, paddingRight: 16,
+    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 20, shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  saveThumb: { width: 72, borderRadius: 12, overflow: 'hidden' },
+  saveTxt: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  saveLink: { color: colors.brand, fontWeight: '600' },
+
   presetPopupBtn: {
     width: '100%', height: 54, borderRadius: 99, marginTop: 18,
     backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center',
