@@ -77,6 +77,8 @@ function CamPreview({
 export default function DevDetail({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   const {
+    activePreset,
+    addPreset,
     clearChecked,
     cruising,
     ctl,
@@ -84,6 +86,9 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     deleteCheckedMessages,
     msgChecked,
     msgs,
+    presets,
+    removePreset,
+    setActivePreset,
     setCruising,
     setCtrlView,
     setTab,
@@ -98,6 +103,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   const [msgFilter, setMsgFilter] = useState<string | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [delConfirm, setDelConfirm] = useState(false);
+  const [presetPopup, setPresetPopup] = useState(false);
   const [msgM, setMsgM] = useState(3);
   const [msgD, setMsgD] = useState(23);
   // calendar picker (prototype msg-cal overlay; TODAY = 2026-04-23)
@@ -186,9 +192,18 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           <ControlsPanel
             view={ctrlView}
             cruising={cruising}
+            presets={presets}
+            activePreset={activePreset}
             onPresets={() => setCtrlView('presets')}
             onBack={() => setCtrlView('pad')}
-            onCruise={() => setCruising((c) => !c)}
+            onAdd={addPreset}
+            onDelete={removePreset}
+            onView={setActivePreset}
+            onCruise={() => {
+              // 原型 cruise-try:少于 2 个预置位先提示添加
+              if (presets.length < 2) setPresetPopup(true);
+              else setCruising((c) => !c);
+            }}
           />
         )}
         {tab === 'tilt' && <TiltPanel tilt={tilt} onToggle={toggleTilt} />}
@@ -327,6 +342,29 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         </Pressable>
       </Modal>
 
+      {/* 巡航前置条件弹窗(原型 preset-popup):预置位不足 2 个 */}
+      <Modal visible={presetPopup} transparent animationType="fade" onRequestClose={() => setPresetPopup(false)}>
+        <Pressable style={st.ovlCenter} onPress={() => setPresetPopup(false)}>
+          <Pressable style={[st.dialog, { paddingHorizontal: 22, paddingTop: 26, paddingBottom: 22 }]} onPress={(e) => e.stopPropagation()}>
+            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' }}>
+              Please add preset points first
+            </Text>
+            <Text style={[st.dialogDesc, { textAlign: 'center' }]}>
+              At least 2 different preset points are required to see the screen switching effect
+            </Text>
+            <Tap
+              style={st.presetPopupBtn}
+              onPress={() => {
+                setPresetPopup(false);
+                setCtrlView('presets');
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Add now</Text>
+            </Tap>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       {/* calendar picker (prototype msg-cal overlay) */}
       <Modal visible={calOpen} transparent animationType="fade" onRequestClose={() => setCalOpen(false)}>
         <Pressable style={st.ovlCenter} onPress={() => setCalOpen(false)}>
@@ -425,14 +463,24 @@ function PhotoBtn({ icon, on, onPress }: { icon: string; on: boolean; onPress: (
 function ControlsPanel({
   view,
   cruising,
+  presets,
+  activePreset,
   onPresets,
   onBack,
+  onAdd,
+  onDelete,
+  onView,
   onCruise,
 }: {
   view: 'pad' | 'presets';
   cruising: boolean;
+  presets: string[];
+  activePreset: number | null;
   onPresets: () => void;
   onBack: () => void;
+  onAdd: () => void;
+  onDelete: (i: number) => void;
+  onView: (i: number) => void;
   onCruise: () => void;
 }) {
   if (view === 'presets') {
@@ -446,12 +494,26 @@ function ControlsPanel({
             <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSecondary }}>Back</Text>
           </Tap>
         </Row>
-        <Tap style={st.addCard} onPress={() => {}}>
-          <View style={st.addIcon}>
-            <Icon name="plus" size={20} color={colors.brand} sw={2.2} />
-          </View>
-          <Text style={st.addTxt}>{'Add Preset\nPosition'}</Text>
-        </Tap>
+        {/* 原型 devPresetView:横向滚动,添加卡 + 预置位卡(缩略图/选中描边/右上删除/名称) */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
+          <Tap style={st.addCard} onPress={onAdd}>
+            <View style={st.addIcon}>
+              <Icon name="plus" size={20} color={colors.brand} sw={2.2} />
+            </View>
+            <Text style={st.addTxt}>{'Add Preset\nPosition'}</Text>
+          </Tap>
+          {presets.map((name, i) => (
+            <Tap key={name + i} style={{ width: 114 }} onPress={() => onView(i)}>
+              <View style={[st.presetThumb, activePreset === i && st.presetThumbSel]}>
+                <CamPreview height={99} showBox={false} tag="" />
+                <Tap style={st.presetDel} onPress={() => onDelete(i)} hitSlop={6}>
+                  <Icon name="x" size={12} color="#fff" sw={2.6} />
+                </Tap>
+              </View>
+              <Text style={st.presetName} numberOfLines={1}>{name}</Text>
+            </Tap>
+          ))}
+        </ScrollView>
       </View>
     );
   }
@@ -811,6 +873,22 @@ const st = StyleSheet.create({
   ctrlActionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
 
   presetTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
+  presetThumb: {
+    width: 114, height: 99, borderRadius: 12, overflow: 'hidden',
+    backgroundColor: colors.bgSecondary,
+  },
+  presetThumbSel: { borderWidth: 2, borderColor: colors.brand },
+  presetDel: {
+    position: 'absolute', top: 6, right: 6, width: 22, height: 22, borderRadius: 11,
+    backgroundColor: 'rgba(0,0,0,0.45)', alignItems: 'center', justifyContent: 'center',
+  },
+  presetName: {
+    marginTop: 6, fontSize: 12, fontWeight: '600', color: colors.textPrimary, textAlign: 'center',
+  },
+  presetPopupBtn: {
+    width: '100%', height: 54, borderRadius: 99, marginTop: 18,
+    backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center',
+  },
   addCard: {
     width: 114,
     height: 132,

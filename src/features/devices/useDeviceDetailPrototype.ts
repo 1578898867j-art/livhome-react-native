@@ -22,6 +22,14 @@ export function useDeviceDetailPrototype() {
   });
   const [ctrlView, setCtrlView] = useState<'pad' | 'presets'>('pad');
   const [cruising, setCruising] = useState(false);
+  // 预置位(原型 S.presets / S.activePreset)
+  const [presets, setPresets] = useState<string[]>([]);
+  const [activePreset, setActivePreset] = useState<number | null>(null);
+  const addPreset = () => setPresets((p) => p.concat(`Preset ${p.length + 1}`));
+  const removePreset = (i: number) => {
+    setPresets((p) => p.filter((_, idx) => idx !== i));
+    setActivePreset((a) => (a === i ? null : a != null && a > i ? a - 1 : a));
+  };
   const [tilt, setTilt] = useState<Record<TiltKey, boolean>>({
     smartTrack: true,
     nightVision: false,
@@ -45,6 +53,8 @@ export function useDeviceDetailPrototype() {
   };
 
   return {
+    activePreset,
+    addPreset,
     clearChecked,
     cruising,
     ctl,
@@ -52,6 +62,9 @@ export function useDeviceDetailPrototype() {
     deleteCheckedMessages,
     msgChecked,
     msgs,
+    presets,
+    removePreset,
+    setActivePreset,
     setCruising,
     setCtrlView,
     setTab,
