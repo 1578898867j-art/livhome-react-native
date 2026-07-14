@@ -351,8 +351,8 @@ const st = StyleSheet.create({
   grabberWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 8 },
   grabber: { width: 38, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong },
   sheetTitle: { fontSize: 19, fontWeight: '800', color: colors.textPrimary },
-  // marginBottom 16:说明文字与第一行选项的分隔线拉开距离
-  sheetDesc: { fontSize: 13, fontWeight: '500', color: colors.textTertiary, marginTop: 5, marginBottom: 16, lineHeight: 19 },
+  // marginBottom 10:说明文字与第一行选项的分隔线拉开距离
+  sheetDesc: { fontSize: 13, fontWeight: '500', color: colors.textTertiary, marginTop: 5, marginBottom: 10, lineHeight: 19 },
 
   /* radio rows */
   radioRow: {
