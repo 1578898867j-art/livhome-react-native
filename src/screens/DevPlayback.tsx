@@ -41,10 +41,16 @@ const PPM = 7.8; // 每分钟像素(10min ≈ 78px,对齐设计稿刻度密度)
 const px = (v: number) => v * PPM;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
+// 连续时间域:自 2026-04-21 00:00 起的分钟数,可一直滑到 04-23 06:50(今天当前时段)
+const DAY_MIN = 1440;
+const T_MAX = 2 * DAY_MIN + 6 * 60 + 50;
+const WIN = 90; // 渲染窗口半径(分钟)——只渲染可视区附近,支撑无限滑动
+const fmtHM = (m: number) => `${pad(Math.floor((m % DAY_MIN) / 60))}:${pad(Math.floor(m) % 60)}`;
+
 export default function DevPlayback({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   // playhead position + active recording-event filters (mirrors S.pbHead / S.pbEvents)
-  const [pbHead, setPbHead] = useState(23);
+  const [pbHead, setPbHead] = useState(2 * DAY_MIN + 6 * 60 + 23); // 04-23 06:23
   const [pbEvents, setPbEvents] = useState<string[]>(['motion', 'sound']);
   // date (mirrors S.pbM/pbD; TODAY = 2026-04-23) + overlays
   const [pbM, setPbM] = useState(3);
@@ -65,19 +71,21 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   const [clipS, setClipS] = useState(15);
   const [clipE, setClipE] = useState(31);
 
-  const mm = Math.floor(pbHead);
-  const ss = Math.round((pbHead - mm) * 60);
-  const stamp = `2026-04-23 06:${pad(mm)}:${pad(ss)}`;
+  const headDay = Math.floor(pbHead / DAY_MIN); // 0=Apr21 1=Apr22 2=Apr23
+  const tm = pbHead % DAY_MIN;
+  const ss = Math.round((pbHead - Math.floor(pbHead)) * 60);
+  const stamp = `2026-04-${pad(21 + headDay)} ${pad(Math.floor(tm / 60))}:${pad(Math.floor(tm % 60))}:${pad(ss)}`;
 
   const evtOn = (sg: Seg) => sg.t === 'evt' && !!sg.ev && pbEvents.indexOf(sg.ev) >= 0;
   const filterActive = pbEvents.length < EVFILTER_COUNT;
 
-  // playhead on a recorded segment? (pbSegAt) — gates the Clip action
-  const segAt = PBSEGS.find((sg) => pbHead >= sg.s && pbHead < sg.e) || null;
+  // playhead on a recorded segment? (pbSegAt) — 录像段按小时平铺
+  const tm60 = pbHead % 60;
+  const segAt = PBSEGS.find((sg) => tm60 >= sg.s && tm60 < sg.e) || null;
 
   const enterClip = () => {
     setClipS(Math.max(0, pbHead - 8));
-    setClipE(Math.min(50, pbHead + 8));
+    setClipE(Math.min(T_MAX, pbHead + 8));
     setClipMode(true);
   };
 
@@ -93,7 +101,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         dragStart.current = pbHeadRef.current;
       },
       onPanResponderMove: (_e, g) => {
-        const v = Math.max(0, Math.min(50, dragStart.current - g.dx / PPM));
+        const v = Math.max(0, Math.min(T_MAX, dragStart.current - g.dx / PPM));
         setPbHead(Math.round(v * 10) / 10);
       },
     })
@@ -153,9 +161,9 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         <Tap style={st.dateTap} onPress={() => setCalOpen(true)}>
           <SvgXml xml={CALICON} width={19} height={19} color={colors.textSecondary} />
           <Text style={st.dateText}>
-            {MONTHS_ABBR[pbM]} {pbD}
+            Apr {21 + headDay}
           </Text>
-          {pbM === CAL_TODAY.m && pbD === CAL_TODAY.d && <Text style={st.todayText}>| Today</Text>}
+          {headDay === 2 && <Text style={st.todayText}>| Today</Text>}
         </Tap>
         <View style={{ flex: 1 }} />
         {!clipMode && (
@@ -175,54 +183,98 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         )}
       </Row>
 
-      {/* 24h timeline — 拖动时间轴本体,固定中线读值;全宽出血、两侧无剪切蒙版 */}
-      <View style={st.timelineWrap} {...(clipMode ? {} : pan.panHandlers)}>
-        <View
-          pointerEvents={clipMode ? 'auto' : 'none'}
-          style={[
-            st.strip,
-            { width: px(50), transform: [{ translateX: SCREEN_W / 2 - px(pbHead) }] },
-          ]}
-        >
-          {TIME_LABELS.map((l, i) => (
-            <Text key={l} style={[st.label, { left: px(i * 10) - 22 }]}>{l}</Text>
-          ))}
-          <View style={st.stripTrack}>
-            {clipMode ? (
-              <>
-                {/* trim bar: rails + kept span + green start / red end handles */}
-                <View style={st.clipRail} pointerEvents="none" />
-                <View
-                  style={[st.clipSpan, { left: px(clipS), width: px(clipE - clipS) }]}
-                  pointerEvents="none"
-                />
-                <View style={[st.clipHandle, { left: px(clipS), backgroundColor: '#22C55E' }]}>
-                  <SvgXml xml={CLIPGRIP} width={17} height={17} />
-                </View>
-                <View style={[st.clipHandle, { left: px(clipE), backgroundColor: '#EF4444' }]}>
-                  <SvgXml xml={CLIPGRIP} width={17} height={17} />
-                </View>
-              </>
-            ) : (
-              PBSEGS.map((sg, i) => (
-                <View
-                  key={i}
-                  pointerEvents="none"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    bottom: 0,
-                    left: px(sg.s),
-                    width: px(sg.e - sg.s),
-                    backgroundColor: evtOn(sg) ? colors.brand : PB_REG,
-                  }}
-                />
-              ))
-            )}
+      {/* 连续时间轴 — 拖动条带本体、固定中线读值;窗口化渲染支持跨天滑动,两侧渐隐蒙版 */}
+      {(() => {
+        const winStart = Math.floor((pbHead - WIN) / 10) * 10;
+        const winEnd = winStart + WIN * 2 + 20;
+        const ticks: number[] = [];
+        for (let m = Math.max(0, Math.ceil(winStart / 10) * 10); m <= Math.min(winEnd, T_MAX); m += 10) {
+          ticks.push(m);
+        }
+        const trackS = Math.max(winStart, 0);
+        const trackE = Math.min(winEnd, T_MAX);
+        const tiles: { s: number; e: number; evt: boolean }[] = [];
+        for (let h = Math.max(0, Math.floor(winStart / 60)); h <= Math.floor(winEnd / 60); h++) {
+          for (const sg of PBSEGS) {
+            const ts = h * 60 + sg.s;
+            const te = Math.min(h * 60 + sg.e, T_MAX);
+            if (te < winStart || ts > winEnd || ts >= T_MAX) continue;
+            tiles.push({ s: ts, e: te, evt: evtOn(sg) });
+          }
+        }
+        return (
+          <View style={st.timelineWrap} {...(clipMode ? {} : pan.panHandlers)}>
+            <View
+              pointerEvents="none"
+              style={[
+                st.strip,
+                {
+                  width: px(winEnd - winStart),
+                  transform: [{ translateX: SCREEN_W / 2 - px(pbHead - winStart) }],
+                },
+              ]}
+            >
+              {ticks.map((m) => (
+                <Text key={m} style={[st.label, { left: px(m - winStart) - 22 }]}>{fmtHM(m)}</Text>
+              ))}
+              <View
+                style={[
+                  st.stripTrack,
+                  { left: px(trackS - winStart), width: px(trackE - trackS) },
+                ]}
+              >
+                {clipMode ? (
+                  <>
+                    {/* trim bar: rails + kept span + green start / red end handles */}
+                    <View style={st.clipRail} pointerEvents="none" />
+                    <View
+                      style={[st.clipSpan, { left: px(clipS - trackS), width: px(clipE - clipS) }]}
+                      pointerEvents="none"
+                    />
+                    <View style={[st.clipHandle, { left: px(clipS - trackS), backgroundColor: '#22C55E' }]}>
+                      <SvgXml xml={CLIPGRIP} width={17} height={17} />
+                    </View>
+                    <View style={[st.clipHandle, { left: px(clipE - trackS), backgroundColor: '#EF4444' }]}>
+                      <SvgXml xml={CLIPGRIP} width={17} height={17} />
+                    </View>
+                  </>
+                ) : (
+                  tiles.map((t, i) => (
+                    <View
+                      key={i}
+                      pointerEvents="none"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        bottom: 0,
+                        left: px(t.s - trackS),
+                        width: px(t.e - t.s),
+                        backgroundColor: t.evt ? colors.brand : PB_REG,
+                      }}
+                    />
+                  ))
+                )}
+              </View>
+            </View>
+            {!clipMode && <View pointerEvents="none" style={st.centerHead} />}
+            {/* 两侧剪切蒙版:条带滑入屏幕边缘时渐隐 */}
+            <LinearGradient
+              colors={[colors.bgPrimary, `${colors.bgPrimary}00`]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={st.edgeFadeL}
+              pointerEvents="none"
+            />
+            <LinearGradient
+              colors={[`${colors.bgPrimary}00`, colors.bgPrimary]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={st.edgeFadeR}
+              pointerEvents="none"
+            />
           </View>
-        </View>
-        {!clipMode && <View pointerEvents="none" style={st.centerHead} />}
-      </View>
+        );
+      })()}
 
       {/* legend (hidden while trimming) */}
       {!clipMode && (
@@ -439,6 +491,8 @@ const st = StyleSheet.create({
     borderColor: colors.border,
     overflow: 'hidden',
   },
+  edgeFadeL: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 36 },
+  edgeFadeR: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 36 },
   // 固定中线(读值指针)
   centerHead: {
     position: 'absolute', left: SCREEN_W / 2 - 1.5, top: 26, height: 80, width: 3,
