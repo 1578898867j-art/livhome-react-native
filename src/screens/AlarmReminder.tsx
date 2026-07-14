@@ -1,6 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
 import { Screen, Tap, Card, Header, Eyebrow, Row, ToggleRow, SettingRow } from '../components/kit';
 import { BottomSheet } from '../components/BottomSheet';
 import { Icon } from '../components/Icon';
