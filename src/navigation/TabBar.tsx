@@ -44,12 +44,14 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
       pointerEvents="box-none"
     >
       {/* 底部渐变蒙版:内容滑到 tab 栏后淡出成页面底色(与顶部蒙版同配方镜像) */}
-      <LinearGradient
-        colors={[`${colors.bgPrimary}00`, `${colors.bgPrimary}4D`, colors.bgPrimary]}
-        locations={[0, 0.45, 1]}
-        style={styles.fade}
-        pointerEvents="none"
-      />
+      {state.routes[state.index].name !== 'agent-chat' && (
+        <LinearGradient
+          colors={[`${colors.bgPrimary}00`, `${colors.bgPrimary}4D`, colors.bgPrimary]}
+          locations={[0, 0.45, 1]}
+          style={styles.fade}
+          pointerEvents="none"
+        />
+      )}
       <View
         style={[
           styles.pill,

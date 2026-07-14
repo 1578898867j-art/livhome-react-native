@@ -188,7 +188,7 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
               <Pressable style={st.delCard} onPress={(e) => e.stopPropagation()}>
                 <Text style={st.delTitle}>Delete Recording</Text>
                 <Text style={st.delDesc}>
-                  Are you sure you want to delete "{recs.find((r) => r.id === delId)?.name}"? This
+                  Are you sure you want to delete &quot;{recs.find((r) => r.id === delId)?.name}&quot;? This
                   action cannot be undone.
                 </Text>
                 <Row style={{ gap: 12, marginTop: 20 }}>

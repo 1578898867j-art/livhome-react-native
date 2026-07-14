@@ -432,7 +432,6 @@ const st = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingBottom: 24,
   },
   contactSheetTitle: {
     textAlign: 'center',
@@ -466,7 +465,7 @@ const st = StyleSheet.create({
     lineHeight: 20,
   },
   contactBtns: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: 16 },
-  contactBtn: { flex: 1, height: 52, alignItems: 'center', justifyContent: 'center' },
+  contactBtn: { flex: 1, height: 61, paddingBottom: 9, alignItems: 'center', justifyContent: 'center' },
   contactBtnDivider: { borderRightWidth: 1, borderRightColor: colors.border },
   contactCancel: { fontSize: 16, fontWeight: '600', color: colors.textSecondary },
   contactConfirm: { fontSize: 16, fontWeight: '700' },
