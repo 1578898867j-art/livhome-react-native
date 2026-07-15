@@ -423,7 +423,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
 
       {/* bottom action bar — Album / Clip / Return (clip mode: Save to Album / Return) */}
       {clipMode ? (
-        <Row style={[st.bottomBar, { justifyContent: 'space-between', paddingHorizontal: 56 }]}>
+        <Row style={[st.bottomBar, { justifyContent: 'center', gap: 120 }]}>
           <Tap style={st.barItem} onPress={() => navigation.navigate('dev-download')}>
             <SvgXml xml={PBTABICONS.album} width={21} height={21} color={colors.textSecondary} />
             <Text style={st.barLabel}>Save to Album</Text>
