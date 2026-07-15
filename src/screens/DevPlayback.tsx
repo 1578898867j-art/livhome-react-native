@@ -44,6 +44,10 @@ const PPM_BROWSE = 1.3;
 const PPM_CLIP = 7.8;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
+// Full-screen(全局放大)—— 与设备详情页同款用户素材
+const FULLSCREEN_ICON =
+  '<svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3H19.5C20.3284 3 21 3.67157 21 4.5V7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16.5V19.5C21 20.3284 20.3284 21 19.5 21H16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 21H4.5C3.67157 21 3 20.3284 3 19.5V16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7.5V4.5C3 3.67157 3.67157 3 4.5 3H7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 // 时间域:单天。今天(2026-04-23)只到 06:50 当前时段;过去日期为完整 24h
 const DAY_MIN = 1440;
 const TODAY_MAX = 6 * 60 + 50;
@@ -188,7 +192,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
               <Text style={st.stamp}>{stamp}</Text>
               <Text style={st.quality}>1080P</Text>
               <View style={st.scanBtn}>
-                <Icon name="scan" size={16} color="#fff" sw={2} />
+                <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
               </View>
             </>
           ) : (
@@ -471,10 +475,11 @@ const st = StyleSheet.create({
     justifyContent: 'center',
   },
   noRecTxt: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '500' },
+  // 左下,与右下全屏钮垂直居中(对齐设备详情页)
   stamp: {
     position: 'absolute',
-    top: 10,
-    right: 12,
+    bottom: 15,
+    left: 12,
     color: '#fff',
     fontSize: 11,
     fontWeight: '600',
@@ -482,10 +487,11 @@ const st = StyleSheet.create({
     textShadowRadius: 3,
     textShadowOffset: { width: 0, height: 1 },
   },
+  // 右上(对齐设备详情页 1080P 徽标位置)
   quality: {
     position: 'absolute',
-    bottom: 11,
-    right: 42,
+    top: 12,
+    right: 12,
     color: '#fff',
     fontSize: 11,
     fontWeight: '700',
