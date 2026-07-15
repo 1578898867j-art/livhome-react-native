@@ -193,6 +193,22 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
       },
     })
   ).current;
+  const clipMoveGrab = useRef({ s: 0, len: 16 });
+  const panClipMove = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        clipMoveGrab.current = { s: clipSRef.current, len: clipERef.current - clipSRef.current };
+      },
+      onPanResponderMove: (_e, g) => {
+        const { s: s0, len } = clipMoveGrab.current;
+        const ns = Math.max(0, Math.min(dayMaxRef.current - len, s0 + g.dx / PPM_CLIP));
+        setClipS(Math.round(ns * 10) / 10);
+        setClipE(Math.round((ns + len) * 10) / 10);
+      },
+    })
+  ).current;
   const panClipE = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
@@ -374,7 +390,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
                       >
                         <SvgXml xml={CLIPGRIP} width={19} height={19} />
                       </View>
-                      <View style={st.clipMid} pointerEvents="none" />
+                      <View {...panClipMove.panHandlers} style={st.clipMid} />
                       <View
                         {...panClipE.panHandlers}
                         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
