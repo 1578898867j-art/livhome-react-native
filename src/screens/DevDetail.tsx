@@ -22,6 +22,20 @@ const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Se
 const FULLSCREEN_ICON =
   '<svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3H19.5C20.3284 3 21 3.67157 21 4.5V7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16.5V19.5C21 20.3284 20.3284 21 19.5 21H16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 21H4.5C3.67157 21 3 20.3284 3 19.5V16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7.5V4.5C3 3.67157 3.67157 3 4.5 3H7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
+// 全屏横屏控件 —— 用户提供的 Figma 830:1018 切片(54 圆钮 + 174 方向盘)
+const FS_FHD =
+  '<svg viewBox="0 0 54 54" fill="none"><rect width="54" height="54" rx="27" fill="#878787" fill-opacity="0.4"/><path d="M35 17C37.2091 17 39 18.7909 39 21V33C39 35.2091 37.2091 37 35 37H19C16.7909 37 15 35.2091 15 33V21C15 18.7909 16.7909 17 19 17H35ZM18.4287 29.9756H19.7461V27.2441H22.2822V26.0918H19.7461V24.5166H22.5557V23.3633H18.4287V29.9756ZM24.2695 29.9756H25.5879V27.2441H28.2637V29.9756H29.5781V23.3633H28.2637V26.0918H25.5879V23.3633H24.2695V29.9756ZM31.293 23.3633V29.9756H33.502C34.135 29.9756 34.6793 29.8428 35.1338 29.5781C35.5903 29.3134 35.9401 28.9334 36.1836 28.4385C36.4291 27.9435 36.5527 27.3517 36.5527 26.6631C36.5527 25.9765 36.4291 25.3864 36.1836 24.8936C35.9401 24.4009 35.592 24.0232 35.1396 23.7607C34.6872 23.4961 34.1474 23.3633 33.5205 23.3633H31.293ZM33.4502 24.5615C33.8398 24.5615 34.1678 24.6349 34.4336 24.7812C34.6993 24.9275 34.8993 25.1552 35.0332 25.4648C35.1692 25.7748 35.2373 26.1745 35.2373 26.6631C35.2373 27.1558 35.1691 27.5581 35.0332 27.8701C34.8993 28.18 34.6985 28.4091 34.4307 28.5576C34.1648 28.704 33.8369 28.7773 33.4473 28.7773H32.6104V24.5615H33.4502Z" fill="#D9D8D8"/></svg>';
+const FS_SNAP =
+  '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M34.667 21.167C36.876 21.1672 38.667 22.958 38.667 25.167V33.5C38.667 35.709 36.876 37.4998 34.667 37.5H19.333C17.124 37.4998 15.333 35.709 15.333 33.5V25.167C15.333 22.958 17.124 21.1672 19.333 21.167H34.667ZM27 25.833C25.0671 25.833 23.5002 27.4002 23.5 29.333C23.5 31.266 25.067 32.833 27 32.833C28.933 32.833 30.5 31.266 30.5 29.333C30.4998 27.4002 28.9329 25.833 27 25.833ZM29.4297 16.5C30.0982 16.5001 30.7229 16.8344 31.0938 17.3906L32.4443 19.417H21.5547L22.9062 17.3906C23.2771 16.8344 23.9018 16.5001 24.5703 16.5H29.4297Z" fill="#D9D8D8"/></svg>';
+const FS_REC =
+  '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M27.667 17.667C29.876 17.6672 31.667 19.458 31.667 21.667V32.333C31.667 34.542 29.876 36.3328 27.667 36.333H19.333C17.124 36.3328 15.333 34.542 15.333 32.333V21.667C15.333 19.458 17.124 17.6672 19.333 17.667H27.667ZM35.208 21.3564C36.4481 20.0341 38.667 20.9117 38.667 22.7246V31.2764C38.6665 33.089 36.4479 33.9659 35.208 32.6436L33.417 30.7334V23.2656L35.208 21.3564Z" fill="#D9D8D8"/></svg>';
+const FS_MIC =
+  '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M35.5332 26.3662C35.975 26.3662 36.333 26.7252 36.333 27.167V29.2998C36.333 34.4545 32.1547 38.6338 27 38.6338C21.8453 38.6338 17.667 34.4545 17.667 29.2998V27.167C17.667 26.7252 18.025 26.3662 18.4668 26.3662C18.9086 26.3663 19.2666 26.7252 19.2666 27.167V29.2998C19.2666 33.5708 22.729 37.0332 27 37.0332C31.271 37.0332 34.7334 33.5708 34.7334 29.2998V27.167C34.7334 26.7252 35.0914 26.3663 35.5332 26.3662ZM27 16.5C29.9454 16.5 32.3328 18.8876 32.333 21.833V29.2998C32.333 32.2453 29.9455 34.6338 27 34.6338C24.0545 34.6338 21.667 32.2453 21.667 29.2998V21.833C21.6672 18.8876 24.0546 16.5 27 16.5Z" fill="#D9D8D8"/></svg>';
+const FS_MUTE =
+  '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M17.048 17.0479C17.3897 16.7063 17.9436 16.7063 18.2853 17.0479L36.9523 35.7149C37.2937 36.0567 37.2939 36.6106 36.9523 36.9522C36.6107 37.2939 36.0567 37.2937 35.715 36.9522L32.8302 34.0675C32.777 35.9452 30.6189 37.0013 29.0998 35.8624L24.0334 32.0636C23.6874 31.8043 23.2664 31.6643 22.8341 31.6642H20.0002C18.7116 31.6642 17.6673 30.6201 17.6671 29.3321V24.6671C17.6674 23.3792 18.7117 22.3351 20.0002 22.3351H21.0978L17.048 18.2852C16.7063 17.9435 16.7063 17.3896 17.048 17.0479ZM29.0998 18.1368C30.6379 16.984 32.8329 18.0814 32.8332 20.003V29.2618L24.8751 21.3038L29.0998 18.1368Z" fill="#D9D8D8"/></svg>';
+const FS_DPAD =
+  '<svg viewBox="0 0 174 174" fill="none"><rect y="174" width="174" height="174" rx="87" transform="rotate(-90 0 174)" fill="#908E8E" fill-opacity="0.4"/><path d="M15.3674 84.568L25.2435 77.4352C27.2275 76.0024 30 77.42 30 79.8673V87V94.1327C30 96.58 27.2275 97.9976 25.2435 96.5648L15.3674 89.432C13.7094 88.2346 13.7094 85.7654 15.3674 84.568Z" fill="#D0C5BA" fill-opacity="0.8"/><path d="M89.432 158.633L96.5648 148.756C97.9976 146.772 96.58 144 94.1327 144H87H79.8673C77.42 144 76.0024 146.772 77.4352 148.756L84.568 158.633C85.7654 160.291 88.2346 160.291 89.432 158.633Z" fill="#D0C5BA" fill-opacity="0.8"/><circle cx="87" cy="87" r="15" fill="#D0C5BA" fill-opacity="0.8"/><path d="M89.432 15.3674L96.5648 25.2435C97.9976 27.2275 96.58 30 94.1327 30H87H79.8673C77.42 30 76.0024 27.2275 77.4352 25.2435L84.568 15.3674C85.7654 13.7094 88.2346 13.7094 89.432 15.3674Z" fill="#D0C5BA" fill-opacity="0.8"/><path d="M158.633 84.568L148.756 77.4352C146.772 76.0024 144 77.42 144 79.8673V87V94.1327C144 96.58 146.772 97.9976 148.756 96.5648L158.633 89.432C160.291 88.2346 160.291 85.7654 158.633 84.568Z" fill="#D0C5BA" fill-opacity="0.8"/></svg>';
+
 // 预设位网格:一排 3 个(面板左右 padding 18,列间距 10)
 const WIN = Dimensions.get('window');
 const PRESET_W = Math.floor((WIN.width - 18 * 2 - 10 * 2) / 3);
@@ -395,16 +409,53 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         </View>
       )}
 
-      {/* 全屏预览:旋转 90° 的横屏沉浸模态 */}
+      {/* 全屏预览 —— Figma 830:1018:全出血画面 + 左上返回 + 右侧竖排控钮 + 左下方向盘 */}
       <Modal visible={fullscreen} animationType="fade" onRequestClose={() => setFullscreen(false)}>
         <View style={st.fsRoot}>
           <View style={[st.fsStage, { width: WIN.height, height: WIN.width }]}>
-            <View style={{ width: Math.min(WIN.height, WIN.width * (16 / 9)) }}>
-              <CamPreview live tag="Person · sofa" label="14:22:08" />
+            {/* 画面全出血 */}
+            <View style={StyleSheet.absoluteFill}>
+              <CamPreview height={WIN.width} showBox={false} tag="" />
             </View>
-            <Tap style={st.fsExit} onPress={() => setFullscreen(false)} hitSlop={10}>
-              <SvgXml xml={FULLSCREEN_ICON} width={18} height={18} color="#fff" />
+
+            {/* 返回 */}
+            <Tap style={st.fsBack} onPress={() => setFullscreen(false)} hitSlop={10}>
+              <Icon name="chevL" size={18} color="#fff" sw={2.2} />
             </Tap>
+
+            {/* 右侧控钮列 */}
+            <View style={st.fsRail}>
+              <Tap onPress={() => toggleCtl('ctlSpk')}><SvgXml xml={FS_MUTE} width={54} height={54} /></Tap>
+              <Tap
+                onPress={() => {
+                  if (ctl.ctlRec) showSaveToast('video');
+                  toggleCtl('ctlRec');
+                }}
+              >
+                <SvgXml xml={FS_REC} width={54} height={54} />
+              </Tap>
+              <Tap onPress={snap}><SvgXml xml={FS_SNAP} width={54} height={54} /></Tap>
+              <Tap onPress={() => toggleCtl('ctlMic')}><SvgXml xml={FS_MIC} width={54} height={54} /></Tap>
+              <SvgXml xml={FS_FHD} width={54} height={54} />
+            </View>
+
+            {/* 左下方向盘 */}
+            <View style={st.fsDpad}>
+              <SvgXml xml={FS_DPAD} width={174} height={174} />
+            </View>
+
+            {/* 保存成功 toast(全屏深色变体) */}
+            {saveToast != null && (
+              <View style={st.fsToast}>
+                <View style={st.fsToastThumb}>
+                  <CamPreview height={40} showBox={false} tag="" />
+                </View>
+                <Text style={st.fsToastTxt} numberOfLines={1}>
+                  {saveToast === 'photo' ? 'Photo saved to album' : 'Video saved to album'}{' '}
+                  <Text style={st.fsToastLink}>Tap to view</Text>
+                </Text>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -971,11 +1022,24 @@ const st = StyleSheet.create({
   saveLink: { color: colors.brand, fontWeight: '600' },
 
   fsRoot: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
-  fsStage: { transform: [{ rotate: '90deg' }], alignItems: 'center', justifyContent: 'center' },
-  fsExit: {
-    position: 'absolute', top: 14, right: 14, width: 36, height: 36, borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center',
+  fsStage: { transform: [{ rotate: '90deg' }], overflow: 'hidden' },
+  fsBack: {
+    position: 'absolute', top: 14, left: 16, width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(80,80,80,0.45)', alignItems: 'center', justifyContent: 'center',
   },
+  fsRail: {
+    position: 'absolute', right: 14, top: 28, bottom: 28,
+    justifyContent: 'space-between', alignItems: 'center',
+  },
+  fsDpad: { position: 'absolute', left: 100, bottom: 22 },
+  fsToast: {
+    position: 'absolute', bottom: 26, alignSelf: 'center',
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(28,28,30,0.72)', borderRadius: 14, padding: 8, paddingRight: 16,
+  },
+  fsToastThumb: { width: 64, height: 40, borderRadius: 8, overflow: 'hidden' },
+  fsToastTxt: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  fsToastLink: { color: '#6EA8FF', fontWeight: '600' },
 
   presetPopupBtn: {
     width: '100%', height: 54, borderRadius: 99, marginTop: 18,
