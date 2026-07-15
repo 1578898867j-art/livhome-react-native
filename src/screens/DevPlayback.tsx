@@ -44,6 +44,16 @@ const PPM_BROWSE = 1.3;
 const PPM_CLIP = 7.8;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
+// 控制条图标 —— Figma 1125:1525(用户素材原样)
+const CTRL_SPEAKER_OFF =
+  '<svg viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M3.46967 3.46967C3.76256 3.17678 4.23732 3.17678 4.53022 3.46967L20.5302 19.4697C20.8231 19.7626 20.8231 20.2373 20.5302 20.5302C20.2373 20.8231 19.7626 20.8231 19.4697 20.5302L16.997 18.0576C16.9516 19.6672 15.102 20.5729 13.7997 19.5966L9.53315 16.3974C9.18718 16.1381 8.76626 15.9981 8.33393 15.998H5.99994C4.89537 15.998 3.99994 15.103 3.99994 13.999V10.0009C3.99998 8.89688 4.89539 8.0019 5.99994 8.0019H6.94135L3.46967 4.53022C3.17678 4.23732 3.17678 3.76256 3.46967 3.46967ZM13.7997 4.40326C15.1182 3.41491 16.9999 4.35558 16.9999 6.00287V13.9394L10.1787 7.11811L13.7997 4.40326Z" fill="#28303F"/></svg>';
+const CTRL_EDITING =
+  '<svg viewBox="0 0 24 24" fill="none"><path d="M7.11111 20.0001C8.82933 20.0001 10.2222 18.6072 10.2222 16.8889C10.2222 15.1707 8.82933 13.7778 7.11111 13.7778C5.39289 13.7778 4 15.1707 4 16.8889C4 18.6072 5.39289 20.0001 7.11111 20.0001Z" fill="#28303F" stroke="#28303F" stroke-width="2"/><path d="M16.8889 20.0001C18.6072 20.0001 20.0001 18.6072 20.0001 16.8889C20.0001 15.1707 18.6072 13.7778 16.8889 13.7778C15.1707 13.7778 13.7778 15.1707 13.7778 16.8889C13.7778 18.6072 15.1707 20.0001 16.8889 20.0001Z" fill="#28303F" stroke="#28303F" stroke-width="2"/><path d="M4.88892 4L15.5556 13.7778" stroke="#28303F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.111 4L8.44434 13.7778" stroke="#28303F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const CTRL_CAMVIDEO =
+  '<svg viewBox="0 0 24 24" fill="none"><path d="M12 4C14.2091 4 16 5.79086 16 8V16C16 18.2091 14.2091 20 12 20H6C3.79086 20 2 18.2091 2 16V8C2 5.79086 3.79086 4 6 4H12ZM18.541 7.68945C19.7811 6.36715 21.9999 7.24474 22 9.05762V14.9424C21.9999 16.7553 19.781 17.633 18.541 16.3105L17.5 15.2002V8.7998L18.541 7.68945Z" fill="#28303F"/></svg>';
+const CTRL_EXTEND =
+  '<svg viewBox="0 0 24 24" fill="none"><path d="M18.6667 4H5.33333C4.59695 4 4 4.59695 4 5.33333V18.6667C4 19.403 4.59695 20 5.33333 20H18.6667C19.403 20 20 19.403 20 18.6667V5.33333C20 4.59695 19.403 4 18.6667 4Z" fill="#28303F" stroke="#28303F" stroke-width="2"/><path d="M17.5 6H15.2071C14.7616 6 14.5385 6.53855 14.8535 6.85355L17.1464 9.14645C17.4614 9.46145 18 9.23835 18 8.7929V6.5C18 6.22385 17.7761 6 17.5 6Z" fill="white"/><path d="M6 6.5V8.7929C6 9.23835 6.53855 9.46145 6.85355 9.14645L9.14645 6.85355C9.46145 6.53855 9.23835 6 8.7929 6H6.5C6.22385 6 6 6.22385 6 6.5Z" fill="white"/><path d="M6.5 18H8.7929C9.23835 18 9.46145 17.4614 9.14645 17.1464L6.85355 14.8535C6.53855 14.5385 6 14.7616 6 15.2071V17.5C6 17.7761 6.22385 18 6.5 18Z" fill="white"/><path d="M18 17.5V15.2071C18 14.7616 17.4614 14.5385 17.1464 14.8535L14.8535 17.1464C14.5385 17.4614 14.7616 18 15.2071 18H17.5C17.7761 18 18 17.7761 18 17.5Z" fill="white"/></svg>';
+
 // Full-screen(全局放大)—— 与设备详情页同款用户素材
 const FULLSCREEN_ICON =
   '<svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3H19.5C20.3284 3 21 3.67157 21 4.5V7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16.5V19.5C21 20.3284 20.3284 21 19.5 21H16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 21H4.5C3.67157 21 3 20.3284 3 19.5V16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7.5V4.5C3 3.67157 3.67157 3 4.5 3H7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -202,10 +212,18 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           )}
         </View>
         <Row style={st.ctlRow}>
-          {ctl('speaker', ctlSpk, () => setCtlSpk((v) => !v))}
-          {ctl('mic', ctlMic, () => setCtlMic((v) => !v))}
-          {ctl('record', ctlRec, () => setCtlRec((v) => !v))}
-          {ctl('camera', ctlSnap, () => setCtlSnap((v) => !v))}
+          <Tap style={st.ctlBtn} onPress={() => setCtlSpk((v) => !v)}>
+            <SvgXml xml={CTRL_SPEAKER_OFF} width={22} height={22} />
+          </Tap>
+          <Tap style={st.ctlBtn} onPress={segAt ? enterClip : undefined}>
+            <SvgXml xml={CTRL_EDITING} width={22} height={22} />
+          </Tap>
+          <Tap style={st.ctlBtn} onPress={() => setCtlRec((v) => !v)}>
+            <SvgXml xml={CTRL_CAMVIDEO} width={22} height={22} />
+          </Tap>
+          <Tap style={st.ctlBtn}>
+            <SvgXml xml={CTRL_EXTEND} width={22} height={22} />
+          </Tap>
         </Row>
       </View>
 
