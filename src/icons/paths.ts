@@ -81,6 +81,7 @@ export const P: Record<string, string> = {
   restart: '<path d="M4 12a8 8 0 1 1 2.3 5.6M4 12V7M4 12h5"/>',
   timer: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/>',
   sd: '<path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M9 3v4M12 3v4M15 3v4"/>',
+  bluetooth: '<polyline points="6.5 6.5 17.5 17.5 12 23 12 1 17.5 6.5 6.5 17.5"/>',
 };
 
 export const FILL: Record<string, string> = {
