@@ -335,6 +335,8 @@ export default function AgentChat({ navigation }: AppScreenProps) {
 
   // 新聊天提示:已处于新聊天时点「新聊天」按钮 → 灰色胶囊提示(参考稿样式)
   const [hint, setHint] = useState<string | null>(null);
+  // 空态底部区(建议卡 + 输入框)实测高度,提示胶囊放它上方避免重叠
+  const [bottomWrapH, setBottomWrapH] = useState(0);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showHint = (text: string) => {
     setHint(text);
@@ -550,7 +552,10 @@ export default function AgentChat({ navigation }: AppScreenProps) {
               </Text>
             </Pressable>
 
-            <View style={[styles.bottomWrap, { paddingBottom: emptyInputBottom }]}>
+            <View
+              style={[styles.bottomWrap, { paddingBottom: emptyInputBottom }]}
+              onLayout={(e) => setBottomWrapH(e.nativeEvent.layout.height)}
+            >
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -843,14 +848,16 @@ export default function AgentChat({ navigation }: AppScreenProps) {
         </KeyboardAvoidingView>
       )}
 
-      {/* 新聊天提示(灰色胶囊)—— 悬浮在底部输入胶囊上方 */}
+      {/* 新聊天提示(灰色胶囊)—— 悬浮在底部整块(建议卡 + 输入胶囊)上方,不与胶囊重叠 */}
       {hint != null && (
         <View
           style={[
             styles.hintToast,
             {
               bottom:
-                (mode === 'empty' ? emptyInputBottom : conversationInputBottom) + INPUT_HEIGHT + 16,
+                mode === 'empty'
+                  ? bottomWrapH + 12
+                  : conversationInputBottom + INPUT_HEIGHT + 16,
             },
           ]}
           pointerEvents="none"
@@ -1198,13 +1205,13 @@ const styles = StyleSheet.create({
   },
   copiedText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
 
-  // 新聊天提示胶囊(参考稿:浅灰底、灰字、无图标)
+  // 新聊天提示胶囊(参考稿:浅灰底、灰字、无图标;缩小版)
   hintToast: {
     position: 'absolute', alignSelf: 'center', zIndex: 90,
-    height: 40, paddingHorizontal: 20, borderRadius: 20,
+    height: 34, paddingHorizontal: 16, borderRadius: 17,
     backgroundColor: '#EBEBF1', alignItems: 'center', justifyContent: 'center',
   },
-  hintText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
+  hintText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
 
   // dialogs
   dialogWrap: {
