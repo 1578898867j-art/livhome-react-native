@@ -352,7 +352,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           }
         }
         return (
-          <View style={st.timelineWrap} {...pan.panHandlers}>
+          <View style={st.timelineWrap} {...(clipMode ? {} : pan.panHandlers)}>
             <View
               pointerEvents="none"
               style={[
