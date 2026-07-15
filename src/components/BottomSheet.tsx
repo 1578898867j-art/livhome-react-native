@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Keyboard, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme';
 
 // 全局底部弹层壳:遮罩原地淡入淡出,白色面板单独从底部滑入/滑出
@@ -59,14 +59,15 @@ export function BottomSheet({
             ],
           }}
         >
-          <View style={st.sheet}>
+          {/* 面板空白区域点击收起键盘(面板内含输入框的场景,如自定义语音重命名) */}
+          <Pressable style={st.sheet} onPress={Keyboard.dismiss} accessible={false}>
             <View style={st.grabberWrap}>
               <View style={st.grabber} />
             </View>
             <Text style={st.title}>{title}</Text>
             {!!desc && <Text style={st.desc}>{desc}</Text>}
             {children}
-          </View>
+          </Pressable>
         </Animated.View>
       </View>
       {/* 浮层必须绝对铺满:否则会作为兄弟节点和面板平分屏幕高度,把面板挤到上半屏 */}

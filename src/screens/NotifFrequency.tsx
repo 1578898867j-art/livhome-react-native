@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Modal,
   Pressable,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -82,7 +83,8 @@ export default function NotifFrequency({ navigation }: AppScreenProps) {
           style={{ flex: 1 }}
         >
           <Pressable style={st.ovl} onPress={closeDlg}>
-            <Pressable style={st.dialog} onPress={() => {}}>
+            {/* 弹窗内空白点击收起键盘(拦截冒泡,不关弹窗) */}
+            <Pressable style={st.dialog} onPress={Keyboard.dismiss}>
               <Text style={st.dlgTitle}>Custom Interval</Text>
               <Row
                 style={[

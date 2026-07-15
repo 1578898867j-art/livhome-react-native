@@ -7,6 +7,7 @@ import {
   ViewStyle,
   StyleProp,
   ScrollView,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -43,6 +44,8 @@ export function Screen({
   bg?: string; // 页面底色(如消息中心的灰底),默认全局 bgPrimary
 }) {
   const insets = useSafeAreaInsets();
+  // 全局键盘交互:滚动页 keyboardShouldPersistTaps="handled" —— 点空白自动收起、
+  // 按钮照常响应;非滚动页根部用无反馈 Pressable 承接空白点击收起键盘。
   if (header) {
     return (
       <SafeAreaView style={[s.screen, { backgroundColor: bg }]} edges={edges}>
@@ -52,11 +55,18 @@ export function Screen({
             style={s.screenBody}
             contentContainerStyle={[{ paddingBottom: 28 }, contentStyle]}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             {children}
           </ScrollView>
         ) : (
-          <View style={[s.screenBody, contentStyle]}>{children}</View>
+          <Pressable
+            style={[s.screenBody, contentStyle]}
+            onPress={Keyboard.dismiss}
+            accessible={false}
+          >
+            {children}
+          </Pressable>
         )}
       </SafeAreaView>
     );
@@ -68,6 +78,7 @@ export function Screen({
         <ScrollView
           contentContainerStyle={[{ paddingTop: insets.top, paddingBottom: 28 }, contentStyle]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           {children}
         </ScrollView>
@@ -82,7 +93,9 @@ export function Screen({
   }
   return (
     <SafeAreaView style={[s.screen, { backgroundColor: bg }]} edges={edges}>
-      <View style={[{ flex: 1 }, contentStyle]}>{children}</View>
+      <Pressable style={[{ flex: 1 }, contentStyle]} onPress={Keyboard.dismiss} accessible={false}>
+        {children}
+      </Pressable>
     </SafeAreaView>
   );
 }
