@@ -342,7 +342,8 @@ const st = StyleSheet.create({
   },
   devThumb: {
     width: 72, height: 72, borderRadius: 16, backgroundColor: '#FAFAFA',
-    alignItems: 'center', justifyContent: 'center', padding: 6, flexShrink: 0,
+    // 内边距加大让设备图缩小(72 底不变,卡片布局零位移)
+    alignItems: 'center', justifyContent: 'center', padding: 14, flexShrink: 0,
   },
   devImg: { width: '100%', height: '100%' },
   msgTitle: { fontSize: 17, fontWeight: '600', lineHeight: 20, color: colors.textPrimary, flexShrink: 1 },
