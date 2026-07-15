@@ -1025,14 +1025,14 @@ const st = StyleSheet.create({
   fsStage: { transform: [{ rotate: '90deg' }], overflow: 'hidden' },
   // 返回钮与云台方向盘左缘对齐(left 100);右侧控钮列避开刘海再内收
   fsBack: {
-    position: 'absolute', top: 24, left: 100, width: 44, height: 44, borderRadius: 22,
+    position: 'absolute', top: 24, left: 56, width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(80,80,80,0.45)', alignItems: 'center', justifyContent: 'center',
   },
   fsRail: {
     position: 'absolute', right: 56, top: 40, bottom: 40,
     justifyContent: 'space-between', alignItems: 'center',
   },
-  fsDpad: { position: 'absolute', left: 100, bottom: 22 },
+  fsDpad: { position: 'absolute', left: 56, bottom: 22 },
   fsToast: {
     position: 'absolute', bottom: 34, alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center', gap: 12,
