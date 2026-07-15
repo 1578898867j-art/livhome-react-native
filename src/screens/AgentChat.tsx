@@ -843,9 +843,18 @@ export default function AgentChat({ navigation }: AppScreenProps) {
         </KeyboardAvoidingView>
       )}
 
-      {/* 新聊天提示(灰色胶囊,参考稿样式) */}
+      {/* 新聊天提示(灰色胶囊)—— 悬浮在底部输入胶囊上方 */}
       {hint != null && (
-        <View style={[styles.hintToast, { top: insets.top + 10 }]} pointerEvents="none">
+        <View
+          style={[
+            styles.hintToast,
+            {
+              bottom:
+                (mode === 'empty' ? emptyInputBottom : conversationInputBottom) + INPUT_HEIGHT + 16,
+            },
+          ]}
+          pointerEvents="none"
+        >
           <Text style={styles.hintText}>{hint}</Text>
         </View>
       )}
