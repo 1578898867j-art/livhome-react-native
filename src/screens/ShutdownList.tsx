@@ -7,6 +7,8 @@ import { Icon } from '../components/Icon';
 import { MOONICON, SUNICON, ARROWBOX, TRASHICON } from '../icons/protoIcons';
 import { colors } from '../theme';
 import { removeSchedule, resetDraftDays, useSchedules } from '../features/devices/shutdownStore';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 
 const p2 = (n: number) => (n < 10 ? '0' : '') + n;
 
@@ -22,7 +24,14 @@ function repeatLabel(days: boolean[]) {
 export default function ShutdownList({ navigation }: AppScreenProps) {
   const schedules = useSchedules();
 
-  const del = (i: number) => removeSchedule(i);
+  const del = (i: number) => {
+    // 删除失败演示:提示错误,保留方案
+    if (getDemoFlags().failOps) {
+      showToast('Failed to delete. Please try again.', 'error');
+      return;
+    }
+    removeSchedule(i);
+  };
   const goAdd = () => {
     resetDraftDays();
     navigation.navigate('shutdown-edit');

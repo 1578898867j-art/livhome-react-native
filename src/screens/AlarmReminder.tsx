@@ -1,10 +1,11 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, TextInput, Linking } from 'react-native';
 import { Screen, Tap, Card, Header, Eyebrow, Row, ToggleRow, SettingRow } from '../components/kit';
 import { BottomSheet } from '../components/BottomSheet';
 import { Icon } from '../components/Icon';
 import { SvgXml } from 'react-native-svg';
+import { getDemoFlags } from '../features/app/demoStore';
 import { CONV_EDIT, CONV_TRASH } from '../icons/protoIcons';
 import { colors } from '../theme';
 
@@ -84,8 +85,29 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
     return () => clearInterval(t);
   }, [recording]);
 
+  // 概率性状态:麦克风权限被拒(sheet 内引导)/ 上传、删除失败(sheet 内错误提示条)
+  const [micDlg, setMicDlg] = useState(false);
+  const [cvErr, setCvErr] = useState<string | null>(null);
+  const cvErrTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (cvErrTimer.current) clearTimeout(cvErrTimer.current);
+    },
+    [],
+  );
+  const showCvErr = (msg: string) => {
+    setCvErr(msg);
+    if (cvErrTimer.current) clearTimeout(cvErrTimer.current);
+    cvErrTimer.current = setTimeout(() => setCvErr(null), 2400);
+  };
+
   const startRec = () => {
     if (recs.length >= 3) return;
+    // 录音权限被拒 → sheet 内引导弹窗
+    if (getDemoFlags().permsDenied) {
+      setMicDlg(true);
+      return;
+    }
     setMenuId(null);
     setSec(0);
     setRecording(true);
@@ -93,6 +115,11 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
 
   const stopRec = () => {
     setRecording(false);
+    // 上传失败演示:不入列表
+    if (getDemoFlags().failOps) {
+      showCvErr('Failed to upload the recording.');
+      return;
+    }
     const id = `r${Date.now()}`;
     setRecs((prev) => prev.concat({ id, name: `Recording ${prev.length + 1}` }));
     // 首条录音自动选用并切到自定义语音(对齐原型)
@@ -108,6 +135,12 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
   };
 
   const confirmDelete = () => {
+    // 删除失败演示
+    if (getDemoFlags().failOps) {
+      setDelId(null);
+      showCvErr('Failed to delete. Please try again.');
+      return;
+    }
     setRecs((prev) => prev.filter((r) => r.id !== delId));
     if (sel === delId) {
       setSel(null);
@@ -183,7 +216,36 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
         desc="Support up to 3 custom voice recordings."
         onClose={closeSheet}
         overlay={
-          delId != null ? (
+          micDlg ? (
+            <Pressable style={st.ovl} onPress={() => setMicDlg(false)}>
+              <Pressable style={st.delCard} onPress={(e) => e.stopPropagation()}>
+                <View style={st.micIcon}>
+                  <Icon name="mic" size={24} color={colors.brand} sw={1.8} />
+                </View>
+                <Text style={st.delTitle}>Microphone Access Needed</Text>
+                <Text style={st.delDesc}>
+                  Microphone access is required to record a custom voice. Please allow it in Settings.
+                </Text>
+                <Row style={{ gap: 12, marginTop: 20 }}>
+                  <Pressable
+                    style={[st.delBtn, { backgroundColor: colors.bgSecondary }]}
+                    onPress={() => setMicDlg(false)}
+                  >
+                    <Text style={[st.delBtnTxt, { color: colors.textSecondary }]}>Cancel</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[st.delBtn, { backgroundColor: colors.brand }]}
+                    onPress={() => {
+                      Linking.openSettings().catch(() => {});
+                      setMicDlg(false);
+                    }}
+                  >
+                    <Text style={[st.delBtnTxt, { color: '#fff' }]}>Go to Settings</Text>
+                  </Pressable>
+                </Row>
+              </Pressable>
+            </Pressable>
+          ) : delId != null ? (
             <Pressable style={st.ovl} onPress={() => setDelId(null)}>
               <Pressable style={st.delCard} onPress={(e) => e.stopPropagation()}>
                 <Text style={st.delTitle}>Delete Recording</Text>
@@ -210,6 +272,13 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
           ) : null
         }
       >
+        {/* sheet 内失败提示条(全局 toast 位于 Modal 之下,需就地提示) */}
+        {cvErr != null && (
+          <Row style={st.cvErrPill}>
+            <Icon name="warn" size={13} color={colors.critical} sw={2} />
+            <Text style={st.cvErrTxt}>{cvErr}</Text>
+          </Row>
+        )}
         {recording ? (
           <View style={{ alignItems: 'center', paddingTop: 14, paddingBottom: 6 }}>
             <Text style={st.recTimer}>
@@ -423,4 +492,20 @@ const st = StyleSheet.create({
   },
   delBtn: { flex: 1, height: 46, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
   delBtnTxt: { fontSize: 15, fontWeight: '700' },
+
+  // 麦克风权限引导 / sheet 内失败提示条
+  micIcon: {
+    width: 52, height: 52, borderRadius: 26, backgroundColor: colors.brandSoft,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 14,
+  },
+  cvErrPill: {
+    alignSelf: 'center',
+    gap: 8,
+    height: 34,
+    paddingHorizontal: 14,
+    borderRadius: 17,
+    backgroundColor: colors.criticalSoft,
+    marginBottom: 10,
+  },
+  cvErrTxt: { fontSize: 13, fontWeight: '600', color: colors.critical },
 });

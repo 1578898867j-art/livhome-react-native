@@ -12,6 +12,19 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, radius, shadow } from '../theme';
 import { Icon } from './Icon';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
+
+// 设置项保存守卫:failOps 演示打开时,所有设置开关/选项「保存失败」——
+// 提示错误并保持原状态(接后端后换成真实请求失败回滚)。
+function guardSave(apply?: () => void) {
+  if (!apply) return;
+  if (getDemoFlags().failOps) {
+    showToast('Failed to save. Please try again.', 'error');
+    return;
+  }
+  apply();
+}
 
 /* ---- Screen shell (replaces the phone frame; full-bleed) ---- */
 export function Screen({
@@ -176,7 +189,10 @@ export const Hint = ({ children }: { children: React.ReactNode }) => (
 /* ---- toggle switch (.tg) ---- */
 export function Toggle({ on, onToggle }: { on: boolean; onToggle?: () => void }) {
   return (
-    <Pressable onPress={onToggle} style={[s.tg, on && { backgroundColor: colors.brand, alignItems: 'flex-end' }]}>
+    <Pressable
+      onPress={() => guardSave(onToggle)}
+      style={[s.tg, on && { backgroundColor: colors.brand, alignItems: 'flex-end' }]}
+    >
       <View style={s.tgKnob} />
     </Pressable>
   );
@@ -262,7 +278,7 @@ export function Segmented({
       {opts.map((o, i) => (
         <Tap
           key={o}
-          onPress={() => onSelect?.(i)}
+          onPress={() => guardSave(() => onSelect?.(i))}
           style={[s.segItem, i === active && s.segItemActive]}
         >
           <Text style={{ fontSize: 13, fontWeight: '700', color: i === active ? colors.brand : colors.textSecondary }}>
@@ -287,7 +303,7 @@ export function RadioRow({
   last?: boolean;
 }) {
   return (
-    <Tap onPress={onPress} style={s.setRow}>
+    <Tap onPress={() => guardSave(onPress)} style={s.setRow}>
       <Text style={{ flex: 1, fontSize: 15, fontWeight: '600', color: selected ? colors.brand : colors.textPrimary }}>
         {name}
       </Text>

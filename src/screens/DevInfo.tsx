@@ -1,10 +1,13 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, Animated, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Tap, Row, Card, Header } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { Spinner } from '../components/states';
+import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
+import { showToast as showAppToast } from '../features/app/toastStore';
 import { colors, shadow } from '../theme';
 
 /* device / edit avatars — ported verbatim from the prototype (DEVAVATAR / EDITAVATAR) */
@@ -41,6 +44,61 @@ export default function DevInfo({ navigation }: AppScreenProps) {
   };
 
   const toggleTip = (key: TipKey) => setTip((t) => (t === key ? null : key));
+
+  // ---- 固件 OTA:检查更新 → 新版本弹窗 → 升级进度 → 成功/失败 ----
+  const { otaUpdate } = useDemoFlags();
+  const [fw, setFw] = useState('v2.4.1');
+  const [ota, setOta] = useState<null | 'checking' | 'update' | 'progress'>(null);
+  const [otaPct, setOtaPct] = useState(0);
+  const otaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const otaInt = useRef<ReturnType<typeof setInterval> | null>(null);
+  const otaProg = useRef(0);
+  const hasUpdate = otaUpdate && fw === 'v2.4.1';
+  useEffect(
+    () => () => {
+      if (otaTimer.current) clearTimeout(otaTimer.current);
+      if (otaInt.current) clearInterval(otaInt.current);
+    },
+    [],
+  );
+
+  const checkUpdate = () => {
+    if (ota) return;
+    setOta('checking');
+    if (otaTimer.current) clearTimeout(otaTimer.current);
+    otaTimer.current = setTimeout(() => {
+      if (getDemoFlags().otaUpdate && fw === 'v2.4.1') {
+        setOta('update');
+      } else {
+        setOta(null);
+        showAppToast('Firmware is up to date', 'success');
+      }
+    }, 1000);
+  };
+
+  const startUpdate = () => {
+    setOta('progress');
+    otaProg.current = 0;
+    setOtaPct(0);
+    if (otaInt.current) clearInterval(otaInt.current);
+    otaInt.current = setInterval(() => {
+      otaProg.current += 3;
+      if (getDemoFlags().failOps && otaProg.current >= 60) {
+        if (otaInt.current) clearInterval(otaInt.current);
+        setOta(null);
+        showAppToast('Update failed. Please try again.', 'error');
+        return;
+      }
+      if (otaProg.current >= 100) {
+        if (otaInt.current) clearInterval(otaInt.current);
+        setOta(null);
+        setFw('v2.5.0');
+        showAppToast('Updated to v2.5.0', 'success');
+        return;
+      }
+      setOtaPct(otaProg.current);
+    }, 90);
+  };
 
   return (
     <Screen
@@ -84,9 +142,70 @@ export default function DevInfo({ navigation }: AppScreenProps) {
         <Text style={st.eyebrowTxt}>Device version</Text>
       </View>
       <Card style={st.card}>
-        <InfoRow label="Firmware" value="v2.4.1" />
+        {/* Firmware:点击检查更新;有新版本时显示 New 角标 */}
+        <View>
+          <Tap style={[st.infoRow, { flexDirection: 'row', alignItems: 'center' }]} onPress={checkUpdate}>
+            <View style={st.infoLabelWrap}>
+              <Text style={st.infoLabel}>Firmware</Text>
+            </View>
+            {ota === 'checking' ? (
+              <Spinner size={15} stroke={1.8} />
+            ) : (
+              <>
+                {hasUpdate && (
+                  <View style={st.newBadge}>
+                    <Text style={st.newBadgeTxt}>New</Text>
+                  </View>
+                )}
+                <Text style={st.infoVal}>{fw}</Text>
+              </>
+            )}
+            <View style={{ marginLeft: 2 }}>
+              <Icon name="chevR" size={14} color={colors.textTertiary} sw={2} />
+            </View>
+          </Tap>
+          <View style={st.divider} />
+        </View>
         <InfoRow label="Embedded Application" value="1.0.8" last />
       </Card>
+
+      {/* 新版本弹窗 */}
+      <Modal transparent visible={ota === 'update'} animationType="fade" onRequestClose={() => setOta(null)}>
+        <Pressable style={st.otaOvl} onPress={() => setOta(null)}>
+          <Pressable style={st.otaDialog} onPress={() => {}}>
+            <View style={st.otaIcon}>
+              <Icon name="cpu" size={24} color={colors.brand} sw={1.8} />
+            </View>
+            <Text style={st.otaTitle}>New Version v2.5.0</Text>
+            <Text style={st.otaDesc}>
+              Improved motion detection accuracy and stability fixes. The camera will restart after
+              updating.
+            </Text>
+            <Row style={{ gap: 12, marginTop: 20 }}>
+              <Pressable style={[st.otaBtn, st.otaBtnGhost]} onPress={() => setOta(null)}>
+                <Text style={[st.otaBtnTxt, { color: colors.textSecondary }]}>Later</Text>
+              </Pressable>
+              <Pressable style={[st.otaBtn, { backgroundColor: colors.brand }]} onPress={startUpdate}>
+                <Text style={[st.otaBtnTxt, { color: '#fff' }]}>Update Now</Text>
+              </Pressable>
+            </Row>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* 升级进度弹窗(不可取消) */}
+      <Modal transparent visible={ota === 'progress'} animationType="fade">
+        <View style={st.otaOvl}>
+          <View style={st.otaDialog}>
+            <Text style={st.otaTitle}>Updating Firmware</Text>
+            <View style={st.otaTrack}>
+              <View style={[st.otaFill, { width: `${otaPct}%` }]} />
+            </View>
+            <Text style={st.otaPct}>{otaPct}%</Text>
+            <Text style={st.otaHint}>Do not power off the camera during the update.</Text>
+          </View>
+        </View>
+      </Modal>
 
       {/* Device information */}
       <View style={st.eyebrow}>
@@ -206,6 +325,65 @@ const st = StyleSheet.create({
   infoLabelWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 },
   infoLabel: { fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   infoVal: { fontSize: 13, fontWeight: '700', color: colors.textPrimary },
+
+  // ---- 固件 OTA ----
+  newBadge: {
+    height: 18,
+    paddingHorizontal: 7,
+    borderRadius: 9,
+    backgroundColor: colors.critical,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  newBadgeTxt: { fontSize: 10, fontWeight: '800', color: '#fff' },
+  otaOvl: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.42)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 34,
+  },
+  otaDialog: {
+    width: '100%',
+    maxWidth: 322,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    paddingHorizontal: 22,
+    paddingTop: 24,
+    paddingBottom: 20,
+  },
+  otaIcon: {
+    alignSelf: 'center',
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.brandSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  otaTitle: { fontSize: 17, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
+  otaDesc: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: colors.textTertiary,
+    marginTop: 10,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  otaBtn: { flex: 1, height: 46, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
+  otaBtnGhost: { backgroundColor: colors.bgSecondary },
+  otaBtnTxt: { fontSize: 15, fontWeight: '700' },
+  otaTrack: {
+    marginTop: 18,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.bgSecondary,
+    overflow: 'hidden',
+  },
+  otaFill: { height: 6, borderRadius: 3, backgroundColor: colors.brand },
+  otaPct: { marginTop: 10, fontSize: 13, fontWeight: '600', color: colors.textTertiary, textAlign: 'center' },
+  otaHint: { marginTop: 12, fontSize: 12, fontWeight: '500', color: colors.textTertiary, textAlign: 'center' },
   divider: { height: 1, marginHorizontal: 16, backgroundColor: colors.border },
 
   tipWrap: { paddingHorizontal: 16, paddingTop: 2, paddingBottom: 12 },

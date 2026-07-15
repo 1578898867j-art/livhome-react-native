@@ -1,9 +1,11 @@
 import { navigateTo } from '../navigation/types';
 import type { AppScreenProps, StackRouteName } from '../navigation/types';
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { StateView, Spinner } from '../components/states';
+import { useDemoFlags } from '../features/app/demoStore';
 import { colors } from '../theme';
 import { CAMAVATAR } from '../assets/images';
 
@@ -11,6 +13,14 @@ type Prev = { tag: string; label: string };
 
 export default function DevHome({ navigation }: AppScreenProps) {
   const go = (id: StackRouteName) => () => navigateTo(navigation, id);
+
+  // 概率性状态:设备列表加载失败 / 无设备空态
+  const { failLoad, noDevices } = useDemoFlags();
+  const [retrying, setRetrying] = useState(false);
+  const retryLoad = () => {
+    setRetrying(true);
+    setTimeout(() => setRetrying(false), 800);
+  };
 
   /* ---- camPreview({play:true, tag, label}) ---- */
   const CamPreview = ({ tag, label }: Prev) => (
@@ -122,11 +132,39 @@ export default function DevHome({ navigation }: AppScreenProps) {
       }
       contentStyle={{ paddingBottom: 108 }}
     >
-      <View style={{ paddingHorizontal: 18, gap: 16 }}>
-        <DevCard name="Living Room" status="Online" prev={{ tag: 'Person · sofa', label: '14:22' }} />
-        <DevCard name="Backyard" status="Online" prev={{ tag: 'No motion', label: '14:20' }} />
-        <DevCardOffline name="Bedroom Cam" />
-      </View>
+      {failLoad ? (
+        retrying ? (
+          <View style={{ alignItems: 'center', paddingTop: 130 }}>
+            <Spinner size={28} />
+          </View>
+        ) : (
+          <StateView
+            variant="error"
+            icon="warn"
+            title="Failed to load devices"
+            sub="Please check your network and try again."
+            actionLabel="Retry"
+            onAction={retryLoad}
+            style={{ paddingTop: 90 }}
+          />
+        )
+      ) : noDevices ? (
+        <StateView
+          variant="brand"
+          icon="camera"
+          title="No devices yet"
+          sub="Add your first camera to start monitoring your home."
+          actionLabel="Add Device"
+          onAction={go('bind-find')}
+          style={{ paddingTop: 90 }}
+        />
+      ) : (
+        <View style={{ paddingHorizontal: 18, gap: 16 }}>
+          <DevCard name="Living Room" status="Online" prev={{ tag: 'Person · sofa', label: '14:22' }} />
+          <DevCard name="Backyard" status="Online" prev={{ tag: 'No motion', label: '14:20' }} />
+          <DevCardOffline name="Bedroom Cam" />
+        </View>
+      )}
     </Screen>
   );
 }

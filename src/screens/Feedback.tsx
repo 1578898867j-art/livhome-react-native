@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Tap, Row, Card, NavBar } from '../components/kit';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 
@@ -141,7 +143,14 @@ export default function Feedback({ navigation }: AppScreenProps) {
         <View style={st.submitWrap}>
           <Tap
             onPress={() => {
-              if (ready) navigation.goBack();
+              if (!ready) return;
+              // 提交失败演示:提示错误,保留已填内容
+              if (getDemoFlags().failOps) {
+                showToast('Failed to submit. Please try again.', 'error');
+                return;
+              }
+              showToast('Feedback submitted', 'success');
+              navigation.goBack();
             }}
             style={[
               st.submitBtn,

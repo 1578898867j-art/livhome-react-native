@@ -1,8 +1,11 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { Screen, Tap, Header, Card, Eyebrow } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { Spinner } from '../components/states';
+import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { colors } from '../theme';
 
 const RECMODES: Record<string, string> = {
@@ -12,24 +15,51 @@ const RECMODES: Record<string, string> = {
 };
 const REC_OPTS: string[] = ['off', 'alert', 'allday'];
 
-type Overlay = null | 'rec' | 'format';
+type Overlay = null | 'rec' | 'format' | 'formatting';
 
 export default function StorageSettings({ navigation }: AppScreenProps) {
   const [recMode, setRecMode] = useState<string>('allday');
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [used, setUsed] = useState(2.19);
 
+  // 概率性状态:卡状态读取失败(--)/ 未插卡 / 格式化进行中与失败
+  const flags = useDemoFlags();
+  const cardStatus = flags.noSdCard ? 'No card' : flags.failLoad ? '--' : 'Ready';
+  const statusColor = flags.noSdCard || flags.failLoad ? colors.textTertiary : colors.success;
+  const fmtTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (fmtTimer.current) clearTimeout(fmtTimer.current);
+    },
+    [],
+  );
+
   const close = () => setOverlay(null);
+
+  // 格式化:进度弹窗 1.6s → 成功 / failOps 失败
+  const startFormat = () => {
+    setOverlay('formatting');
+    if (fmtTimer.current) clearTimeout(fmtTimer.current);
+    fmtTimer.current = setTimeout(() => {
+      setOverlay(null);
+      if (getDemoFlags().failOps) {
+        showToast('Failed to format the card. Please try again.', 'error');
+        return;
+      }
+      setUsed(0);
+      showToast('Card formatted', 'success');
+    }, 1600);
+  };
 
   return (
     <Screen header={<Header title="Storage Card" onBack={() => navigation.goBack()} />}>
       <View style={{ paddingTop: 8 }}>
         <Card style={{ marginHorizontal: 18, marginTop: 8 }}>
-          {/* Card Status */}
+          {/* Card Status(读取失败显示 --,未插卡显示 No card) */}
           <View style={st.row}>
             <View style={st.divider} />
             <Text style={st.label}>Card Status</Text>
-            <Text style={[st.value, { color: colors.success, fontWeight: '700' }]}>Ready</Text>
+            <Text style={[st.value, { color: statusColor, fontWeight: '700' }]}>{cardStatus}</Text>
           </View>
 
           {/* Recording Mode */}
@@ -115,10 +145,7 @@ export default function StorageSettings({ navigation }: AppScreenProps) {
               </Pressable>
               <View style={st.dialogSep} />
               <Pressable
-                onPress={() => {
-                  setUsed(0);
-                  close();
-                }}
+                onPress={startFormat}
                 style={({ pressed }) => [st.dialogBtn, pressed && { opacity: 0.55 }]}
               >
                 <Text style={st.dialogConfirm}>Format</Text>
@@ -126,6 +153,16 @@ export default function StorageSettings({ navigation }: AppScreenProps) {
             </View>
           </Pressable>
         </Pressable>
+      </Modal>
+
+      {/* Formatting progress */}
+      <Modal transparent visible={overlay === 'formatting'} animationType="fade">
+        <View style={st.dlgOvl}>
+          <View style={[st.dialog, st.fmtDialog]}>
+            <Spinner size={28} />
+            <Text style={st.fmtTxt}>Formatting…</Text>
+          </View>
+        </View>
       </Modal>
     </Screen>
   );
@@ -213,4 +250,8 @@ const st = StyleSheet.create({
   dialogSep: { width: 1, backgroundColor: colors.border },
   dialogCancel: { fontSize: 17, fontWeight: '500', color: colors.textSecondary },
   dialogConfirm: { fontSize: 17, fontWeight: '700', color: colors.critical },
+
+  /* ---- formatting progress ---- */
+  fmtDialog: { alignItems: 'center', paddingVertical: 30, gap: 14 },
+  fmtTxt: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
 });

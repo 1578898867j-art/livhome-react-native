@@ -5,6 +5,8 @@ import { Screen, Tap, Row, Card, Header, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 import { addSchedule, useDraftDays } from '../features/devices/shutdownStore';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import type { TM } from '../features/devices/shutdownStore';
 
 type Which = 'off' | 'on';
@@ -75,6 +77,11 @@ export default function ShutdownEdit({ navigation }: AppScreenProps) {
   const [edErr] = useState(false);
 
   const save = () => {
+    // 保存失败演示:提示错误,停留本页
+    if (getDemoFlags().failOps) {
+      showToast('Failed to save. Please try again.', 'error');
+      return;
+    }
     addSchedule({ off: edOff, on: edOn, days: edDays });
     navigation.goBack();
   };

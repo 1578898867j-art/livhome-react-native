@@ -4,6 +4,8 @@ import { Keyboard, Platform, ScrollView, View, Text, StyleSheet, TextInput } fro
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, Header, Eyebrow, Row, Tap, PrimaryBtn } from '../components/kit';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 
@@ -148,7 +150,18 @@ export default function EditProfile({ navigation }: AppScreenProps) {
 
           {/* Save */}
           <View style={st.footer}>
-            <PrimaryBtn label="Save" onPress={() => navigation.goBack()} style={st.saveBtn} />
+            <PrimaryBtn
+              label="Save"
+              onPress={() => {
+                // 资料保存失败演示:提示错误,保留已填内容
+                if (getDemoFlags().failOps) {
+                  showToast('Failed to save. Please try again.', 'error');
+                  return;
+                }
+                navigation.goBack();
+              }}
+              style={st.saveBtn}
+            />
           </View>
       </ScrollView>
     </Screen>

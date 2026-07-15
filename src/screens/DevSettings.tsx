@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { Screen, Tap, Row, Card, Header, Eyebrow, SettingRow } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { colors } from '../theme';
 
 type Overlay = null | 'restart' | 'delete';
@@ -11,9 +13,22 @@ export default function DevSettings({ navigation }: AppScreenProps) {
   const [overlay, setOverlay] = useState<Overlay>(null);
 
   const closeOverlay = () => setOverlay(null);
-  const onRestartConfirm = () => setOverlay(null);
+  const onRestartConfirm = () => {
+    setOverlay(null);
+    // 指令发送失败 / 设备无响应演示
+    if (getDemoFlags().failOps) {
+      showToast('Failed to restart the device. Please try again.', 'error');
+      return;
+    }
+    showToast('Restart command sent', 'success');
+  };
   const onDeleteConfirm = () => {
     setOverlay(null);
+    // 删除失败演示:提示错误,留在本页
+    if (getDemoFlags().failOps) {
+      showToast('Failed to delete the device. Please try again.', 'error');
+      return;
+    }
     navigation.navigate('Main', { screen: 'dev-home' });
   };
 
