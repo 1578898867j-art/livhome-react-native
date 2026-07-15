@@ -13,11 +13,7 @@ export default function BindWifi({ navigation }: AppScreenProps) {
     <Screen
       scroll={false}
       contentStyle={st.page}
-      header={
-        <View style={st.headerInset}>
-          <Header title="Wi-Fi Setup" onBack={() => navigation.goBack()} />
-        </View>
-      }
+      header={<Header title="Wi-Fi Setup" onBack={() => navigation.goBack()} />}
     >
       {/* step indicator (bStepper(2) of 4) */}
       <Row style={st.stepper}>
@@ -85,7 +81,6 @@ export default function BindWifi({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  headerInset: { paddingTop: 6 },
   page: { paddingBottom: 40 },
   stepper: { justifyContent: 'center', gap: 6, paddingVertical: 8, paddingTop: 8 },
   stepBar: { width: 20, height: 3, borderRadius: 2 },
