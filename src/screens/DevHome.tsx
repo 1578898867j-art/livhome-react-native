@@ -120,8 +120,8 @@ export default function DevHome({ navigation }: AppScreenProps) {
       contentStyle={{ paddingBottom: 108 }}
     >
       <View style={{ paddingHorizontal: 18, gap: 16 }}>
-        <DevCard name="Living Room" status="Living room · synced 12s ago" prev={{ tag: 'Person · sofa', label: 'Living · 14:22' }} />
-        <DevCard name="Backyard" status="Online · synced 2 min ago" prev={{ tag: 'No motion', label: 'Backyard · 14:20' }} />
+        <DevCard name="Living Room" status="Online" prev={{ tag: 'Person · sofa', label: '14:22' }} />
+        <DevCard name="Backyard" status="Online" prev={{ tag: 'No motion', label: '14:20' }} />
         <DevCardOffline name="Bedroom Cam" />
       </View>
     </Screen>
