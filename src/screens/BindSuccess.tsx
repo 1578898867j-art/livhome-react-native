@@ -5,11 +5,9 @@ import { Screen, Header, Tap, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 
-const ROOMS = ['Living', 'Bedroom', 'Backyard', 'Other'];
 
 export default function BindSuccess({ navigation }: AppScreenProps) {
   const [name, setName] = useState('Living Room Camera');
-  const [room, setRoom] = useState('Living');
 
   return (
     <Screen
@@ -53,39 +51,6 @@ export default function BindSuccess({ navigation }: AppScreenProps) {
               style={st.fieldInput}
             />
           </View>
-        </View>
-      </View>
-
-      {/* room chips */}
-      <View style={st.roomWrap}>
-        <Text style={st.roomLabel}>Room</Text>
-        <View style={st.roomRow}>
-          {ROOMS.map((r) => {
-            const sel = r === room;
-            return (
-              <Tap
-                key={r}
-                onPress={() => setRoom(r)}
-                style={[
-                  st.chip,
-                  {
-                    backgroundColor: sel ? colors.brand : colors.surface,
-                    borderColor: sel ? colors.brand : colors.border,
-                  },
-                ]}
-              >
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: sel ? '600' : '500',
-                    color: sel ? '#fff' : colors.textSecondary,
-                  }}
-                >
-                  {r}
-                </Text>
-              </Tap>
-            );
-          })}
         </View>
       </View>
 
