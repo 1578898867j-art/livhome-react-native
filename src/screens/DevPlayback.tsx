@@ -354,7 +354,8 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         return (
           <View style={st.timelineWrap} {...(clipMode ? {} : pan.panHandlers)}>
             <View
-              pointerEvents="none"
+              // 浏览态穿透给外层平移手势;剪辑态放行,让红绿把手/选区接收拖动
+              pointerEvents={clipMode ? 'auto' : 'none'}
               style={[
                 st.strip,
                 {
