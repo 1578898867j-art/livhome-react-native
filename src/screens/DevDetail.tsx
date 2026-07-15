@@ -1,10 +1,16 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Modal, Pressable, Dimensions } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, Tap, Row, Card } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { DarkPlayerState } from '../components/states';
+import { PermissionDialog } from '../components/PermissionDialog';
+import type { PermType } from '../components/PermissionDialog';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS, MOVEICONS } from '../icons/protoSets';
 import { ZOOMICON, SELICON, SELICON2 } from '../icons/protoIcons';
 import { colors } from '../theme';
@@ -143,11 +149,78 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setSaveToast(null), 2600);
   };
-  const snap = () => {
+
+  // ---- 概率性状态:拉流 加载/失败/离线、权限引导、保存失败 ----
+  const [pState, setPState] = useState<'loading' | 'ready' | 'error' | 'offline'>('loading');
+  const [permDlg, setPermDlg] = useState<PermType | null>(null);
+  const [fsError, setFsError] = useState<string | null>(null);
+  const pTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fsErrTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 连接直播流:1.2s loading 后按 flag 进入 就绪/离线/失败(接后端后换真实拉流回调)
+  const connectStream = useCallback(() => {
+    setPState('loading');
+    if (pTimer.current) clearTimeout(pTimer.current);
+    pTimer.current = setTimeout(() => {
+      const f = getDemoFlags();
+      setPState(f.deviceOffline ? 'offline' : f.failStream ? 'error' : 'ready');
+    }, 1200);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      connectStream();
+      return () => {
+        if (pTimer.current) clearTimeout(pTimer.current);
+      };
+    }, [connectStream]),
+  );
+
+  useEffect(
+    () => () => {
+      if (fsErrTimer.current) clearTimeout(fsErrTimer.current);
+    },
+    [],
+  );
+
+  // 全屏内失败提示(全局 toast 在 Modal 之下,需用全屏本地深色提示)
+  const showFsError = (text: string) => {
+    setFsError(text);
+    if (fsErrTimer.current) clearTimeout(fsErrTimer.current);
+    fsErrTimer.current = setTimeout(() => setFsError(null), 2400);
+  };
+
+  // 保存截图/录像:相册权限被拒 → 引导弹窗;failOps → 失败提示;否则成功提示条
+  const trySave = (kind: 'photo' | 'video', inFullscreen = false): boolean => {
+    const f = getDemoFlags();
+    if (f.permsDenied && !inFullscreen) {
+      setPermDlg('photos');
+      return false;
+    }
+    if (f.failOps) {
+      const msg = kind === 'photo' ? 'Failed to save the photo.' : 'Failed to save the video.';
+      if (inFullscreen) showFsError(msg);
+      else showToast(msg, 'error');
+      return false;
+    }
+    showSaveToast(kind);
+    return true;
+  };
+
+  // 对讲:麦克风权限被拒 → 引导弹窗(仅开启时拦截)
+  const tryTalk = () => {
+    if (!ctl.ctlMic && getDemoFlags().permsDenied) {
+      setPermDlg('microphone');
+      return;
+    }
+    toggleCtl('ctlMic');
+  };
+
+  const snap = (inFullscreen = false) => {
+    if (!trySave('photo', inFullscreen)) return;
     setSnapFlash(true);
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setSnapFlash(false), 260);
-    showSaveToast('photo');
   };
   const [msgM, setMsgM] = useState(3);
   const [msgD, setMsgD] = useState(23);
@@ -216,29 +289,59 @@ export default function DevDetail({ navigation }: AppScreenProps) {
       }
     >
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-        {/* player */}
+        {/* player —— 加载/离线/失败 时显示深色状态占位 */}
         <View style={st.player}>
-          <CamPreview live tag="Person · sofa" label="14:22:08">
-            <View style={st.resBadge}>
-              <Text style={st.resTxt}>1080P</Text>
+          {pState === 'ready' ? (
+            <CamPreview live tag="Person · sofa" label="14:22:08">
+              <View style={st.resBadge}>
+                <Text style={st.resTxt}>1080P</Text>
+              </View>
+              <Tap style={st.scanBtn} onPress={() => setFullscreen(true)} hitSlop={8}>
+                <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
+              </Tap>
+            </CamPreview>
+          ) : (
+            <View style={st.playerStateBox}>
+              <DarkPlayerState
+                loading={pState === 'loading'}
+                icon={pState === 'offline' ? 'cloudOff' : 'warn'}
+                title={pState === 'offline' ? 'The device is offline' : 'Connection failed'}
+                sub={
+                  pState === 'offline'
+                    ? 'Check the device power and network.'
+                    : 'Please check your network and try again.'
+                }
+                actionLabel={pState === 'loading' ? undefined : pState === 'offline' ? 'Reconnect' : 'Retry'}
+                onAction={connectStream}
+              />
             </View>
-            <Tap style={st.scanBtn} onPress={() => setFullscreen(true)} hitSlop={8}>
-              <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
-            </Tap>
-          </CamPreview>
-          <Row style={{ gap: 8, padding: 12, backgroundColor: colors.surface }}>
-            <PhotoBtn icon="speaker" on={ctl.ctlSpk} onPress={() => toggleCtl('ctlSpk')} />
-            <PhotoBtn icon="mic" on={ctl.ctlMic} onPress={() => toggleCtl('ctlMic')} />
-            <PhotoBtn
-              icon="record"
-              on={ctl.ctlRec}
-              onPress={() => {
-                if (ctl.ctlRec) showSaveToast('video');
-                toggleCtl('ctlRec');
-              }}
-            />
-            <PhotoBtn icon="camera" on={snapFlash} onPress={snap} />
-          </Row>
+          )}
+          <View
+            pointerEvents={pState === 'ready' ? 'auto' : 'none'}
+            style={pState !== 'ready' ? { opacity: 0.4 } : undefined}
+          >
+            <Row style={{ gap: 8, padding: 12, backgroundColor: colors.surface }}>
+              <PhotoBtn icon="speaker" on={ctl.ctlSpk} onPress={() => toggleCtl('ctlSpk')} />
+              <PhotoBtn icon="mic" on={ctl.ctlMic} onPress={tryTalk} />
+              <PhotoBtn
+                icon="record"
+                on={ctl.ctlRec}
+                onPress={() => {
+                  if (ctl.ctlRec) {
+                    trySave('video');
+                    toggleCtl('ctlRec');
+                    return;
+                  }
+                  if (getDemoFlags().permsDenied) {
+                    setPermDlg('photos');
+                    return;
+                  }
+                  toggleCtl('ctlRec');
+                }}
+              />
+              <PhotoBtn icon="camera" on={snapFlash} onPress={() => snap()} />
+            </Row>
+          </View>
         </View>
 
         {/* body */}
@@ -250,7 +353,14 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             activePreset={activePreset}
             onPresets={() => setCtrlView('presets')}
             onBack={() => setCtrlView('pad')}
-            onAdd={addPreset}
+            onAdd={() => {
+              // 预设位上限 6 个
+              if (presets.length >= 6) {
+                showToast('You can add up to 6 preset positions.', 'info');
+                return;
+              }
+              addPreset();
+            }}
             onDelete={removePreset}
             onView={setActivePreset}
             onCruise={() => {
@@ -428,13 +538,13 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               <Tap onPress={() => toggleCtl('ctlSpk')}><SvgXml xml={FS_MUTE} width={54} height={54} /></Tap>
               <Tap
                 onPress={() => {
-                  if (ctl.ctlRec) showSaveToast('video');
+                  if (ctl.ctlRec) trySave('video', true);
                   toggleCtl('ctlRec');
                 }}
               >
                 <SvgXml xml={FS_REC} width={54} height={54} />
               </Tap>
-              <Tap onPress={snap}><SvgXml xml={FS_SNAP} width={54} height={54} /></Tap>
+              <Tap onPress={() => snap(true)}><SvgXml xml={FS_SNAP} width={54} height={54} /></Tap>
               <Tap onPress={() => toggleCtl('ctlMic')}><SvgXml xml={FS_MIC} width={54} height={54} /></Tap>
               <SvgXml xml={FS_FHD} width={54} height={54} />
             </View>
@@ -456,9 +566,28 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                 </Text>
               </View>
             )}
+
+            {/* 保存失败 toast(全屏本地,全局 toast 位于 Modal 之下) */}
+            {fsError != null && (
+              <View style={st.fsToast}>
+                <View style={st.fsErrMark}>
+                  <Icon name="x" size={12} color="#fff" sw={3} />
+                </View>
+                <Text style={st.fsToastTxt} numberOfLines={1}>{fsError}</Text>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
+
+      {/* 权限引导(麦克风/相册)—— 全屏 Modal 打开时不渲染,避免 iOS 双 Modal 冲突 */}
+      {!fullscreen && (
+        <PermissionDialog
+          type={permDlg ?? 'photos'}
+          visible={permDlg !== null}
+          onClose={() => setPermDlg(null)}
+        />
+      )}
 
       {/* 巡航前置条件弹窗(原型 preset-popup):预置位不足 2 个 */}
       <Modal visible={presetPopup} transparent animationType="fade" onRequestClose={() => setPresetPopup(false)}>
@@ -898,6 +1027,7 @@ const st = StyleSheet.create({
   navTitle: { flex: 1, fontSize: 17, fontWeight: '600', textAlign: 'center', color: colors.textPrimary },
 
   player: { marginHorizontal: 18, marginTop: 6, borderRadius: 18, overflow: 'hidden' },
+  playerStateBox: { width: '100%', aspectRatio: 16 / 9, backgroundColor: '#1E1A16' },
 
   cam: { position: 'relative', width: '100%', backgroundColor: '#211c17', overflow: 'hidden' },
   liveBadge: {
@@ -1039,6 +1169,14 @@ const st = StyleSheet.create({
     backgroundColor: 'rgba(28,28,30,0.72)', borderRadius: 14, padding: 8, paddingRight: 16,
   },
   fsToastThumb: { width: 64, height: 40, borderRadius: 8, overflow: 'hidden' },
+  fsErrMark: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.critical,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   fsToastTxt: { fontSize: 15, fontWeight: '600', color: '#fff' },
   fsToastLink: { color: '#6EA8FF', fontWeight: '600' },
 

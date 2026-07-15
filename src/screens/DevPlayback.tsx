@@ -1,12 +1,17 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions, PanResponder } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 import { Modal, Pressable } from 'react-native';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { StateView, Spinner, DarkPlayerState } from '../components/states';
+import { PermissionDialog } from '../components/PermissionDialog';
+import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { PHOTOICONS, PBTABICONS, FEICONS } from '../icons/protoSets';
 import { CALICON, FILTERICON, CLIPGRIP } from '../icons/protoIcons';
 import CalendarModal, { CAL_TODAY } from '../components/CalendarModal';
@@ -115,9 +120,47 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   const evtOn = (sg: Seg) => sg.t === 'evt' && !!sg.ev && pbEvents.indexOf(sg.ev) >= 0;
   const filterActive = pbEvents.length < EVFILTER_COUNT;
 
+  // ---- 概率性状态(docs/edge-states-checklist.md)----
+  const flags = useDemoFlags();
+  // 整页态:未插卡 / 云存过期 / 录像数据加载失败
+  const pageState = flags.noSdCard ? 'nosd' : flags.cloudExpired ? 'cloud' : flags.failLoad ? 'fail' : null;
+  const [retrying, setRetrying] = useState(false);
+  const retryLoad = () => {
+    setRetrying(true);
+    setTimeout(() => setRetrying(false), 800);
+  };
+  // 当日无录像
+  const noRecordings = flags.emptyDay;
+  // 回放拉流失败:1s loading 后错误,Retry 重连
+  const [streamState, setStreamState] = useState<'ok' | 'loading' | 'error'>('ok');
+  const streamTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectPlayback = useCallback(() => {
+    if (!getDemoFlags().failStream) {
+      setStreamState('ok');
+      return;
+    }
+    setStreamState('loading');
+    if (streamTimer.current) clearTimeout(streamTimer.current);
+    streamTimer.current = setTimeout(
+      () => setStreamState(getDemoFlags().failStream ? 'error' : 'ok'),
+      1000,
+    );
+  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      connectPlayback();
+      return () => {
+        if (streamTimer.current) clearTimeout(streamTimer.current);
+      };
+    }, [connectPlayback]),
+  );
+  // 相册权限被拒引导
+  const [permDlg, setPermDlg] = useState(false);
+
   // playhead on a recorded segment? (pbSegAt) — 录像段按小时平铺
   const tm60 = pbHead % 60;
-  const segAt = PBSEGS.find((sg) => tm60 >= sg.s && tm60 < sg.e) || null;
+  const segAtRaw = PBSEGS.find((sg) => tm60 >= sg.s && tm60 < sg.e) || null;
+  const segAt = noRecordings ? null : segAtRaw;
 
   const enterClip = () => {
     setClipS(Math.max(0, pbHead - 8));
@@ -256,16 +299,61 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         </View>
       }
     >
+      {/* 整页态:未插 SD 卡 / 云存过期 / 加载失败 */}
+      {pageState ? (
+        <View style={st.pageStateWrap}>
+          {pageState === 'fail' && retrying ? (
+            <Spinner size={28} />
+          ) : pageState === 'nosd' ? (
+            <StateView
+              variant="empty"
+              icon="sd"
+              title="No SD card detected"
+              sub="Insert an SD card into the camera to record and play back footage."
+              actionLabel="Storage Settings"
+              onAction={() => navigation.navigate('storage-settings')}
+            />
+          ) : pageState === 'cloud' ? (
+            <StateView
+              variant="brand"
+              icon="cloud"
+              title="Cloud storage expired"
+              sub="Your cloud plan has expired. Renew it to keep event recordings and playback."
+            />
+          ) : (
+            <StateView
+              variant="error"
+              icon="warn"
+              title="Failed to load recordings"
+              sub="Please check your network and try again."
+              actionLabel="Retry"
+              onAction={retryLoad}
+            />
+          )}
+        </View>
+      ) : (
+        <>
       {/* video + control cluster */}
       <View style={st.videoWrap}>
         <View style={st.video}>
           {segAt ? (
-            <>
-              {/* prototype dark gradient: linear-gradient(180deg,#2A2520,#15110d) */}
-              <LinearGradient colors={['#2A2520', '#15110D'] as const} style={StyleSheet.absoluteFill} />
-              <Text style={st.stamp}>{stamp}</Text>
-              <Text style={st.quality}>1080P</Text>
-            </>
+            streamState !== 'ok' ? (
+              <DarkPlayerState
+                loading={streamState === 'loading'}
+                icon="warn"
+                title="Playback failed"
+                sub="Please check your network and try again."
+                actionLabel="Retry"
+                onAction={connectPlayback}
+              />
+            ) : (
+              <>
+                {/* prototype dark gradient: linear-gradient(180deg,#2A2520,#15110d) */}
+                <LinearGradient colors={['#2A2520', '#15110D'] as const} style={StyleSheet.absoluteFill} />
+                <Text style={st.stamp}>{stamp}</Text>
+                <Text style={st.quality}>1080P</Text>
+              </>
+            )
           ) : (
             <View style={st.noRecWrap}>
               <Text style={st.noRecTxt}>No recordings in this time period</Text>
@@ -286,8 +374,18 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           <Tap
             style={st.ctlBtn}
             onPress={() => {
-              if (ctlRec) showSaved();
-              setCtlRec((v) => !v);
+              if (ctlRec) {
+                // 停止录像 → 保存:失败演示 / 成功提示条
+                if (getDemoFlags().failOps) showToast('Failed to save the video.', 'error');
+                else showSaved();
+                setCtlRec(false);
+                return;
+              }
+              if (getDemoFlags().permsDenied) {
+                setPermDlg(true);
+                return;
+              }
+              setCtlRec(true);
             }}
           >
             <SvgXml xml={CTRL_CAMVIDEO} width={22} height={22} color={ctlRec ? colors.brand : colors.textPrimary} />
@@ -327,8 +425,15 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         )}
       </Row>
 
-      {/* 连续时间轴 — 拖动条带本体、固定中线读值;窗口化渲染支持跨天滑动,两侧渐隐蒙版 */}
-      {(() => {
+      {/* 当日无录像:时间轴区域空态 */}
+      {noRecordings ? (
+        <View style={st.tlEmpty}>
+          <Icon name="fileVideo" size={22} color={colors.textTertiary} sw={1.6} />
+          <Text style={st.tlEmptyTxt}>No recordings on this day</Text>
+        </View>
+      ) : (
+      /* 连续时间轴 — 拖动条带本体、固定中线读值;窗口化渲染支持跨天滑动,两侧渐隐蒙版 */
+      (() => {
         const tickStep = clipMode ? 10 : 60;
         const winStart = Math.floor((pbHead - WIN) / tickStep) * tickStep;
         const winEnd = winStart + WIN * 2 + tickStep * 2;
@@ -422,10 +527,11 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
             {!clipMode && <View pointerEvents="none" style={st.centerHead} />}
           </View>
         );
-      })()}
+      })()
+      )}
 
       {/* legend (hidden while trimming) */}
-      {!clipMode && (
+      {!clipMode && !noRecordings && (
         <View style={st.legend}>
           <Row style={st.legendRow}>
             <View style={[st.swatch, { backgroundColor: PB_REG }]} />
@@ -443,7 +549,21 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
       {/* bottom action bar — Album / Clip / Return (clip mode: Save to Album / Return) */}
       {clipMode ? (
         <Row style={[st.bottomBar, { justifyContent: 'center', gap: 120 }]}>
-          <Tap style={st.barItem} onPress={() => navigation.navigate('dev-download')}>
+          <Tap
+            style={st.barItem}
+            onPress={() => {
+              // 剪辑保存:相册权限被拒 → 引导;failOps → 失败提示
+              if (getDemoFlags().permsDenied) {
+                setPermDlg(true);
+                return;
+              }
+              if (getDemoFlags().failOps) {
+                showToast('Failed to save the clip.', 'error');
+                return;
+              }
+              navigation.navigate('dev-download');
+            }}
+          >
             <SvgXml xml={PBTABICONS.album} width={21} height={21} color={colors.textSecondary} />
             <Text style={st.barLabel}>Save to Album</Text>
           </Tap>
@@ -495,6 +615,11 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           </Text>
         </View>
       )}
+        </>
+      )}
+
+      {/* 相册权限被拒引导(全屏 Modal 打开时不渲染,避免 iOS 双 Modal 冲突) */}
+      {!fsOpen && <PermissionDialog type="photos" visible={permDlg} onClose={() => setPermDlg(false)} />}
 
       {/* 拓展:横屏全屏回放 */}
       <Modal visible={fsOpen} animationType="fade" onRequestClose={() => setFsOpen(false)}>
@@ -677,6 +802,17 @@ const st = StyleSheet.create({
   filterText: { fontSize: 14, fontWeight: '500' },
 
   timelineWrap: { marginHorizontal: TL_MARGIN, marginTop: 18, height: 106, overflow: 'hidden' },
+  // 整页态 / 当日无录像空态
+  pageStateWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 60 },
+  tlEmpty: {
+    marginHorizontal: TL_MARGIN,
+    marginTop: 18,
+    height: 106,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  tlEmptyTxt: { fontSize: 13, fontWeight: '600', color: colors.textTertiary },
   strip: { position: 'absolute', top: 0, left: 0, height: 106 },
   label: {
     position: 'absolute', top: 0, width: 44, textAlign: 'center',

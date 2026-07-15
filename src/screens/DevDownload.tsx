@@ -1,10 +1,13 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { PermissionDialog } from '../components/PermissionDialog';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { CLIPGRIP, CALICON } from '../icons/protoIcons';
 import { colors } from '../theme';
 
@@ -45,16 +48,59 @@ export default function DevDownload({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   const [saved, setSaved] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 下载进度弹窗(0-100,可取消);failOps 演示 60% 时下载中断
+  const [dl, setDl] = useState<number | null>(null);
+  const [permDlg, setPermDlg] = useState(false);
+  const dlProg = useRef(0);
+  const dlTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopDl = () => {
+    if (dlTimer.current) clearInterval(dlTimer.current);
+    dlTimer.current = null;
+  };
   useEffect(
     () => () => {
       if (timer.current) clearTimeout(timer.current);
+      stopDl();
     },
     [],
   );
-  const save = () => {
+
+  const finishSaved = () => {
     setSaved(true);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setSaved(false), 1800);
+  };
+
+  const save = () => {
+    if (getDemoFlags().permsDenied) {
+      setPermDlg(true);
+      return;
+    }
+    dlProg.current = 0;
+    setDl(0);
+    stopDl();
+    dlTimer.current = setInterval(() => {
+      dlProg.current += 4;
+      if (getDemoFlags().failOps && dlProg.current >= 60) {
+        stopDl();
+        setDl(null);
+        showToast('Failed to save the clip. Please try again.', 'error');
+        return;
+      }
+      if (dlProg.current >= 100) {
+        stopDl();
+        setDl(null);
+        finishSaved();
+        return;
+      }
+      setDl(dlProg.current);
+    }, 80);
+  };
+
+  const cancelDl = () => {
+    stopDl();
+    setDl(null);
   };
 
   return (
@@ -140,11 +186,70 @@ export default function DevDownload({ navigation }: AppScreenProps) {
           <Text style={st.bottomTxt}>Return</Text>
         </Tap>
       </View>
+
+      {/* 下载进度弹窗(可取消) */}
+      <Modal transparent visible={dl !== null} animationType="fade" onRequestClose={cancelDl}>
+        <View style={st.ovl}>
+          <View style={st.dlDialog}>
+            <Text style={st.dlTitle}>Saving to Album</Text>
+            <View style={st.dlTrack}>
+              <View style={[st.dlFill, { width: `${dl ?? 0}%` }]} />
+            </View>
+            <Text style={st.dlPct}>{dl ?? 0}%</Text>
+            <Pressable
+              style={({ pressed }) => [st.dlCancel, pressed && { opacity: 0.8 }]}
+              onPress={cancelDl}
+            >
+              <Text style={st.dlCancelTxt}>Cancel</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* 相册权限被拒引导 */}
+      <PermissionDialog type="photos" visible={permDlg} onClose={() => setPermDlg(false)} />
     </Screen>
   );
 }
 
 const st = StyleSheet.create({
+  // 下载进度弹窗(App 弹窗规范)
+  ovl: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.42)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 34,
+  },
+  dlDialog: {
+    width: '100%',
+    maxWidth: 322,
+    backgroundColor: colors.surface,
+    borderRadius: 22,
+    paddingHorizontal: 22,
+    paddingTop: 24,
+    paddingBottom: 20,
+  },
+  dlTitle: { fontSize: 17, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' },
+  dlTrack: {
+    marginTop: 18,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.bgSecondary,
+    overflow: 'hidden',
+  },
+  dlFill: { height: 6, borderRadius: 3, backgroundColor: colors.brand },
+  dlPct: { marginTop: 10, fontSize: 13, fontWeight: '600', color: colors.textTertiary, textAlign: 'center' },
+  dlCancel: {
+    marginTop: 18,
+    height: 46,
+    borderRadius: 99,
+    backgroundColor: colors.bgSecondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dlCancelTxt: { fontSize: 15, fontWeight: '700', color: colors.textSecondary },
+
   nav: { paddingHorizontal: 16, height: 50, gap: 10 },
   navSlot: { width: 44, height: '100%', justifyContent: 'center' },
   navBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },

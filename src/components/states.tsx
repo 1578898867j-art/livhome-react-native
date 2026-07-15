@@ -84,6 +84,83 @@ export function StateView({
   );
 }
 
+/* ---- DarkPlayerState:深色播放器内的 加载/离线/错误 态 ----
+ * 绝对铺满播放器区域,居中内容;loading 时只显示白色 spinner。
+ */
+export function DarkPlayerState({
+  loading,
+  icon = 'cloudOff',
+  title,
+  sub,
+  actionLabel,
+  onAction,
+}: {
+  loading?: boolean;
+  icon?: string;
+  title?: string;
+  sub?: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <View style={dk.wrap} pointerEvents="box-none">
+      {loading ? (
+        <Spinner size={28} color="rgba(255,255,255,0.9)" stroke={2.4} />
+      ) : (
+        <>
+          <View style={dk.circle}>
+            <Icon name={icon} size={24} color="rgba(255,255,255,0.85)" sw={1.7} />
+          </View>
+          {!!title && <Text style={dk.title}>{title}</Text>}
+          {!!sub && <Text style={dk.sub}>{sub}</Text>}
+          {!!actionLabel && (
+            <Tap style={dk.btn} onPress={onAction}>
+              <Text style={dk.btnTxt}>{actionLabel}</Text>
+            </Tap>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+const dk = StyleSheet.create({
+  wrap: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1E1A16',
+  },
+  circle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  title: { marginTop: 12, fontSize: 14, fontWeight: '700', color: '#fff' },
+  sub: {
+    marginTop: 4,
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.55)',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+  },
+  btn: {
+    marginTop: 14,
+    height: 34,
+    paddingHorizontal: 20,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnTxt: { fontSize: 13, fontWeight: '700', color: '#fff' },
+});
+
 const st = StyleSheet.create({
   wrap: { alignItems: 'center', paddingVertical: 48, paddingHorizontal: 32 },
   circle: {
