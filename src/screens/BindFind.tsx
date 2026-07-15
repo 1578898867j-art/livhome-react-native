@@ -5,17 +5,6 @@ import { Screen, Tap, Row, Header } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors, shadow } from '../theme';
 
-/* stepper — 4 bars, `active` filled brand (bStepper) */
-function Stepper({ active }: { active: number }) {
-  return (
-    <View style={st.stepper}>
-      {[1, 2, 3, 4].map((i) => (
-        <View key={i} style={[st.stepBar, { backgroundColor: i <= active ? colors.brand : colors.borderStrong }]} />
-      ))}
-    </View>
-  );
-}
-
 /* manual-add device tile (bDeviceTile) → continue/next */
 function DeviceTile({ name, onPress }: { name: string; onPress?: () => void }) {
   return (
@@ -70,8 +59,6 @@ export default function BindFind({ navigation }: AppScreenProps) {
       scroll={false}
       header={<Header title="Add Device" onBack={() => navigation.goBack()} />}
     >
-      <Stepper active={1} />
-
       <View style={st.headBlock}>
         <Text style={st.title}>Bring your phone close to the device</Text>
         <Text style={st.sub}>LIVHOME is quietly detecting nearby cameras</Text>
@@ -120,9 +107,6 @@ export default function BindFind({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  stepper: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingTop: 8, paddingBottom: 4 },
-  stepBar: { width: 20, height: 3, borderRadius: 2 },
-
   headBlock: { alignItems: 'center', paddingHorizontal: 26, paddingTop: 22 },
   title: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, lineHeight: 29, color: colors.textPrimary, textAlign: 'center' },
   sub: { fontSize: 14, fontWeight: '500', color: colors.textSecondary, lineHeight: 21, marginTop: 10, textAlign: 'center' },
