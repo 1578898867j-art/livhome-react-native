@@ -328,9 +328,26 @@ export default function AgentChat({ navigation }: AppScreenProps) {
   useEffect(
     () => () => {
       if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      if (hintTimer.current) clearTimeout(hintTimer.current);
     },
     [],
   );
+
+  // 新聊天提示:已处于新聊天时点「新聊天」按钮 → 灰色胶囊提示(参考稿样式)
+  const [hint, setHint] = useState<string | null>(null);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showHint = (text: string) => {
+    setHint(text);
+    if (hintTimer.current) clearTimeout(hintTimer.current);
+    hintTimer.current = setTimeout(() => setHint(null), 1500);
+  };
+  const onNewChat = () => {
+    if (mode === 'empty') {
+      showHint('Already in new chat');
+      return;
+    }
+    reset();
+  };
 
   const showCopied = (text: string) => {
     Clipboard.setStringAsync(text.replace(/<\/?b>/g, '')).catch(() => {});
@@ -517,7 +534,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
         style={[styles.topBarGrad, { paddingTop: insets.top + 8 }]}
         pointerEvents="box-none"
       >
-        <Toolbar onNew={reset} onMenu={openDrawer} />
+        <Toolbar onNew={onNewChat} onMenu={openDrawer} />
       </LinearGradient>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {mode === 'empty' ? (
@@ -824,6 +841,13 @@ export default function AgentChat({ navigation }: AppScreenProps) {
             </View>
           </View>
         </KeyboardAvoidingView>
+      )}
+
+      {/* 新聊天提示(灰色胶囊,参考稿样式) */}
+      {hint != null && (
+        <View style={[styles.hintToast, { top: insets.top + 10 }]} pointerEvents="none">
+          <Text style={styles.hintText}>{hint}</Text>
+        </View>
       )}
 
       {/* Copied toast(与图片保存 toast 同款) */}
@@ -1164,6 +1188,14 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   copiedText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
+
+  // 新聊天提示胶囊(参考稿:浅灰底、灰字、无图标)
+  hintToast: {
+    position: 'absolute', alignSelf: 'center', zIndex: 90,
+    height: 40, paddingHorizontal: 20, borderRadius: 20,
+    backgroundColor: '#EBEBF1', alignItems: 'center', justifyContent: 'center',
+  },
+  hintText: { fontSize: 15, fontWeight: '600', color: colors.textSecondary },
 
   // dialogs
   dialogWrap: {
