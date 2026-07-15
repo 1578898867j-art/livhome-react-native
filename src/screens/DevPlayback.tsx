@@ -160,6 +160,39 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
     })
   ).current;
 
+  // ── 剪辑把手拖拽:绿(起点)/红(终点),互相夹逼、限制在当天时间域内
+  const clipSRef = useRef(clipS);
+  clipSRef.current = clipS;
+  const clipERef = useRef(clipE);
+  clipERef.current = clipE;
+  const clipGrab = useRef(0);
+  const panClipS = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        clipGrab.current = clipSRef.current;
+      },
+      onPanResponderMove: (_e, g) => {
+        const v = Math.max(0, Math.min(clipERef.current - 2, clipGrab.current + g.dx / PPM_CLIP));
+        setClipS(Math.round(v * 10) / 10);
+      },
+    })
+  ).current;
+  const panClipE = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        clipGrab.current = clipERef.current;
+      },
+      onPanResponderMove: (_e, g) => {
+        const v = Math.max(clipSRef.current + 2, Math.min(dayMaxRef.current, clipGrab.current + g.dx / PPM_CLIP));
+        setClipE(Math.round(v * 10) / 10);
+      },
+    })
+  ).current;
+
   const ctl = (name: string, on: boolean, toggle: () => void) => {
     const glyph = on ? (name === 'speaker' ? 'speakerSolid' : name === 'mic' ? 'micSolid' : name) : name;
     return (
@@ -310,10 +343,18 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
                       style={[st.clipSpan, { left: px(clipS - trackS), width: px(clipE - clipS) }]}
                       pointerEvents="none"
                     />
-                    <View style={[st.clipHandle, { left: px(clipS - trackS), backgroundColor: '#22C55E' }]}>
+                    <View
+                      {...panClipS.panHandlers}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      style={[st.clipHandle, { left: px(clipS - trackS), backgroundColor: '#22C55E' }]}
+                    >
                       <SvgXml xml={CLIPGRIP} width={17} height={17} />
                     </View>
-                    <View style={[st.clipHandle, { left: px(clipE - trackS), backgroundColor: '#EF4444' }]}>
+                    <View
+                      {...panClipE.panHandlers}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      style={[st.clipHandle, { left: px(clipE - trackS), backgroundColor: '#EF4444' }]}
+                    >
                       <SvgXml xml={CLIPGRIP} width={17} height={17} />
                     </View>
                   </>
@@ -358,7 +399,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
 
       {/* bottom action bar — Album / Clip / Return (clip mode: Save to Album / Return) */}
       {clipMode ? (
-        <Row style={[st.bottomBar, { paddingHorizontal: 64 }]}>
+        <Row style={[st.bottomBar, { justifyContent: 'space-between', paddingHorizontal: 56 }]}>
           <Tap style={st.barItem} onPress={() => navigation.navigate('dev-download')}>
             <SvgXml xml={PBTABICONS.album} width={21} height={21} color={colors.textSecondary} />
             <Text style={st.barLabel}>Save to Album</Text>
