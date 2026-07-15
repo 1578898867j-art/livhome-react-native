@@ -23,7 +23,8 @@ const FULLSCREEN_ICON =
   '<svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3H19.5C20.3284 3 21 3.67157 21 4.5V7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16.5V19.5C21 20.3284 20.3284 21 19.5 21H16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 21H4.5C3.67157 21 3 20.3284 3 19.5V16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7.5V4.5C3 3.67157 3.67157 3 4.5 3H7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 // 预设位网格:一排 3 个(面板左右 padding 18,列间距 10)
-const PRESET_W = Math.floor((Dimensions.get('window').width - 18 * 2 - 10 * 2) / 3);
+const WIN = Dimensions.get('window');
+const PRESET_W = Math.floor((WIN.width - 18 * 2 - 10 * 2) / 3);
 
 // Prototype MSGFILTERS map — keys match the message icon keys.
 const MSGFILTERS: Record<string, string> = {
@@ -110,6 +111,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [delConfirm, setDelConfirm] = useState(false);
   const [presetPopup, setPresetPopup] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   // 拍照/录像保存提示条(截图为瞬时动作,不保持常亮)
   const [saveToast, setSaveToast] = useState<null | 'photo' | 'video'>(null);
   const [snapFlash, setSnapFlash] = useState(false);
@@ -206,9 +208,9 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             <View style={st.resBadge}>
               <Text style={st.resTxt}>1080P</Text>
             </View>
-            <View style={st.scanBtn}>
+            <Tap style={st.scanBtn} onPress={() => setFullscreen(true)} hitSlop={8}>
               <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
-            </View>
+            </Tap>
           </CamPreview>
           <Row style={{ gap: 8, padding: 12, backgroundColor: colors.surface }}>
             <PhotoBtn icon="speaker" on={ctl.ctlSpk} onPress={() => toggleCtl('ctlSpk')} />
@@ -392,6 +394,20 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           </Text>
         </View>
       )}
+
+      {/* 全屏预览:旋转 90° 的横屏沉浸模态 */}
+      <Modal visible={fullscreen} animationType="fade" onRequestClose={() => setFullscreen(false)}>
+        <View style={st.fsRoot}>
+          <View style={[st.fsStage, { width: WIN.height, height: WIN.width }]}>
+            <View style={{ width: Math.min(WIN.height, WIN.width * (16 / 9)) }}>
+              <CamPreview live tag="Person · sofa" label="14:22:08" />
+            </View>
+            <Tap style={st.fsExit} onPress={() => setFullscreen(false)} hitSlop={10}>
+              <SvgXml xml={FULLSCREEN_ICON} width={18} height={18} color="#fff" />
+            </Tap>
+          </View>
+        </View>
+      </Modal>
 
       {/* 巡航前置条件弹窗(原型 preset-popup):预置位不足 2 个 */}
       <Modal visible={presetPopup} transparent animationType="fade" onRequestClose={() => setPresetPopup(false)}>
@@ -953,6 +969,13 @@ const st = StyleSheet.create({
   saveThumb: { width: 72, height: 44, borderRadius: 10, overflow: 'hidden' },
   saveTxt: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   saveLink: { color: colors.brand, fontWeight: '600' },
+
+  fsRoot: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
+  fsStage: { transform: [{ rotate: '90deg' }], alignItems: 'center', justifyContent: 'center' },
+  fsExit: {
+    position: 'absolute', top: 14, right: 14, width: 36, height: 36, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center',
+  },
 
   presetPopupBtn: {
     width: '100%', height: 54, borderRadius: 99, marginTop: 18,
