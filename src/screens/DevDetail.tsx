@@ -18,6 +18,10 @@ import type {
 
 const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+// Full-screen(全局放大)—— 用户提供的 Huge-icon 素材
+const FULLSCREEN_ICON =
+  '<svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3H19.5C20.3284 3 21 3.67157 21 4.5V7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16.5V19.5C21 20.3284 20.3284 21 19.5 21H16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 21H4.5C3.67157 21 3 20.3284 3 19.5V16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7.5V4.5C3 3.67157 3.67157 3 4.5 3H7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
 // 预设位网格:一排 3 个(面板左右 padding 18,列间距 10)
 const PRESET_W = Math.floor((Dimensions.get('window').width - 18 * 2 - 10 * 2) / 3);
 
@@ -198,12 +202,12 @@ export default function DevDetail({ navigation }: AppScreenProps) {
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
         {/* player */}
         <View style={st.player}>
-          <CamPreview live tag="Person · sofa" label="Living · 14:22:08">
+          <CamPreview live tag="Person · sofa" label="14:22:08">
             <View style={st.resBadge}>
               <Text style={st.resTxt}>1080P</Text>
             </View>
             <View style={st.scanBtn}>
-              <Icon name="scan" size={15} color="#fff" sw={2} />
+              <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
             </View>
           </CamPreview>
           <Row style={{ gap: 8, padding: 12, backgroundColor: colors.surface }}>
@@ -863,13 +867,15 @@ const st = StyleSheet.create({
     borderRadius: 4,
   },
   detTagTxt: { color: '#062018', fontSize: 10, fontWeight: '700' },
+  // bottom 17:与右侧 30 高的全屏按钮(bottom 8)垂直居中对齐
   camLabel: {
     position: 'absolute',
-    bottom: 8,
+    bottom: 17,
     left: 12,
     color: 'rgba(255,255,255,.85)',
     fontSize: 10,
     fontWeight: '700',
+    lineHeight: 12,
   },
   resBadge: {
     position: 'absolute',
