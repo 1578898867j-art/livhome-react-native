@@ -4,6 +4,10 @@ import { View, Text, StyleSheet, Image, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { StateView, Spinner } from '../components/states';
+import { PermissionDialog } from '../components/PermissionDialog';
+import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { SELICON } from '../icons/protoIcons';
 import { CAMAVATAR, MAILBOX_EMPTY } from '../assets/images';
 import { colors } from '../theme';
@@ -52,6 +56,15 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
   const [systemMsgs, setSystemMsgs] = useState<DayGroup[]>(SYSTEM_INIT);
   const [confirm, setConfirm] = useState<null | 'all' | 'sel'>(null);
 
+  // 概率性状态:列表加载失败 / 推送权限关闭引导 / 删除失败
+  const flags = useDemoFlags();
+  const [retrying, setRetrying] = useState(false);
+  const [permDlg, setPermDlg] = useState(false);
+  const retryLoad = () => {
+    setRetrying(true);
+    setTimeout(() => setRetrying(false), 800);
+  };
+
   const groups = tab === 'device' ? deviceMsgs : systemMsgs;
   const setGroups = tab === 'device' ? setDeviceMsgs : setSystemMsgs;
   const empty = groups.every((g) => g.msgs.length === 0);
@@ -69,6 +82,12 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
   };
 
   const doDelete = () => {
+    // 删除失败演示:提示错误,列表保持不变
+    if (getDemoFlags().failOps) {
+      setConfirm(null);
+      showToast('Failed to delete. Please try again.', 'error');
+      return;
+    }
     if (confirm === 'all') {
       setGroups((gs) => gs.map((g) => ({ ...g, msgs: [] })));
     } else {
@@ -134,8 +153,38 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
         )}
       </Row>
 
-      {/* 空态(设计稿:邮筒插画 + No camera messages yet.) */}
-      {empty ? (
+      {/* 推送权限关闭引导条 */}
+      {flags.permsDenied && (
+        <Tap style={st.pushBanner} onPress={() => setPermDlg(true)}>
+          <View style={st.pushIcon}>
+            <Icon name="bell" size={15} color={colors.brand} />
+          </View>
+          <Text style={st.pushTxt} numberOfLines={1}>
+            Notifications are off — you may miss alerts
+          </Text>
+          <Text style={st.pushCta}>Enable</Text>
+        </Tap>
+      )}
+
+      {/* 加载失败(设计稿 4531 错误区块:Failed to load + Retry) */}
+      {flags.failLoad ? (
+        retrying ? (
+          <View style={st.retryWrap}>
+            <Spinner size={28} />
+          </View>
+        ) : (
+          <StateView
+            variant="error"
+            icon="warn"
+            title="Failed to load Notification"
+            sub="Please check your network and try again."
+            actionLabel="Retry"
+            onAction={retryLoad}
+            style={{ paddingTop: 72 }}
+          />
+        )
+      ) : /* 空态(设计稿:邮筒插画 + No camera messages yet.) */
+      empty ? (
         <View style={st.emptyWrap}>
           <Image source={{ uri: MAILBOX_EMPTY }} style={st.emptyArt} resizeMode="contain" />
           <Text style={st.emptyTitle}>
@@ -225,6 +274,9 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* 通知权限引导弹窗 */}
+      <PermissionDialog type="notifications" visible={permDlg} onClose={() => setPermDlg(false)} />
     </Screen>
   );
 }
@@ -251,6 +303,30 @@ const st = StyleSheet.create({
   tabDot: { position: 'absolute', top: 0, right: 0, width: 8, height: 8, borderRadius: 4, backgroundColor: colors.critical },
   delAllRow: { gap: 12 },
   delAllTxt: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
+
+  // 推送权限关闭引导条 + 加载失败重试
+  pushBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 22,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: colors.surface,
+  },
+  pushIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: colors.brandSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pushTxt: { flex: 1, fontSize: 13, fontWeight: '500', color: colors.textSecondary },
+  pushCta: { fontSize: 13, fontWeight: '700', color: colors.brand },
+  retryWrap: { alignItems: 'center', paddingTop: 110 },
 
   dayRow: { paddingHorizontal: 22, marginTop: 8, marginBottom: 16, height: 30, alignItems: 'baseline' },
   dayNum: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, color: colors.textPrimary },

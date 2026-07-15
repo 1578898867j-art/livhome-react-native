@@ -1,8 +1,10 @@
 import type { AppScreenProps } from '../navigation/types';
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { StateView, Spinner } from '../components/states';
+import { useDemoFlags } from '../features/app/demoStore';
 import { colors } from '../theme';
 
 type Convo = { title: string; time: string };
@@ -30,6 +32,13 @@ const GROUPS: { label: string; items: Convo[] }[] = [
 
 export default function AgentHistory({ navigation }: AppScreenProps) {
   const openChat = () => navigation.navigate('Main', { screen: 'agent-chat' });
+  // 历史记录加载失败(failLoad 演示)
+  const { failLoad } = useDemoFlags();
+  const [retrying, setRetrying] = useState(false);
+  const retryLoad = () => {
+    setRetrying(true);
+    setTimeout(() => setRetrying(false), 800);
+  };
 
   return (
     <Screen
@@ -51,7 +60,24 @@ export default function AgentHistory({ navigation }: AppScreenProps) {
           <Text style={st.newBtnLabel}>New Conversation</Text>
         </Tap>
 
-        {GROUPS.map((g) => (
+        {failLoad ? (
+          retrying ? (
+            <View style={{ alignItems: 'center', paddingTop: 90 }}>
+              <Spinner size={28} />
+            </View>
+          ) : (
+            <StateView
+              variant="error"
+              icon="warn"
+              title="Failed to load conversations"
+              sub="Please check your network and try again."
+              actionLabel="Retry"
+              onAction={retryLoad}
+              style={{ paddingTop: 50 }}
+            />
+          )
+        ) : (
+        GROUPS.map((g) => (
           <View key={g.label}>
             <Text style={st.group}>{g.label}</Text>
             {g.items.map((it) => (
@@ -61,7 +87,8 @@ export default function AgentHistory({ navigation }: AppScreenProps) {
               </Tap>
             ))}
           </View>
-        ))}
+        ))
+        )}
       </View>
     </Screen>
   );

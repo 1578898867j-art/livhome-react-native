@@ -35,6 +35,8 @@ import { colors } from '../theme';
 import { CAREPICS } from '../assets/images';
 import { SENDICON, SCROLLDOWN, CONV_EDIT, CONV_TRASH } from '../icons/protoIcons';
 import { CONVERSATION_GROUPS, useAssistantPrototype } from '../features/assistant/useAssistantPrototype';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 
 const W = Dimensions.get('window').width;
 const H = Dimensions.get('window').height;
@@ -58,7 +60,12 @@ const COPY_ICON =
 const SPEAK_ICON =
   '<svg viewBox="57 9 20 20" fill="none"><path d="M72.0003 17.557C72.4985 17.8451 72.8337 18.3838 72.8337 19.0007C72.8337 19.6176 72.4985 20.1562 72.0003 20.4444M72.0003 14.9173C73.9022 15.3034 75.3337 16.9848 75.3337 19.0006C75.3337 21.0164 73.9022 22.6979 72.0003 23.084M63.278 15.3357L66.8337 12.6702C67.9324 11.8465 69.5003 12.6301 69.5003 14.0029V23.9984C69.5003 25.3712 67.9324 26.1548 66.8337 25.3311L63.278 22.6656C62.9896 22.4494 62.6388 22.3325 62.2783 22.3325H60.3337C59.4132 22.3325 58.667 21.5866 58.667 20.6666V17.3347C58.667 16.4147 59.4132 15.6688 60.3337 15.6688H62.2783C62.6388 15.6688 62.9896 15.5519 63.278 15.3357Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 
-type Block = { t: 'me' | 'p' | 'h' | 'sh' | 'li' | 'gap'; text?: string; secondary?: boolean };
+type Block = {
+  t: 'me' | 'p' | 'h' | 'sh' | 'li' | 'gap' | 'err';
+  text?: string;
+  secondary?: boolean;
+  failed?: boolean; // 发送失败(断网):气泡旁红色感叹号,点击重发
+};
 
 // The exact demo conversation from the prototype (convHistory + final answer).
 const CONV: Block[] = [
@@ -367,10 +374,53 @@ export default function AgentChat({ navigation }: AppScreenProps) {
     sendAssistant();
   }
 
+  const appendBlocks = (blocks: Block[]) =>
+    setConv((prev) => [...prev, ...blocks]);
+
+  // 发送失败重发:仍断网 → 错误提示;恢复 → 清除失败标记
+  const resendMsg = (i: number) => {
+    if (getDemoFlags().offline) {
+      showToast('Still offline. Check your connection.', 'error');
+      return;
+    }
+    setConv((prev) => prev.map((b, idx) => (idx === i ? { ...b, failed: false } : b)));
+  };
+
+  // 错误气泡重试:服务恢复 → 换成正常回复
+  const retryErr = (i: number) => {
+    if (getDemoFlags().failOps) {
+      showToast('Service is unavailable. Please try again later.', 'error');
+      return;
+    }
+    setConv((prev) =>
+      prev.map((b, idx) =>
+        idx === i ? { t: 'p' as const, text: 'Sorry about the hiccup — I’m back. How can I help?' } : b,
+      ),
+    );
+  };
+
   function sendText() {
     if (!draft.trim()) return;
+    const text = draft.trim();
     const shouldCollapseNavigation = collapsedTab === null;
-    send();
+    const f = getDemoFlags();
+    if (f.offline) {
+      // 断网:消息进入会话但标记发送失败(红色感叹号,点击重发)
+      Keyboard.dismiss();
+      appendBlocks([{ t: 'gap' }, { t: 'me', text, failed: true }]);
+      setDraft('');
+      openConversation();
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    } else if (f.failOps) {
+      // 服务不可用:消息发出,回复位置显示错误气泡 + Retry
+      Keyboard.dismiss();
+      appendBlocks([{ t: 'gap' }, { t: 'me', text }, { t: 'err' }]);
+      setDraft('');
+      openConversation();
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    } else {
+      send();
+    }
     if (shouldCollapseNavigation) {
       requestAnimationFrame(() => setCollapsedTab('agent-chat'));
     }
@@ -578,6 +628,11 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                       if (b.t === 'me')
                         return (
                           <View key={i} style={styles.meRow}>
+                            {b.failed && (
+                              <Pressable style={styles.failBadge} onPress={() => resendMsg(i)} hitSlop={8}>
+                                <Text style={styles.failBang}>!</Text>
+                              </Pressable>
+                            )}
                             <Pressable
                               style={({ pressed }) => [styles.meBubble, pressed && { backgroundColor: colors.bgSecondary }]}
                               delayLongPress={350}
@@ -587,6 +642,18 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                               }}
                             >
                               <Text style={styles.meText}>{b.text}</Text>
+                            </Pressable>
+                          </View>
+                        );
+                      if (b.t === 'err')
+                        return (
+                          <View key={i} style={styles.errBubble}>
+                            <View style={styles.errIcon}>
+                              <Icon name="warn" size={13} color={colors.critical} sw={2} />
+                            </View>
+                            <Text style={styles.errTxt}>Something went wrong. Please try again.</Text>
+                            <Pressable onPress={() => retryErr(i)} hitSlop={6}>
+                              <Text style={styles.errRetry}>Retry</Text>
                             </Pressable>
                           </View>
                         );
@@ -969,8 +1036,33 @@ const styles = StyleSheet.create({
   convContent: { paddingHorizontal: 18, paddingBottom: 220 },
   thinkingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 8 },
   thinkingText: { fontSize: 18, fontWeight: '600', letterSpacing: -0.2, color: colors.textPrimary },
-  meRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 2, marginBottom: 22 },
+  meRow: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginTop: 2, marginBottom: 22 },
   meBubble: { maxWidth: '82%', borderWidth: 1, borderColor: colors.border, borderRadius: 18, paddingVertical: 9, paddingHorizontal: 15 },
+  // 发送失败:红色感叹号(点击重发)
+  failBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.critical,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  failBang: { color: '#fff', fontSize: 13, fontWeight: '800' },
+  // 服务不可用错误气泡 + Retry
+  errBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: colors.criticalSoft,
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 6,
+  },
+  errIcon: { width: 18, height: 18, alignItems: 'center', justifyContent: 'center' },
+  errTxt: { flexShrink: 1, fontSize: 13, fontWeight: '500', color: colors.textSecondary },
+  errRetry: { fontSize: 13, fontWeight: '700', color: colors.brand },
   meText: { fontSize: 15, fontWeight: '500', color: colors.textPrimary, lineHeight: 21 },
   p: { fontSize: 16, fontWeight: '500', lineHeight: 25, color: colors.textPrimary, marginBottom: 15 },
   h: { fontSize: 20, fontWeight: '700', letterSpacing: -0.3, color: colors.textPrimary, marginTop: 22, marginBottom: 12 },

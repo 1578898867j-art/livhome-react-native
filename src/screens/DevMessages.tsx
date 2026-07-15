@@ -5,6 +5,8 @@ import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { CamPreview } from '../components/CamPreview';
+import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { NT_MOTION, NT_CROSSING } from '../icons/notifIcons';
 import { colors, shadow } from '../theme';
 
@@ -34,6 +36,8 @@ const FILTERS = ['All', 'Cloud', 'SD Card'] as const;
 export default function DevMessages({ navigation }: AppScreenProps) {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('All');
   const [readIds, setReadIds] = useState<number[]>([]);
+  // 事件图片加载失败占位(failLoad 演示)
+  const { failLoad } = useDemoFlags();
 
   const list = EVENTS.filter(
     (e) => filter === 'All' || (filter === 'Cloud' ? e.src === 'cloud' : e.src === 'sd'),
@@ -60,7 +64,17 @@ export default function DevMessages({ navigation }: AppScreenProps) {
         <Text style={st.dayNum}>23</Text>
         <Text style={st.dayMon}> Apr</Text>
         <View style={{ flex: 1 }} />
-        <Tap style={st.allReadPill} onPress={() => setReadIds(EVENTS.map((e) => e.id))}>
+        <Tap
+          style={st.allReadPill}
+          onPress={() => {
+            // 全部已读失败演示:错误提示,不改状态
+            if (getDemoFlags().failOps) {
+              showToast('Failed to mark all as read.', 'error');
+              return;
+            }
+            setReadIds(EVENTS.map((e) => e.id));
+          }}
+        >
           <View style={st.allReadCheck}>
             <Icon name="check" size={10} color={colors.textTertiary} sw={2.4} />
           </View>
@@ -107,11 +121,17 @@ export default function DevMessages({ navigation }: AppScreenProps) {
                 </Row>
                 {unread && <View style={st.unreadDot} />}
                 <Text style={st.evTitle} numberOfLines={1}>{e.title}</Text>
-                {e.preview && (
-                  <Tap style={st.preview} onPress={() => navigation.navigate('notif-image')}>
-                    <CamPreview box={false} style={{ width: '100%', height: '100%' }} />
-                  </Tap>
-                )}
+                {e.preview &&
+                  (failLoad ? (
+                    <View style={[st.preview, st.previewFail]}>
+                      <Icon name="photo" size={22} color={colors.textTertiary} sw={1.6} />
+                      <Text style={st.previewFailTxt}>Failed to load</Text>
+                    </View>
+                  ) : (
+                    <Tap style={st.preview} onPress={() => navigation.navigate('notif-image')}>
+                      <CamPreview box={false} style={{ width: '100%', height: '100%' }} />
+                    </Tap>
+                  ))}
               </View>
             </Row>
           );
@@ -185,4 +205,6 @@ const st = StyleSheet.create({
     marginTop: 6, height: 168, borderRadius: 12, overflow: 'hidden',
     backgroundColor: colors.bgSecondary,
   },
+  previewFail: { alignItems: 'center', justifyContent: 'center', gap: 8 },
+  previewFailTxt: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
 });

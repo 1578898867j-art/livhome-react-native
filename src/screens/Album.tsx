@@ -4,6 +4,10 @@ import { View, Text, StyleSheet, ScrollView, Modal, Pressable } from 'react-nati
 import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { StateView, Spinner } from '../components/states';
+import { PermissionDialog } from '../components/PermissionDialog';
+import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { SELICON2 } from '../icons/protoIcons';
 import { CamPreview } from '../components/CamPreview';
 import { colors } from '../theme';
@@ -27,8 +31,18 @@ export default function Album({ navigation }: AppScreenProps) {
   const [groups, setGroups] = useState<Group[]>(GROUPS);
   const [confirm, setConfirm] = useState(false);
 
+  // 概率性状态:列表加载失败 / 删除失败 / 保存权限被拒
+  const { failLoad } = useDemoFlags();
+  const [retrying, setRetrying] = useState(false);
+  const [permDlg, setPermDlg] = useState(false);
+  const retryLoad = () => {
+    setRetrying(true);
+    setTimeout(() => setRetrying(false), 800);
+  };
+
   const allKeys = groups.flatMap((g) => g.times.map((t) => g.title + t));
   const allOn = allKeys.length > 0 && selected.length === allKeys.length;
+  const albumEmpty = allKeys.length === 0;
 
   const toggleSel = (k: string) =>
     setSelected((s) => (s.indexOf(k) >= 0 ? s.filter((v) => v !== k) : s.concat(k)));
@@ -39,12 +53,33 @@ export default function Album({ navigation }: AppScreenProps) {
   };
 
   const doDelete = () => {
+    // 删除失败演示:提示错误,保留列表
+    if (getDemoFlags().failOps) {
+      setConfirm(false);
+      showToast('Failed to delete. Please try again.', 'error');
+      return;
+    }
     setGroups((gs) =>
       gs
         .map((g) => ({ ...g, times: g.times.filter((t) => selected.indexOf(g.title + t) < 0) }))
         .filter((g) => g.times.length > 0),
     );
     setConfirm(false);
+    exitEdit();
+  };
+
+  // 保存到系统相册:权限被拒 → 引导;failOps → 失败;否则成功提示
+  const doDownload = () => {
+    if (selected.length === 0) return;
+    if (getDemoFlags().permsDenied) {
+      setPermDlg(true);
+      return;
+    }
+    if (getDemoFlags().failOps) {
+      showToast('Failed to save to gallery.', 'error');
+      return;
+    }
+    showToast(selected.length > 1 ? 'Saved to gallery' : 'Saved to gallery', 'success');
     exitEdit();
   };
 
@@ -69,13 +104,41 @@ export default function Album({ navigation }: AppScreenProps) {
               <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
             </Tap>
             <Text style={st.title}>Album</Text>
-            <Tap onPress={() => setEditMode(true)} hitSlop={8}>
-              <Text style={st.action}>Select</Text>
-            </Tap>
+            {!albumEmpty && !failLoad && (
+              <Tap onPress={() => setEditMode(true)} hitSlop={8}>
+                <Text style={st.action}>Select</Text>
+              </Tap>
+            )}
           </Row>
         )
       }
     >
+      {/* 加载失败 / 空相册 / 正常网格 */}
+      {failLoad ? (
+        retrying ? (
+          <View style={{ alignItems: 'center', paddingTop: 130 }}>
+            <Spinner size={28} />
+          </View>
+        ) : (
+          <StateView
+            variant="error"
+            icon="warn"
+            title="Failed to load album"
+            sub="Please check your network and try again."
+            actionLabel="Retry"
+            onAction={retryLoad}
+            style={{ paddingTop: 90 }}
+          />
+        )
+      ) : albumEmpty ? (
+        <StateView
+          variant="empty"
+          icon="photo"
+          title="No photos or videos yet"
+          sub="Snapshots and recordings you save will appear here."
+          style={{ paddingTop: 90 }}
+        />
+      ) : (
       <ScrollView
         contentContainerStyle={{ paddingBottom: editMode ? 140 : 40 }}
         showsVerticalScrollIndicator={false}
@@ -115,11 +178,12 @@ export default function Album({ navigation }: AppScreenProps) {
         ))}
         </View>
       </ScrollView>
+      )}
 
       {/* 底部操作栏 — 钉在屏幕底部(滚动容器之外) */}
       {editMode && (
         <View style={st.actionBar}>
-          <Tap style={st.barBtn}>
+          <Tap style={st.barBtn} onPress={doDownload}>
             <SvgXml xml={DL_ICON} width={24} height={24} color={colors.brand} />
           </Tap>
           <Tap style={st.barBtn} onPress={() => selected.length > 0 && setConfirm(true)}>
@@ -127,6 +191,9 @@ export default function Album({ navigation }: AppScreenProps) {
           </Tap>
         </View>
       )}
+
+      {/* 相册写入权限被拒引导 */}
+      <PermissionDialog type="photos" visible={permDlg} onClose={() => setPermDlg(false)} />
 
       {/* 删除确认弹窗(与消息中心同款式) */}
       <Modal transparent visible={confirm} animationType="fade" onRequestClose={() => setConfirm(false)}>
