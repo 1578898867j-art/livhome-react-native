@@ -336,7 +336,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           }
         }
         return (
-          <View style={st.timelineWrap} {...(clipMode ? {} : pan.panHandlers)}>
+          <View style={st.timelineWrap} {...pan.panHandlers}>
             <View
               pointerEvents="none"
               style={[
@@ -354,29 +354,34 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
                 style={[
                   st.stripTrack,
                   { left: px(trackS - winStart), width: px(trackE - trackS) },
+                  clipMode && { backgroundColor: 'transparent', borderWidth: 0 },
                 ]}
               >
                 {clipMode ? (
                   <>
-                    {/* trim bar: rails + kept span + green start / red end handles */}
-                    <View style={st.clipRail} pointerEvents="none" />
+                    {/* 设计稿 1125:1525 剪辑样式:2px 石板灰轨道线,白底选区卡 + 绿/红把手 */}
+                    <View style={st.clipTrackLine} pointerEvents="none" />
                     <View
-                      style={[st.clipSpan, { left: px(clipS - trackS), width: px(clipE - clipS) }]}
-                      pointerEvents="none"
-                    />
-                    <View
-                      {...panClipS.panHandlers}
-                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                      style={[st.clipHandle, { left: px(clipS - trackS), backgroundColor: '#22C55E' }]}
+                      style={[
+                        st.clipBox,
+                        { left: px(clipS - trackS) - 49, width: px(clipE - clipS) + 98 },
+                      ]}
                     >
-                      <SvgXml xml={CLIPGRIP} width={17} height={17} />
-                    </View>
-                    <View
-                      {...panClipE.panHandlers}
-                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                      style={[st.clipHandle, { left: px(clipE - trackS), backgroundColor: '#EF4444' }]}
-                    >
-                      <SvgXml xml={CLIPGRIP} width={17} height={17} />
+                      <View
+                        {...panClipS.panHandlers}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        style={[st.clipGrab, { backgroundColor: '#2AE387' }]}
+                      >
+                        <SvgXml xml={CLIPGRIP} width={19} height={19} />
+                      </View>
+                      <View style={st.clipMid} pointerEvents="none" />
+                      <View
+                        {...panClipE.panHandlers}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        style={[st.clipGrab, { backgroundColor: '#FC414A' }]}
+                      >
+                        <SvgXml xml={CLIPGRIP} width={19} height={19} />
+                      </View>
                     </View>
                   </>
                 ) : (
@@ -675,6 +680,24 @@ const st = StyleSheet.create({
   },
 
   // clip trim bar
+  // 剪辑态(设计稿):轨道 = 上下 2px 石板灰边线;选区 = 白底圆角卡内含把手
+  clipTrackLine: {
+    position: 'absolute', left: 0, right: 0, top: 16, height: 48,
+    borderTopWidth: 2, borderBottomWidth: 2, borderColor: '#6A7282',
+  },
+  clipBox: {
+    position: 'absolute', top: 8, height: 64,
+    backgroundColor: colors.surface, borderRadius: 14, padding: 4,
+    flexDirection: 'row', alignItems: 'center',
+    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
+  clipGrab: { width: 45, height: 56, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  clipMid: {
+    flex: 1, height: 48, alignSelf: 'center',
+    borderTopWidth: 2, borderBottomWidth: 2, borderColor: '#6A7282', backgroundColor: colors.surface,
+  },
+
   clipRail: {
     position: 'absolute',
     left: 0,
