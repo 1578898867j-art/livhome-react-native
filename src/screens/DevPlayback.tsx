@@ -249,9 +249,6 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
               <LinearGradient colors={['#2A2520', '#15110D'] as const} style={StyleSheet.absoluteFill} />
               <Text style={st.stamp}>{stamp}</Text>
               <Text style={st.quality}>1080P</Text>
-              <View style={st.scanBtn}>
-                <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
-              </View>
             </>
           ) : (
             <View style={st.noRecWrap}>
