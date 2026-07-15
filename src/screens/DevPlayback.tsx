@@ -605,7 +605,7 @@ const st = StyleSheet.create({
   fsRoot: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
   fsStage: { transform: [{ rotate: '90deg' }], overflow: 'hidden' },
   fsStamp: {
-    position: 'absolute', top: 16, right: 20, color: '#fff', fontSize: 11, fontWeight: '600',
+    position: 'absolute', top: 16, right: 56, color: '#fff', fontSize: 11, fontWeight: '600',
     fontVariant: ['tabular-nums'],
   },
   fsBack: {
