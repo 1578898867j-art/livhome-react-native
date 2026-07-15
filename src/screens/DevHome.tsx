@@ -4,6 +4,11 @@ import React from 'react';
 import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { SvgXml } from 'react-native-svg';
+
+// Huge-icon/interface/outline/mic(用户素材,描边改 currentColor 便于着色)
+const MIC_ICON =
+  '<svg viewBox="0 0 26 26" fill="none"><path d="M21.6667 13V15.1666C21.6667 19.9531 17.7865 23.8333 13 23.8333C8.21354 23.8333 4.33334 19.9531 4.33334 15.1666V13M18.4167 8.66663V7.58329C18.4167 4.59175 15.9916 2.16663 13 2.16663C10.0085 2.16663 7.58334 4.59175 7.58334 7.58329V15.1666C7.58334 18.1582 10.0085 20.5833 13 20.5833C15.9916 20.5833 18.4167 18.1582 18.4167 15.1666V14.0833V8.66663Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>';
 import { colors } from '../theme';
 import { CAMAVATAR } from '../assets/images';
 
@@ -58,7 +63,7 @@ export default function DevHome({ navigation }: AppScreenProps) {
           <Text style={[st.actText, { color: colors.textInverse }]}>Live view</Text>
         </Pressable>
         <View style={[st.actBtn, st.actBtnOutline]}>
-          <Icon name="mic" size={18} color={colors.textPrimary} />
+          <SvgXml xml={MIC_ICON} width={18} height={18} color={colors.textPrimary} />
           <Text style={[st.actText, { color: colors.textPrimary }]}>Talk</Text>
         </View>
         <Pressable
