@@ -1,102 +1,115 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
-import { Screen, Tap, Row, Header, Segmented } from '../components/kit';
+import { View, Text, StyleSheet } from 'react-native';
+import { SvgXml } from 'react-native-svg';
+import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
-import { colors } from '../theme';
-import { CAREPICS } from '../assets/images';
+import { CamPreview } from '../components/CamPreview';
+import { NT_MOTION, NT_CROSSING } from '../icons/notifIcons';
+import { colors, shadow } from '../theme';
 
-type Sev = 'Info' | 'Critical';
-
-type Evt = {
-  id: string;
+// 设备消息(DevHome Alerts 进入)—— 样式与消息中心的设备消息详情页(NotifDetail)完全一致:
+// 灰底、白事件卡、48 图标 tile + 连接线、Info/Critical tag、右侧时间、未读点、深色预览图。
+type Src = 'cloud' | 'sd';
+type Ev = {
+  id: number;
+  icon?: string; // NT_ 系列 tile;无则用 glyph 合成灰底 tile
+  glyph?: string;
+  tag: 'Info' | 'Critical';
+  title: string;
   time: string;
-  type: string;
-  icon: string;
-  color: string;
-  soft: string;
-  sev: Sev;
-  thumb: boolean;
+  src: Src;
+  unread?: boolean;
+  preview?: boolean;
 };
 
-const EVENTS: Evt[] = [
-  { id: 'e1', time: '14:22:08', type: 'Motion Detected', icon: 'walk', color: colors.brand, soft: colors.brandSoft, sev: 'Info', thumb: true },
-  { id: 'e2', time: '12:08:41', type: 'Person left the zone', icon: 'walk', color: colors.critical, soft: colors.criticalSoft, sev: 'Critical', thumb: true },
-  { id: 'e3', time: '09:41:02', type: 'Sound Detected', icon: 'speaker', color: colors.warning, soft: colors.warningSoft, sev: 'Info', thumb: false },
+const EVENTS: Ev[] = [
+  { id: 1, icon: NT_MOTION, tag: 'Info', title: 'Motion Detected', time: '14:22:08', src: 'cloud', preview: true },
+  { id: 2, icon: NT_CROSSING, tag: 'Critical', title: 'Person left the zone', time: '12:08:41', src: 'sd', unread: true, preview: true },
+  { id: 3, glyph: 'volume', tag: 'Info', title: 'Sound Detected', time: '09:41:02', src: 'cloud' },
 ];
 
-const FILTERS = ['All', 'Cloud', 'SD Card'];
-const GREEN = '#4ADE80';
-
-/* thumbnail preview — port of camPreview() using a CAREPICS still + overlay box/labels */
-function CamPreview({ tag, label, pic }: { tag: string; label: string; pic: string }) {
-  return (
-    <View style={st.preview}>
-      <Image source={{ uri: pic }} resizeMode="cover" style={StyleSheet.absoluteFill} />
-      <View style={st.previewScrim} />
-      <View style={st.detBox}>
-        <View style={st.detTag}>
-          <Text style={st.detTagTxt}>{tag}</Text>
-        </View>
-      </View>
-      <Text style={st.previewLabel}>{label}</Text>
-    </View>
-  );
-}
+const FILTERS = ['All', 'Cloud', 'SD Card'] as const;
 
 export default function DevMessages({ navigation }: AppScreenProps) {
-  // The All/Cloud/SD Card filter is decorative in the prototype — switching is purely visual.
-  const [active, setActive] = useState(0);
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]>('All');
+  const [readIds, setReadIds] = useState<number[]>([]);
+
+  const list = EVENTS.filter(
+    (e) => filter === 'All' || (filter === 'Cloud' ? e.src === 'cloud' : e.src === 'sd'),
+  );
 
   return (
-    <Screen header={<Header title="Notification Details" onBack={() => navigation.goBack()} />}>
-      {/* date group heading */}
-      <Row style={st.dateRow}>
-        <Text style={st.dateNum}>
-          23<Text style={st.dateMon}> Apr</Text>
-        </Text>
+    <Screen
+      bg={colors.bgSecondary}
+      contentStyle={{ paddingBottom: 40 }}
+      header={
+        <Row style={st.nav}>
+          <View style={st.navSlot}>
+            <Tap style={st.iconbtn} onPress={() => navigation.goBack()} hitSlop={8}>
+              <Icon name="chevL" size={16} color={colors.textPrimary} sw={2} />
+            </Tap>
+          </View>
+          <Text style={st.navTitle} numberOfLines={1}>Notification Details</Text>
+          <View style={st.navSlot} />
+        </Row>
+      }
+    >
+      {/* 日期 + All Read */}
+      <Row style={st.dayRow}>
+        <Text style={st.dayNum}>23</Text>
+        <Text style={st.dayMon}> Apr</Text>
         <View style={{ flex: 1 }} />
-        <Tap style={st.actRow} hitSlop={6}>
-          <Icon name="check" size={14} color={colors.brand} sw={2.4} />
-          <Text style={[st.actTxt, { color: colors.brand }]}>All Read</Text>
+        <Tap style={st.allReadPill} onPress={() => setReadIds(EVENTS.map((e) => e.id))}>
+          <View style={st.allReadCheck}>
+            <Icon name="check" size={10} color={colors.textTertiary} sw={2.4} />
+          </View>
+          <Text style={st.allReadTxt}>All Read</Text>
         </Tap>
       </Row>
 
-      {/* All / Cloud / SD Card filter (visual only) */}
+      {/* All / Cloud / SD Card 分段筛选 */}
       <View style={st.segWrap}>
-        <Segmented opts={FILTERS} active={active} onSelect={setActive} />
+        {FILTERS.map((f) => (
+          <Tap key={f} style={[st.segBtn, filter === f && st.segBtnOn]} onPress={() => setFilter(f)}>
+            <Text style={[st.segTxt, filter === f && st.segTxtOn]}>{f}</Text>
+          </Tap>
+        ))}
       </View>
 
-      {/* alert timeline */}
-      <View style={st.list}>
-        {EVENTS.map((e, i) => {
-          const pic = CAREPICS[i % CAREPICS.length];
+      {/* 时间线事件卡 */}
+      <View style={st.eventCard}>
+        {list.map((e, i) => {
+          const unread = e.unread && readIds.indexOf(e.id) < 0;
           return (
-            <Row key={e.id} style={st.evt}>
-              <View style={st.evtIconWrap}>
-                <View style={[st.evtIcon, { backgroundColor: e.soft }]}>
-                  <Icon name={e.icon} size={21} color={e.color} />
-                </View>
-                {e.sev === 'Critical' && <View style={st.critDot} />}
-              </View>
-              <View style={st.evtBody}>
-                <Row style={{ gap: 6 }}>
-                  <View style={[st.sevBadge, { backgroundColor: e.soft }]}>
-                    <Text style={[st.sevTxt, { color: e.color }]}>{e.sev}</Text>
+            <Row key={e.id} style={[st.event, i === list.length - 1 && { marginBottom: 0 }]}>
+              {i < list.length - 1 && <View style={st.connector} />}
+              <View style={{ width: 48 }}>
+                {e.icon ? (
+                  <SvgXml xml={e.icon} width={48} height={48} />
+                ) : (
+                  <View style={st.glyphTile}>
+                    <Icon name={e.glyph!} size={24} color="#191B1F" sw={1.8} />
                   </View>
-                  <Text style={st.evtTime}>{e.time}</Text>
+                )}
+              </View>
+
+              <View style={{ flex: 1, marginLeft: 16 }}>
+                <Row>
+                  <View style={[st.tag, e.tag === 'Critical' ? st.tagCritical : st.tagInfo]}>
+                    <View style={[st.tagDot, { backgroundColor: e.tag === 'Critical' ? colors.warning : colors.success }]} />
+                    <Text style={[st.tagTxt, { color: e.tag === 'Critical' ? colors.warning : colors.success }]}>
+                      {e.tag}
+                    </Text>
+                  </View>
+                  <View style={{ flex: 1 }} />
+                  <Text style={st.evTime}>{e.time}</Text>
                 </Row>
-                <Text style={st.evtType}>{e.type}</Text>
-                {e.thumb && (
-                  <Tap
-                    style={st.thumbWrap}
-                    onPress={() => navigation.navigate('notif-detail')}
-                  >
-                    <CamPreview
-                      tag={e.type}
-                      label={`Living Room · ${e.time}`}
-                      pic={pic}
-                    />
+                {unread && <View style={st.unreadDot} />}
+                <Text style={st.evTitle} numberOfLines={1}>{e.title}</Text>
+                {e.preview && (
+                  <Tap style={st.preview} onPress={() => navigation.navigate('notif-image')}>
+                    <CamPreview box={false} style={{ width: '100%', height: '100%' }} />
                   </Tap>
                 )}
               </View>
@@ -109,78 +122,67 @@ export default function DevMessages({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  dateRow: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 4 },
-  dateNum: { fontSize: 26, fontWeight: '800', letterSpacing: -0.6, color: colors.textPrimary },
-  dateMon: { fontSize: 14, fontWeight: '700', color: colors.textTertiary },
-  actRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  actTxt: { fontSize: 12, fontWeight: '700' },
-
-  segWrap: { paddingHorizontal: 18, paddingTop: 8 },
-
-  list: { paddingHorizontal: 18, paddingTop: 6 },
-  evt: { gap: 12, paddingVertical: 14, alignItems: 'flex-start' },
-
-  evtIconWrap: { position: 'relative', flexShrink: 0 },
-  evtIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+  nav: { paddingHorizontal: 16, height: 50, gap: 10 },
+  navSlot: { width: 60, height: '100%', justifyContent: 'center' },
+  iconbtn: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
   },
-  critDot: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    backgroundColor: colors.critical,
-    borderWidth: 1.5,
-    borderColor: colors.surface,
+  navTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: colors.textPrimary },
+
+  dayRow: { paddingHorizontal: 20, marginTop: 12, height: 32 },
+  dayNum: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, color: colors.textPrimary },
+  dayMon: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
+  allReadPill: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    height: 32, paddingHorizontal: 10, borderRadius: 16,
+    backgroundColor: colors.surface,
+  },
+  allReadCheck: {
+    width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: colors.textTertiary,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  allReadTxt: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
+
+  segWrap: {
+    marginHorizontal: 20, marginTop: 16, height: 42, borderRadius: 21,
+    backgroundColor: '#F9F9FA', flexDirection: 'row', padding: 4,
+  },
+  segBtn: { flex: 1, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  segBtnOn: { backgroundColor: colors.surface, ...shadow.sm },
+  segTxt: { fontSize: 15, fontWeight: '500', color: colors.textTertiary },
+  segTxtOn: { color: colors.textPrimary, fontWeight: '600' },
+
+  eventCard: {
+    marginHorizontal: 20, marginTop: 16, borderRadius: 20,
+    backgroundColor: colors.surface, padding: 12, paddingTop: 12, paddingBottom: 16,
+  },
+  event: { alignItems: 'flex-start', marginBottom: 38 },
+  connector: {
+    position: 'absolute', left: 23, top: 48, bottom: -26, width: 2,
+    borderRadius: 1, backgroundColor: colors.border,
+  },
+  glyphTile: {
+    width: 48, height: 48, borderRadius: 16, backgroundColor: '#F2F2F2',
+    alignItems: 'center', justifyContent: 'center',
   },
 
-  evtBody: { flex: 1, minWidth: 0 },
-  sevBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
-  sevTxt: { fontSize: 10, fontWeight: '700' },
-  evtTime: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
-  evtType: { fontSize: 14, fontWeight: '700', color: colors.textPrimary, marginTop: 5 },
-
-  thumbWrap: { marginTop: 8, borderRadius: 12, overflow: 'hidden' },
+  tag: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    height: 24, paddingHorizontal: 10, borderRadius: 12, marginTop: -2,
+  },
+  tagInfo: { backgroundColor: colors.successSoft },
+  tagCritical: { backgroundColor: colors.warningSoft },
+  tagDot: { width: 6, height: 6, borderRadius: 3 },
+  tagTxt: { fontSize: 13, fontWeight: '600' },
+  evTime: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
+  unreadDot: {
+    position: 'absolute', right: 0, top: 24,
+    width: 8, height: 8, borderRadius: 4, backgroundColor: colors.critical,
+  },
+  evTitle: { marginTop: 8, fontSize: 18, fontWeight: '700', color: colors.textPrimary },
   preview: {
-    position: 'relative',
-    width: '100%',
-    height: 120,
-    backgroundColor: '#15110d',
-    overflow: 'hidden',
-  },
-  previewScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.18)' },
-  detBox: {
-    position: 'absolute',
-    left: '28%',
-    top: '36%',
-    width: '34%',
-    height: '46%',
-    borderWidth: 1.5,
-    borderColor: GREEN,
-    borderRadius: 6,
-  },
-  detTag: {
-    position: 'absolute',
-    top: -19,
-    left: -1,
-    backgroundColor: GREEN,
-    borderRadius: 4,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-  },
-  detTagTxt: { fontSize: 10, fontWeight: '700', color: '#062018' },
-  previewLabel: {
-    position: 'absolute',
-    bottom: 8,
-    left: 12,
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.85)',
+    marginTop: 6, height: 168, borderRadius: 12, overflow: 'hidden',
+    backgroundColor: colors.bgSecondary,
   },
 });
