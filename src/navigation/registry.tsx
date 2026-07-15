@@ -40,6 +40,7 @@ import Feedback from '../screens/Feedback';
 import Language from '../screens/Language';
 import Timezone from '../screens/Timezone';
 import StorageSettings from '../screens/StorageSettings';
+import StatePreview from '../screens/StatePreview';
 import EmailLogin from '../screens/EmailLogin';
 import AppleBind from '../screens/AppleBind';
 import PrivacyTerms from '../screens/PrivacyTerms';
@@ -95,6 +96,7 @@ const SCREENS = {
   'language': Language,
   'timezone': Timezone,
   'storage-settings': StorageSettings,
+  'state-preview': StatePreview,
   'email-login': EmailLogin,
   splash: Splash,
   'apple-bind': AppleBind,

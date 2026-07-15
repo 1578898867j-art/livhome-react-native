@@ -49,6 +49,16 @@ export default function Settings({ navigation }: AppScreenProps) {
           <SettingRow name="About" onPress={() => navigation.navigate('about')} last />
         </Card>
 
+        {/* 演示用:概率性状态开关面板(接入后端后移除) */}
+        <Card style={[st.card, { marginTop: 16 }]}>
+          <SettingRow
+            name="State Preview"
+            value="Demo"
+            onPress={() => navigation.navigate('state-preview')}
+            last
+          />
+        </Card>
+
         <View style={st.bottom}>
           <Pressable
             onPress={() => setOverlay('logout')}
