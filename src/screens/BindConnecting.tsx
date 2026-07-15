@@ -1,9 +1,11 @@
 import type { AppScreenProps } from '../navigation/types';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { useFocusEffect } from '@react-navigation/native';
 import { Screen, Header, PrimaryBtn, SecondaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { getDemoFlags } from '../features/app/demoStore';
 import { colors } from '../theme';
 
 /* 4-dot binding stepper (bStepper(n)) — first n dots brand, rest border-strong */
@@ -58,6 +60,15 @@ export default function BindConnecting({ navigation }: AppScreenProps) {
   const R = 58;
   const CIRC = 364;
   const OFFSET = 36;
+
+  // 概率性状态:bindFail 打开时,最后一步卡住 4s 后进入连接失败页
+  useFocusEffect(
+    useCallback(() => {
+      if (!getDemoFlags().bindFail) return undefined;
+      const timer = setTimeout(() => navigation.navigate('bind-fail'), 4000);
+      return () => clearTimeout(timer);
+    }, [navigation]),
+  );
 
   return (
     <Screen

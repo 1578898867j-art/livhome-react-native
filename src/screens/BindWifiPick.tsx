@@ -1,8 +1,10 @@
 import type { AppScreenProps } from '../navigation/types';
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { StateView, Spinner } from '../components/states';
+import { useDemoFlags } from '../features/app/demoStore';
 import { colors } from '../theme';
 
 type Net = { name: string; checked?: boolean; unsupported?: boolean };
@@ -19,6 +21,14 @@ const NETWORKS: Net[] = [
 
 export default function BindWifiPick({ navigation }: AppScreenProps) {
   const pick = () => navigation.navigate('bind-wifi');
+  const { failLoad } = useDemoFlags();
+  const [retrying, setRetrying] = useState(false);
+
+  // 列表获取失败 → 错误态;Retry 转 0.8s 后仍失败(接后端后换真实请求)
+  const retry = () => {
+    setRetrying(true);
+    setTimeout(() => setRetrying(false), 800);
+  };
 
   return (
     <Screen scroll={false}>
@@ -32,31 +42,49 @@ export default function BindWifiPick({ navigation }: AppScreenProps) {
         <View style={st.grabber} />
         <Text style={st.sheetTitle}>Select a Wi-Fi network</Text>
 
-        {NETWORKS.map((n) => (
-          <Tap
-            key={n.name}
-            onPress={pick}
-            style={[st.row, n.unsupported && { opacity: 0.45 }]}
-          >
-            <Text
-              style={[
-                st.rowName,
-                { fontWeight: n.checked ? '600' : '400' },
-              ]}
+        {failLoad ? (
+          retrying ? (
+            <View style={st.loadingBox}>
+              <Spinner size={26} />
+            </View>
+          ) : (
+            <StateView
+              variant="error"
+              icon="wifi"
+              title="Couldn't get the Wi-Fi list"
+              sub="Please make sure the device is powered on and nearby, then try again."
+              actionLabel="Retry"
+              onAction={retry}
+              style={st.errorBox}
+            />
+          )
+        ) : (
+          NETWORKS.map((n) => (
+            <Tap
+              key={n.name}
+              onPress={pick}
+              style={[st.row, n.unsupported && { opacity: 0.45 }]}
             >
-              {n.name}
-            </Text>
-            {n.unsupported ? (
-              <Text style={st.unsupported}>Unsupported</Text>
-            ) : (
-              <Icon name="wifi" size={16} color={colors.textTertiary} sw={1.8} />
-            )}
-            {n.checked && (
-              <Icon name="check" size={18} color={colors.brand} sw={2.4} />
-            )}
-            <View style={st.rowLine} />
-          </Tap>
-        ))}
+              <Text
+                style={[
+                  st.rowName,
+                  { fontWeight: n.checked ? '600' : '400' },
+                ]}
+              >
+                {n.name}
+              </Text>
+              {n.unsupported ? (
+                <Text style={st.unsupported}>Unsupported</Text>
+              ) : (
+                <Icon name="wifi" size={16} color={colors.textTertiary} sw={1.8} />
+              )}
+              {n.checked && (
+                <Icon name="check" size={18} color={colors.brand} sw={2.4} />
+              )}
+              <View style={st.rowLine} />
+            </Tap>
+          ))
+        )}
       </View>
     </Screen>
   );
@@ -128,4 +156,6 @@ const st = StyleSheet.create({
     fontWeight: '500',
     color: colors.textTertiary,
   },
+  errorBox: { paddingVertical: 34 },
+  loadingBox: { height: 270, alignItems: 'center', justifyContent: 'center' },
 });

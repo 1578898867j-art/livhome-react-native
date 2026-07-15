@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { Screen, Header, Tap, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { getDemoFlags } from '../features/app/demoStore';
+import { showToast } from '../features/app/toastStore';
 import { colors } from '../theme';
 
 
@@ -52,9 +54,18 @@ export default function BindSuccess({ navigation }: AppScreenProps) {
         </View>
       </View>
 
-      {/* save */}
+      {/* save — failOps 打开时演示「命名保存失败」:错误 toast,停留本页 */}
       <View style={st.footer}>
-        <PrimaryBtn label="Save" onPress={() => navigation.navigate('Main', { screen: 'dev-home' })} />
+        <PrimaryBtn
+          label="Save"
+          onPress={() => {
+            if (getDemoFlags().failOps) {
+              showToast('Failed to save the name. Please try again.', 'error');
+              return;
+            }
+            navigation.navigate('Main', { screen: 'dev-home' });
+          }}
+        />
       </View>
     </Screen>
   );
