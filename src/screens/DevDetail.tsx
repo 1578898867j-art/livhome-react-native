@@ -1023,17 +1023,18 @@ const st = StyleSheet.create({
 
   fsRoot: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
   fsStage: { transform: [{ rotate: '90deg' }], overflow: 'hidden' },
+  // 控件整体向内收,避开刘海 / Home 条(横屏两长边即竖屏的上下安全区)
   fsBack: {
-    position: 'absolute', top: 14, left: 16, width: 44, height: 44, borderRadius: 22,
+    position: 'absolute', top: 24, left: 34, width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(80,80,80,0.45)', alignItems: 'center', justifyContent: 'center',
   },
   fsRail: {
-    position: 'absolute', right: 14, top: 28, bottom: 28,
+    position: 'absolute', right: 36, top: 40, bottom: 40,
     justifyContent: 'space-between', alignItems: 'center',
   },
-  fsDpad: { position: 'absolute', left: 100, bottom: 22 },
+  fsDpad: { position: 'absolute', left: 110, bottom: 32 },
   fsToast: {
-    position: 'absolute', bottom: 26, alignSelf: 'center',
+    position: 'absolute', bottom: 34, alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: 'rgba(28,28,30,0.72)', borderRadius: 14, padding: 8, paddingRight: 16,
   },
