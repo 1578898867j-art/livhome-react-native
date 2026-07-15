@@ -86,6 +86,20 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   // clip (trim) mode — mirrors S.pbClip / S.pbClipS / S.pbClipE
   const [clipMode, setClipMode] = useState(false);
   const [fsOpen, setFsOpen] = useState(false);
+  // 录像停止后的保存提示条
+  const [savedToast, setSavedToast] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+    },
+    [],
+  );
+  const showSaved = () => {
+    setSavedToast(true);
+    if (savedTimer.current) clearTimeout(savedTimer.current);
+    savedTimer.current = setTimeout(() => setSavedToast(false), 2600);
+  };
   const [clipS, setClipS] = useState(15);
   const [clipE, setClipE] = useState(31);
 
@@ -247,12 +261,22 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         </View>
         <Row style={st.ctlRow}>
           <Tap style={st.ctlBtn} onPress={() => setCtlSpk((v) => !v)}>
-            <SvgXml xml={CTRL_SPEAKER_OFF} width={22} height={22} color={ctlSpk ? colors.brand : colors.textPrimary} />
+            {ctlSpk ? (
+              <SvgXml xml={PHOTOICONS.speakerSolid} width={22} height={22} color={colors.brand} />
+            ) : (
+              <SvgXml xml={CTRL_SPEAKER_OFF} width={22} height={22} color={colors.textPrimary} />
+            )}
           </Tap>
           <Tap style={[st.ctlBtn, !segAt && { opacity: 0.35 }]} onPress={segAt ? enterClip : undefined}>
             <SvgXml xml={CTRL_EDITING} width={22} height={22} color={clipMode ? colors.brand : colors.textPrimary} />
           </Tap>
-          <Tap style={st.ctlBtn} onPress={() => setCtlRec((v) => !v)}>
+          <Tap
+            style={st.ctlBtn}
+            onPress={() => {
+              if (ctlRec) showSaved();
+              setCtlRec((v) => !v);
+            }}
+          >
             <SvgXml xml={CTRL_CAMVIDEO} width={22} height={22} color={ctlRec ? colors.brand : colors.textPrimary} />
           </Tap>
           <Tap style={st.ctlBtn} onPress={() => setFsOpen(true)}>
@@ -434,6 +458,25 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
         </Row>
       )}
 
+      {/* 录像已保存提示条 */}
+      {savedToast && (
+        <View style={[st.savedToast, { bottom: Math.max(insets.bottom, 12) + 88 }]}>
+          <LinearGradient colors={['#2A2520', '#15110D'] as const} style={st.savedThumb} />
+          <Text style={st.savedTxt} numberOfLines={1}>
+            Video saved to album{' '}
+            <Text
+              style={st.savedLink}
+              onPress={() => {
+                setSavedToast(false);
+                navigation.navigate('album');
+              }}
+            >
+              Tap to view
+            </Text>
+          </Text>
+        </View>
+      )}
+
       {/* 拓展:横屏全屏回放 */}
       <Modal visible={fsOpen} animationType="fade" onRequestClose={() => setFsOpen(false)}>
         <View style={st.fsRoot}>
@@ -548,6 +591,17 @@ const st = StyleSheet.create({
     justifyContent: 'center',
   },
   noRecTxt: { color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: '500' },
+  savedToast: {
+    position: 'absolute', left: 16, right: 16, zIndex: 60,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: colors.surface, borderRadius: 20, padding: 8, paddingRight: 14,
+    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 18, shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  savedThumb: { width: 72, height: 44, borderRadius: 10, overflow: 'hidden' },
+  savedTxt: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  savedLink: { color: colors.brand, fontWeight: '600' },
+
   fsRoot: { flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
   fsStage: { transform: [{ rotate: '90deg' }], overflow: 'hidden' },
   fsStamp: {
