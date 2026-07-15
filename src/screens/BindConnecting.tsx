@@ -1,6 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { Screen, Header, PrimaryBtn, SecondaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
@@ -20,6 +20,20 @@ function Stepper({ n }: { n: number }) {
   );
 }
 
+/* pending spinner — the C-shaped ring rotates continuously */
+function SpinRing() {
+  const spin = React.useRef(new Animated.Value(0)).current;
+  React.useEffect(() => {
+    const loop = Animated.loop(
+      Animated.timing(spin, { toValue: 1, duration: 900, easing: Easing.linear, useNativeDriver: true }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [spin]);
+  const rotate = spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+  return <Animated.View style={[st.dotPending, { transform: [{ rotate }] }]} />;
+}
+
 /* status step row — done = success check, pending = ring */
 function Step({ done, title, sub }: { done: boolean; title: string; sub: string }) {
   return (
@@ -29,7 +43,7 @@ function Step({ done, title, sub }: { done: boolean; title: string; sub: string 
           <Icon name="check" size={13} color="#fff" sw={2.8} />
         </View>
       ) : (
-        <View style={st.dotPending} />
+        <SpinRing />
       )}
       <View>
         <Text style={[st.stepTitle, { color: done ? colors.textPrimary : colors.brand }]}>{title}</Text>
