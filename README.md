@@ -1,114 +1,144 @@
-# LIVHOME · React Native (Expo)
+# LIVHOME
 
-居家看护智能摄像头 App —— 由高保真 HTML 原型 1:1 迁移到 **React Native / Expo** 的工程,55 个页面全部落地,并内置了接后端前的全套异常/边界状态演示。
+LIVHOME 是面向家庭摄像头监控、设备管理与 AI 助手的跨平台 React Native 前端。项目以 iOS 和 Android 为主要目标，同时保留基于 Metro 的 Web 开发入口。
 
-- 设计源:Figma「LIVHOME交付文档」与「小黄人摄像头设计稿」;设计令牌见 [DESIGN.md](DESIGN.md)
-- 主分支:`rn-initial`(GitLab MR !1)
+本仓库是生产前端代码库。当前已经具备完整的页面与导航流程，但多数业务数据和交互仍使用本地状态；真实后端尚未接入页面。API 约定见 [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md)。
+
+## 当前能力
+
+- 设备列表、实时画面、回放、事件、配置与设备绑定流程
+- AI Assistant 对话、历史会话、语音交互与底部导航联动
+- 通知、相册、告警、检测区域、定时关机与提醒流程
+- 登录、个人资料、设置、反馈、隐私协议与帮助中心
+- iOS、Android 和 Web 的类型安全导航
+
+当前登录流程仅保存一个本地登录标记：原生端使用 `expo-secure-store`，Web 端回退到 `localStorage`。它不是正式的验证码认证或 access/refresh token 会话。
 
 ## 技术栈
 
-| 类别 | 选型 |
-|---|---|
-| 框架 | Expo SDK 54 · React Native 0.81 · React 19 · TypeScript 5.9(strict) |
-| 导航 | React Navigation v7(native-stack + bottom-tabs,自定义可收起胶囊 TabBar) |
-| 图形 | react-native-svg(图标体系 + 设计稿切片原样渲染)· expo-linear-gradient |
-| 其他 | expo-clipboard(复制)· expo-secure-store(登录态持久化)· react-native-safe-area-context |
+- Node.js 22.13 或更高版本
+- Expo SDK 54（`54.0.35`）
+- React Native `0.81.5`、React `19.1.0`
+- TypeScript 5.9 strict mode
+- React Navigation 7（native stack + bottom tabs）
+- `react-native-safe-area-context`、`react-native-svg`
+- `expo-secure-store`、`expo-linear-gradient`
 
-Node ≥ 22.13;固定 SDK 54 以兼容 App Store 版 iOS Expo Go。
+Expo SDK 54 是有意固定的版本，用于兼容 App Store 当前提供的 iOS Expo Go。未经明确批准和真机验证，请勿升级 Expo 或 React Native。
 
 ## 快速开始
 
+首次拉取或需要干净安装时，先确保 Metro 已停止，再执行：
+
 ```bash
 npm ci
-
-# 真机同一局域网联调(把 IP 换成开发机地址)
-REACT_NATIVE_PACKAGER_HOSTNAME=192.168.11.55 npx expo start --lan
-
-# 或默认方式
-npx expo start --clear --go
 ```
 
-用 Expo Go 扫码打开。改动纯 JS/TS 时 Fast Refresh 即可;**改了依赖或原生配置需重启 Metro**。
-
-常用检查:
+日常启动：
 
 ```bash
-npm run typecheck   # tsc --noEmit,每次提交前必须通过
-npm run lint        # eslint(expo 规则)
-npm run check:api   # 校验页面未绕过 api/client 直连 fetch
+npm start
 ```
+
+使用 Expo Go 并固定到 `8082` 端口时：
+
+```bash
+npx expo start --go --port 8082
+```
+
+不要把 `--clear` 作为日常启动参数；仅在确认 Metro 缓存异常时使用。不要停止或重启其他人启动的 Metro 服务。
+
+## 环境变量与真机联调
+
+需要连接后端时，在 PowerShell 中创建本地环境文件：
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+默认配置为：
+
+```dotenv
+EXPO_PUBLIC_API_URL=http://localhost:3000
+```
+
+真机不能使用开发电脑的 `localhost`，需要改为电脑的局域网地址，例如：
+
+```dotenv
+EXPO_PUBLIC_API_URL=http://192.168.x.x:3000
+```
+
+手机与电脑需要处于同一网络，后端也必须监听局域网接口。不要在 `EXPO_PUBLIC_*` 变量中保存密钥或其他秘密。
+
+目前页面尚未调用真实 API，因此未配置该变量时仍可浏览本地 UI 流程。
+
+## 常用命令
+
+| 命令 | 用途 |
+| --- | --- |
+| `npm start` | 启动 Expo / Metro |
+| `npm run android` | 启动 Expo 并打开 Android |
+| `npm run ios` | 启动 Expo 并打开 iOS（需要 macOS） |
+| `npm run web` | 启动 Web 开发版本 |
+| `npm run lint` | 运行 ESLint |
+| `npm run typecheck` | 运行 TypeScript 类型检查 |
+| `npm run check:api` | 校验 `src/api/client.ts` 的 HTTP 边界行为 |
+
+普通 TypeScript / TSX 改动完成后运行：
+
+```bash
+npm run lint
+npm run typecheck
+```
+
+`npm run check:api` 仅在 API client 或其检查脚本变化时运行。Expo Doctor、全平台 export 和依赖重装的触发条件见 [`AGENTS.md`](AGENTS.md)。
+
+## 导航与登录路径
+
+- 根导航从 `splash` 开始。
+- 已有登录标记时，启动后直接进入 `Main / agent-chat`。
+- 未登录时依次进入隐私确认、登录与邮箱流程。
+- Settings 中的 Log Out 会清除登录标记并返回 `splash`。
+- 主导航包含 Devices、Assistant、Profile 三个底部 Tab；其他页面使用类型安全的 native stack。
+- 路由与参数以 `src/navigation/types.ts` 为准，页面注册以 `src/navigation/registry.tsx` 为准。
 
 ## 目录结构
 
-```
-App.tsx                     入口:SafeAreaProvider + NavigationContainer + 全局状态层挂载
-index.js                    registerRootComponent
-docs/
-  API_CONTRACT.md           前后端接口约定
-  edge-states-checklist.md  异常/边界状态清单(每项的形式、触发方式、现状)
+```text
+App.tsx                         应用入口：SafeAreaProvider + NavigationContainer
+app.json                        Expo 应用配置
+docs/API_CONTRACT.md            前后端 API 草案与待决事项
+scripts/check-api-client.mjs    API client 最小行为检查
 src/
-  api/client.ts             统一 HTTP:超时、取消、错误处理(页面禁止直接 fetch)
-  contracts/                前后端 DTO 与稳定枚举(auth / device / notification / assistant)
-  theme/index.ts            设计令牌:颜色(仅浅色)/ 圆角 / 间距 / 阴影 / 字号
-  assets/images.ts          data-URI 位图资源(设备图、空态插画等)
-  icons/                    图标体系:paths.ts 描边图标 + 设计稿 SVG 切片(原样使用)
+  api/client.ts                 统一 HTTP、Bearer token、超时、取消与 ApiError
+  contracts/                    前后端 DTO 与稳定枚举
+  features/                     跨页面功能状态与行为
+    auth/session.ts             本地登录标记持久化
   navigation/
-    types.ts                路由表(STACK_ROUTES / TAB_ROUTES)与导航类型
-    registry.tsx            路由名 → 页面组件注册表
-    RootNavigator.tsx       Stack + Bottom Tabs
-    TabBar.tsx / TabOverlay  自定义底部胶囊 Tab(可收起)+ 覆盖层入口
-    navRef.ts               全局导航 ref(供登录过期弹窗等导航树外组件使用)
-  components/
-    kit.tsx                 Screen / Header / Card / Tap / Row / 各类设置行与按钮
-    BottomSheet.tsx         通用底部弹层(动画 + overlay 插槽,规避 iOS 双 Modal 限制)
-    states.tsx              StateView(空/错态)· Spinner · DarkPlayerState(播放器态)
-    AppToast.tsx            全局 toast(白胶囊 + 成功/失败/信息圆标)
-    PermissionDialog.tsx    五种系统权限引导弹窗(跳系统设置)
-    NetBanner.tsx           全局断网提示条
-    SessionExpired.tsx      登录过期全局弹窗
-    CamPreview / CalendarModal / SunLogo / Icon
-  features/
-    app/demoStore.ts        「概率性状态」演示开关 store(接后端后的替换点)
-    app/toastStore.ts       全局 toast store(任意位置 showToast())
-    auth/session.ts         登录态读写(expo-secure-store)
-    devices/                设备详情原型状态 · 定时开关机共享 store
-    assistant/              AI 助手会话原型状态
-  screens/                  55 个页面(命名与路由一一对应)
+    types.ts                    路由名称、参数与 Web linking
+    registry.tsx                页面注册表
+    RootNavigator.tsx           Native Stack + Bottom Tabs
+    TabBar.tsx                  自定义可收起底部导航
+    TabOverlay.tsx              高于底部导航的临时浮层宿主
+  screens/                      页面组合、本地状态、弹窗与导航事件
+  components/                   共享组件与图标组件
+  theme/index.ts                运行时设计令牌
+  assets/                       图片资源
+  icons/                        SVG 路径与图标集合
 ```
 
-## 功能模块
+## 后端接入约束
 
-- **登录**:启动页 / 第三方登录 / 邮箱验证码登录(倒计时、验证码错误、登录失败)
-- **配网**(Bind 系列):蓝牙搜索 → 准备 → Wi-Fi 设置/选择 → 连接进度 → 成功命名;含未找到设备、连接失败、二维码配对、蓝牙/权限引导、设备已被绑定等完整分支
-- **设备**:设备列表(在线/离线/空态)· 直播详情(云台、预设位、巡航、对讲、截图录像、横屏全屏)· SD 回放(NVR 式时间轴、事件筛选、剪辑、下载进度)· 设备消息
-- **消息中心**:设备/系统两级、编辑批删、详情时间线、图片查看与下载
-- **相册**:分组网格、多选下载/删除、大图查看
-- **AI 助手**:会话流、语音按住说话、长按消息编辑/复制、会话抽屉与历史
-- **设置**:设备设置(侦测区域/拌线/声光报警/自定义语音/定时开关机/存储卡/固件 OTA)· 通知设置 · 个人中心(资料、语言、时区、反馈、帮助、关于)
+- 从 [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md) 和 `src/contracts/` 开始，不从页面 JSX 推断接口。
+- 页面不得直接调用 `fetch`；统一通过 `src/api/client.ts`。
+- 网络和 HTTP 错误统一归一为 `ApiError`。
+- 正式认证 token 必须存入 `expo-secure-store`，不能存入 AsyncStorage。
+- 每个联网页面需要覆盖 loading、empty、error、retry 和 mutation-in-progress 状态。
+- Assistant 流式传输方式尚未确定，接入前需要先约定 SSE、WebSocket 或 chunked HTTP。
 
-## 全局状态层与异常演示
+## 项目文档
 
-所有「接后端才会出现」的状态已提前实现,由演示开关驱动:
-
-- **入口**:我的 → Setting → **State Preview**(分组开关 + 一次性事件 + Reset All)
-- **开关**:断网 / 加载失败 / 操作失败 / 拉流失败 / 权限被拒 / 设备离线 / 无设备 / 当日无录像 / 无 SD 卡 / 云存过期 / 蓝牙未开 / 已被绑定 / 配网失败 / 有新固件
-- **自然触发**(无需开关):搜索 12s 超时、扫码 20s 提示、进直播 1.2s 加载态、预设位上限、验证码 `000000` 报错、下载/格式化/OTA 进度弹窗、删空列表出空态
-- 完整对照表:[docs/edge-states-checklist.md](docs/edge-states-checklist.md)
-
-## 后端联调
-
-- 接口约定见 [docs/API_CONTRACT.md](docs/API_CONTRACT.md);页面不得直接调用 `fetch`,统一走 `src/api/client.ts`;DTO 与枚举维护在 `src/contracts/`
-- **替换演示状态**:全局搜索 `getDemoFlags()` / `useDemoFlags()`,即为全部后端接入点;设置项的统一保存出口是 `kit.tsx` 的 `guardSave`
-- 真机联调时将 `.env.example` 复制为本地环境文件,API 地址改为开发机局域网地址
-
-## 开发约定
-
-1. **视觉即规范**:颜色/圆角/阴影一律取自 `src/theme`;间距用 2 的倍数;弹窗、toast、空/错态复用共享组件,不各写各的
-2. **素材原样使用**:设计稿/用户提供的 SVG 切片不改绘、不替换;描边小图标统一走 `icons/paths.ts` + `<Icon/>`
-3. **提交前**:`npm run typecheck` 必须通过;涉及接口层再跑 `npm run check:api`
-4. 团队与编码代理协作规则见 [AGENTS.md](AGENTS.md) 与 [CLAUDE.md](CLAUDE.md)
-
-## 与 HTML 原型的差异
-
-1. **去掉手机外框**——不再模拟设备外壳/状态栏,`SafeAreaView` 全屏渲染真原生页面
-2. **去掉「全局页面」画板**——原型的悬浮球 + All screens picker 移除,改为底部 Tab + 原生栈导航
+- [`DESIGN.md`](DESIGN.md)：视觉与交互规范
+- [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md)：API 契约草案
+- [`AGENTS.md`](AGENTS.md)：工程规则与按改动范围执行的检查
+- [`CLAUDE.md`](CLAUDE.md)：同步的协作说明
