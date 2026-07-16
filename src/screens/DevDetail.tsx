@@ -519,34 +519,17 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         </View>
       )}
 
-      {/* 全屏预览 —— Figma 830:1018:全出血画面 + 左上返回 + 右侧竖排控钮 + 左下方向盘 */}
+      {/* 全屏预览 —— Figma 830:1018:全出血画面 + 左上返回 + 右侧竖排控钮 + 左下方向盘。
+          注意:iOS 上旋转 90° 的祖先会让内部按钮收不到触摸,因此拆成两层——
+          旋转层只放视觉(画面/方向盘/toast,pointerEvents none),
+          按钮放在不旋转的竖屏坐标层,图标各自旋转,视觉与原来完全一致。 */}
       <Modal visible={fullscreen} animationType="fade" onRequestClose={() => setFullscreen(false)}>
         <View style={st.fsRoot}>
-          <View style={[st.fsStage, { width: WIN.height, height: WIN.width }]}>
+          {/* 视觉层(旋转,不接收触摸) */}
+          <View pointerEvents="none" style={[st.fsStage, { width: WIN.height, height: WIN.width }]}>
             {/* 画面全出血 */}
             <View style={StyleSheet.absoluteFill}>
               <CamPreview height={WIN.width} showBox={false} tag="" />
-            </View>
-
-            {/* 返回 */}
-            <Tap style={st.fsBack} onPress={() => setFullscreen(false)} hitSlop={10}>
-              <Icon name="chevL" size={18} color="#fff" sw={2.2} />
-            </Tap>
-
-            {/* 右侧控钮列 */}
-            <View style={st.fsRail}>
-              <Tap onPress={() => toggleCtl('ctlSpk')}><SvgXml xml={FS_MUTE} width={54} height={54} /></Tap>
-              <Tap
-                onPress={() => {
-                  if (ctl.ctlRec) trySave('video', true);
-                  toggleCtl('ctlRec');
-                }}
-              >
-                <SvgXml xml={FS_REC} width={54} height={54} />
-              </Tap>
-              <Tap onPress={() => snap(true)}><SvgXml xml={FS_SNAP} width={54} height={54} /></Tap>
-              <Tap onPress={() => toggleCtl('ctlMic')}><SvgXml xml={FS_MIC} width={54} height={54} /></Tap>
-              <SvgXml xml={FS_FHD} width={54} height={54} />
             </View>
 
             {/* 左下方向盘 */}
@@ -576,6 +559,38 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                 <Text style={st.fsToastTxt} numberOfLines={1}>{fsError}</Text>
               </View>
             )}
+          </View>
+
+          {/* 交互层(竖屏坐标,无旋转祖先):
+              横屏 {left:56, top:24} 的返回钮 ≡ 竖屏 {top:56, right:24};
+              横屏右侧竖列(上→下)≡ 竖屏底部横行(右→左)。 */}
+          <Tap style={st.fsBackP} onPress={() => setFullscreen(false)} hitSlop={10}>
+            <View style={st.fsRot}>
+              <Icon name="chevL" size={18} color="#fff" sw={2.2} />
+            </View>
+          </Tap>
+
+          <View style={st.fsRailP}>
+            <View style={st.fsRot}>
+              <SvgXml xml={FS_FHD} width={54} height={54} />
+            </View>
+            <Tap onPress={() => toggleCtl('ctlMic')}>
+              <View style={st.fsRot}><SvgXml xml={FS_MIC} width={54} height={54} /></View>
+            </Tap>
+            <Tap onPress={() => snap(true)}>
+              <View style={st.fsRot}><SvgXml xml={FS_SNAP} width={54} height={54} /></View>
+            </Tap>
+            <Tap
+              onPress={() => {
+                if (ctl.ctlRec) trySave('video', true);
+                toggleCtl('ctlRec');
+              }}
+            >
+              <View style={st.fsRot}><SvgXml xml={FS_REC} width={54} height={54} /></View>
+            </Tap>
+            <Tap onPress={() => toggleCtl('ctlSpk')}>
+              <View style={st.fsRot}><SvgXml xml={FS_MUTE} width={54} height={54} /></View>
+            </Tap>
           </View>
         </View>
       </Modal>
@@ -1163,6 +1178,16 @@ const st = StyleSheet.create({
     justifyContent: 'space-between', alignItems: 'center',
   },
   fsDpad: { position: 'absolute', left: 56, bottom: 22 },
+  // 竖屏坐标的交互层(横屏位置换算:{left:a,top:b} → {top:a,right:b})
+  fsBackP: {
+    position: 'absolute', top: 56, right: 24, width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(80,80,80,0.45)', alignItems: 'center', justifyContent: 'center',
+  },
+  fsRailP: {
+    position: 'absolute', left: 40, right: 40, bottom: 56,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
+  fsRot: { transform: [{ rotate: '90deg' }] },
   fsToast: {
     position: 'absolute', bottom: 34, alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center', gap: 12,

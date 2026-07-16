@@ -621,16 +621,23 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
       {/* 相册权限被拒引导(全屏 Modal 打开时不渲染,避免 iOS 双 Modal 冲突) */}
       {!fsOpen && <PermissionDialog type="photos" visible={permDlg} onClose={() => setPermDlg(false)} />}
 
-      {/* 拓展:横屏全屏回放 */}
+      {/* 拓展:横屏全屏回放 —— 旋转层只放视觉;返回钮放竖屏坐标层
+          (iOS 上旋转祖先内的按钮收不到触摸,与设备详情页全屏同一修法) */}
       <Modal visible={fsOpen} animationType="fade" onRequestClose={() => setFsOpen(false)}>
         <View style={st.fsRoot}>
-          <View style={[st.fsStage, { width: Dimensions.get('window').height, height: Dimensions.get('window').width }]}>
+          <View
+            pointerEvents="none"
+            style={[st.fsStage, { width: Dimensions.get('window').height, height: Dimensions.get('window').width }]}
+          >
             <LinearGradient colors={['#2A2520', '#15110D'] as const} style={StyleSheet.absoluteFill} />
             <Text style={st.fsStamp}>{stamp}</Text>
-            <Tap style={st.fsBack} onPress={() => setFsOpen(false)} hitSlop={10}>
-              <Icon name="chevL" size={18} color="#fff" sw={2.2} />
-            </Tap>
           </View>
+          {/* 横屏 {left:56, top:16} ≡ 竖屏 {top:56, right:16} */}
+          <Tap style={st.fsBackP} onPress={() => setFsOpen(false)} hitSlop={10}>
+            <View style={st.fsRot}>
+              <Icon name="chevL" size={18} color="#fff" sw={2.2} />
+            </View>
+          </Tap>
         </View>
       </Modal>
 
@@ -756,6 +763,12 @@ const st = StyleSheet.create({
     position: 'absolute', top: 16, left: 56, width: 44, height: 44, borderRadius: 22,
     backgroundColor: 'rgba(80,80,80,0.45)', alignItems: 'center', justifyContent: 'center',
   },
+  // 竖屏坐标的返回钮(横屏 {left:56,top:16} 换算)
+  fsBackP: {
+    position: 'absolute', top: 56, right: 16, width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(80,80,80,0.45)', alignItems: 'center', justifyContent: 'center',
+  },
+  fsRot: { transform: [{ rotate: '90deg' }] },
 
   // 左下,与右下全屏钮垂直居中(对齐设备详情页)
   stamp: {
