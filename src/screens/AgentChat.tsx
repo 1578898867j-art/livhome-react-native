@@ -907,8 +907,9 @@ export default function AgentChat({ navigation }: AppScreenProps) {
               <Pressable
                 style={styles.newConvBtn}
                 onPress={() => {
-                  reset();
+                  // 与右上角新聊天按钮同一套提示逻辑
                   closeDrawer();
+                  onNewChat();
                 }}
               >
                 <Icon name="plus" size={18} color={colors.textPrimary} sw={2.2} />
