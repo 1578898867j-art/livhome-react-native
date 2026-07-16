@@ -1232,12 +1232,15 @@ const st = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
   fsRot: { transform: [{ rotate: '90deg' }] },
+  // 全屏保存提示:与竖屏 saveToast 同款白色胶囊(深色底上原深色胶囊会隐身)
   fsToast: {
-    position: 'absolute', bottom: 34, alignSelf: 'center',
+    position: 'absolute', bottom: 34, alignSelf: 'center', maxWidth: 420,
     flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: 'rgba(28,28,30,0.72)', borderRadius: 14, padding: 8, paddingRight: 16,
+    backgroundColor: colors.surface, borderRadius: 20, padding: 8, paddingRight: 14,
+    shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 18, shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
   },
-  fsToastThumb: { width: 64, height: 40, borderRadius: 8, overflow: 'hidden' },
+  fsToastThumb: { width: 72, height: 44, borderRadius: 10, overflow: 'hidden' },
   fsErrMark: {
     width: 22,
     height: 22,
@@ -1246,8 +1249,8 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fsToastTxt: { fontSize: 15, fontWeight: '600', color: '#fff' },
-  fsToastLink: { color: '#6EA8FF', fontWeight: '600' },
+  fsToastTxt: { flexShrink: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  fsToastLink: { color: colors.brand, fontWeight: '600' },
 
   presetPopupBtn: {
     width: '100%', height: 54, borderRadius: 99, marginTop: 18,
