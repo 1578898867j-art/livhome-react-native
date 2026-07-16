@@ -37,6 +37,13 @@ const FS_REC =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M27.667 17.667C29.876 17.6672 31.667 19.458 31.667 21.667V32.333C31.667 34.542 29.876 36.3328 27.667 36.333H19.333C17.124 36.3328 15.333 34.542 15.333 32.333V21.667C15.333 19.458 17.124 17.6672 19.333 17.667H27.667ZM35.208 21.3564C36.4481 20.0341 38.667 20.9117 38.667 22.7246V31.2764C38.6665 33.089 36.4479 33.9659 35.208 32.6436L33.417 30.7334V23.2656L35.208 21.3564Z" fill="#D9D8D8"/></svg>';
 const FS_MIC =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M35.5332 26.3662C35.975 26.3662 36.333 26.7252 36.333 27.167V29.2998C36.333 34.4545 32.1547 38.6338 27 38.6338C21.8453 38.6338 17.667 34.4545 17.667 29.2998V27.167C17.667 26.7252 18.025 26.3662 18.4668 26.3662C18.9086 26.3663 19.2666 26.7252 19.2666 27.167V29.2998C19.2666 33.5708 22.729 37.0332 27 37.0332C31.271 37.0332 34.7334 33.5708 34.7334 29.2998V27.167C34.7334 26.7252 35.0914 26.3663 35.5332 26.3662ZM27 16.5C29.9454 16.5 32.3328 18.8876 32.333 21.833V29.2998C32.333 32.2453 29.9455 34.6338 27 34.6338C24.0545 34.6338 21.667 32.2453 21.667 29.2998V21.833C21.6672 18.8876 24.0546 16.5 27 16.5Z" fill="#D9D8D8"/></svg>';
+// 声音开启态:同款圆底 + PHOTOICONS.speakerSolid 素材(21.6×18.77)居中,纯白
+const FS_SPK_ON =
+  '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><g transform="translate(16.2 17.62)"><path fill-rule="evenodd" clip-rule="evenodd" d="M 10.60 1.79 C 11.92 0.80 13.80 1.75 13.80 3.39 L 13.80 15.39 C 13.80 17.03 11.92 17.98 10.60 16.99 L 6.33 13.79 C 5.99 13.53 5.57 13.39 5.13 13.39 L 2.80 13.39 C 1.70 13.39 0.80 12.49 0.80 11.39 L 0.80 7.39 C 0.80 6.29 1.70 5.39 2.80 5.39 L 5.13 5.39 C 5.57 5.39 5.99 5.25 6.33 4.99 L 10.60 1.79 Z M 15.31 4.34 C 15.40 3.94 15.79 3.67 16.20 3.76 C 18.82 4.29 20.80 6.61 20.80 9.39 C 20.80 12.17 18.82 14.49 16.20 15.02 C 15.79 15.11 15.40 14.84 15.31 14.44 C 15.23 14.03 15.49 13.64 15.90 13.56 C 17.84 13.16 19.30 11.45 19.30 9.39 C 19.30 7.33 17.84 5.62 15.90 5.23 C 15.49 5.14 15.23 4.75 15.31 4.34 Z M 15.40 7.28 C 15.61 6.92 16.07 6.80 16.43 7.01 C 17.25 7.48 17.80 8.37 17.80 9.39 C 17.80 10.41 17.25 11.30 16.43 11.77 C 16.07 11.98 15.61 11.86 15.40 11.50 C 15.19 11.14 15.32 10.68 15.67 10.47 C 16.05 10.26 16.30 9.85 16.30 9.39 C 16.30 8.93 16.05 8.52 15.67 8.31 C 15.32 8.10 15.19 7.64 15.40 7.28 Z" fill="#FFFFFF"/></g></svg>';
+
+// 激活态:切片玻璃色 #D9D8D8 → 纯白
+const fsActive = (xml: string) => xml.replace(/#D9D8D8/g, '#FFFFFF');
+
 const FS_MUTE =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M17.048 17.0479C17.3897 16.7063 17.9436 16.7063 18.2853 17.0479L36.9523 35.7149C37.2937 36.0567 37.2939 36.6106 36.9523 36.9522C36.6107 37.2939 36.0567 37.2937 35.715 36.9522L32.8302 34.0675C32.777 35.9452 30.6189 37.0013 29.0998 35.8624L24.0334 32.0636C23.6874 31.8043 23.2664 31.6643 22.8341 31.6642H20.0002C18.7116 31.6642 17.6673 30.6201 17.6671 29.3321V24.6671C17.6674 23.3792 18.7117 22.3351 20.0002 22.3351H21.0978L17.048 18.2852C16.7063 17.9435 16.7063 17.3896 17.048 17.0479ZM29.0998 18.1368C30.6379 16.984 32.8329 18.0814 32.8332 20.003V29.2618L24.8751 21.3038L29.0998 18.1368Z" fill="#D9D8D8"/></svg>';
 const FS_DPAD =
@@ -574,11 +581,16 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             <View style={st.fsRot}>
               <SvgXml xml={FS_FHD} width={54} height={54} />
             </View>
+            {/* 开启态 → 图标纯白;声音钮在 斜线静音/实心喇叭 间切换 */}
             <Tap onPress={() => toggleCtl('ctlMic')}>
-              <View style={st.fsRot}><SvgXml xml={FS_MIC} width={54} height={54} /></View>
+              <View style={st.fsRot}>
+                <SvgXml xml={ctl.ctlMic ? fsActive(FS_MIC) : FS_MIC} width={54} height={54} />
+              </View>
             </Tap>
             <Tap onPress={() => snap(true)}>
-              <View style={st.fsRot}><SvgXml xml={FS_SNAP} width={54} height={54} /></View>
+              <View style={st.fsRot}>
+                <SvgXml xml={snapFlash ? fsActive(FS_SNAP) : FS_SNAP} width={54} height={54} />
+              </View>
             </Tap>
             <Tap
               onPress={() => {
@@ -586,10 +598,14 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                 toggleCtl('ctlRec');
               }}
             >
-              <View style={st.fsRot}><SvgXml xml={FS_REC} width={54} height={54} /></View>
+              <View style={st.fsRot}>
+                <SvgXml xml={ctl.ctlRec ? fsActive(FS_REC) : FS_REC} width={54} height={54} />
+              </View>
             </Tap>
             <Tap onPress={() => toggleCtl('ctlSpk')}>
-              <View style={st.fsRot}><SvgXml xml={FS_MUTE} width={54} height={54} /></View>
+              <View style={st.fsRot}>
+                <SvgXml xml={ctl.ctlSpk ? FS_SPK_ON : FS_MUTE} width={54} height={54} />
+              </View>
             </Tap>
           </View>
         </View>
