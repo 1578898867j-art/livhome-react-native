@@ -348,7 +348,9 @@ export default function AgentChat({ navigation }: AppScreenProps) {
       showHint('Already in new chat');
       return;
     }
+    // 从会话开启新聊天:跳到新页面并弹提示
     reset();
+    showHint('New chat started');
   };
 
   const showCopied = (text: string) => {
