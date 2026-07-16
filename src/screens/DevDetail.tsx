@@ -570,7 +570,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             {saveToast != null && (
               <View style={st.fsToast}>
                 <View style={st.fsToastThumb}>
-                  <CamPreview height={40} showBox={false} tag="" />
+                  {/* 填满 72×44 容器,避免底部露出胶囊底色形成遮挡感 */}
+                  <CamPreview height={44} showBox={false} tag="" />
                 </View>
                 <Text style={st.fsToastTxt} numberOfLines={1}>
                   {saveToast === 'photo' ? 'Photo saved to album' : 'Video saved to album'}{' '}
