@@ -7,7 +7,7 @@ import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
-import { colors, shadow } from '../theme';
+import { colors } from '../theme';
 import { ME_NOTIF, ME_ALBUM, ME_FEEDBACK, ME_HELP } from '../icons/meIcons';
 
 type MeMenuRow = {
@@ -208,7 +208,8 @@ const st = StyleSheet.create({
     borderRadius: 24,
     padding: 14,
     backgroundColor: colors.surface,
-    ...shadow.md,
+    // 不用投影:投影会在滚动容器顶缘被裁出一条硬边,与上方底色形成明显分层;
+    // 与下方列表卡同为平面白卡
   },
   avatarShadow: {
     borderRadius: 26,
