@@ -718,13 +718,13 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 )}
               </ScrollView>
 
-              {/* scroll-to-latest (悬浮在输入栏渐变之上) */}
+              {/* scroll-to-latest (悬浮在输入栏渐变之上,相对屏幕水平居中) */}
               <Animated.View
                 pointerEvents={scrollBtnActive ? 'auto' : 'none'}
                 style={[
                   styles.scrollDownWrap,
                   {
-                    left: inputLeft,
+                    left: INPUT_HORIZONTAL_INSET,
                     right: INPUT_HORIZONTAL_INSET,
                     bottom: conversationInputBottom + INPUT_HEIGHT + 20,
                     opacity: scrollBtnAnim,
