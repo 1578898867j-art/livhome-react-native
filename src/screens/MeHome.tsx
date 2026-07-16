@@ -185,7 +185,7 @@ const st = StyleSheet.create({
   topRow: {
     paddingHorizontal: 18,
     paddingTop: 8,
-    paddingBottom: 14,
+    paddingBottom: 8,
   },
   title: {
     fontSize: 24,
@@ -203,7 +203,8 @@ const st = StyleSheet.create({
   },
   userCard: {
     marginHorizontal: 16,
-    marginTop: 8,
+    // 紧贴标题行(消除标题与卡片间的分层空档);卡片在滚动体内,随内容一起滚
+    marginTop: 0,
     marginBottom: 14,
     borderRadius: 24,
     padding: 14,
