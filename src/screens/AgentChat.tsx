@@ -1205,11 +1205,11 @@ const styles = StyleSheet.create({
   },
   copiedText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
 
-  // 新聊天提示胶囊(参考稿:浅灰底、灰字、无图标;缩小版)
+  // 新聊天提示胶囊 —— 底色与建议胶囊(cardSoft)一致
   hintToast: {
     position: 'absolute', alignSelf: 'center', zIndex: 90,
     height: 34, paddingHorizontal: 16, borderRadius: 17,
-    backgroundColor: '#EBEBF1', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(120,120,128,0.05)', alignItems: 'center', justifyContent: 'center',
   },
   hintText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
 
