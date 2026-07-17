@@ -11,6 +11,7 @@ import { PermissionDialog } from '../components/PermissionDialog';
 import type { PermType } from '../components/PermissionDialog';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
+import { consumeTalkIntent } from '../features/devices/talkIntent';
 import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS, MOVEICONS } from '../icons/protoSets';
 import { ZOOMICON, SELICON, SELICON2 } from '../icons/protoIcons';
 import { colors } from '../theme';
@@ -186,6 +187,18 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         if (pTimer.current) clearTimeout(pTimer.current);
       };
     }, [connectStream]),
+  );
+
+  // 首页 Talk 进入:自动开启对讲(权限被拒演示则弹麦克风引导)
+  useFocusEffect(
+    useCallback(() => {
+      if (!consumeTalkIntent()) return;
+      if (getDemoFlags().permsDenied) {
+        setPermDlg('microphone');
+        return;
+      }
+      if (!ctl.ctlMic) toggleCtl('ctlMic');
+    }, [ctl.ctlMic, toggleCtl]),
   );
 
   useEffect(
