@@ -31,12 +31,24 @@ const FULLSCREEN_ICON =
 // 全屏横屏控件 —— 用户提供的 Figma 830:1018 切片(54 圆钮 + 174 方向盘)
 const FS_FHD =
   '<svg viewBox="0 0 54 54" fill="none"><rect width="54" height="54" rx="27" fill="#878787" fill-opacity="0.4"/><path d="M35 17C37.2091 17 39 18.7909 39 21V33C39 35.2091 37.2091 37 35 37H19C16.7909 37 15 35.2091 15 33V21C15 18.7909 16.7909 17 19 17H35ZM18.4287 29.9756H19.7461V27.2441H22.2822V26.0918H19.7461V24.5166H22.5557V23.3633H18.4287V29.9756ZM24.2695 29.9756H25.5879V27.2441H28.2637V29.9756H29.5781V23.3633H28.2637V26.0918H25.5879V23.3633H24.2695V29.9756ZM31.293 23.3633V29.9756H33.502C34.135 29.9756 34.6793 29.8428 35.1338 29.5781C35.5903 29.3134 35.9401 28.9334 36.1836 28.4385C36.4291 27.9435 36.5527 27.3517 36.5527 26.6631C36.5527 25.9765 36.4291 25.3864 36.1836 24.8936C35.9401 24.4009 35.592 24.0232 35.1396 23.7607C34.6872 23.4961 34.1474 23.3633 33.5205 23.3633H31.293ZM33.4502 24.5615C33.8398 24.5615 34.1678 24.6349 34.4336 24.7812C34.6993 24.9275 34.8993 25.1552 35.0332 25.4648C35.1692 25.7748 35.2373 26.1745 35.2373 26.6631C35.2373 27.1558 35.1691 27.5581 35.0332 27.8701C34.8993 28.18 34.6985 28.4091 34.4307 28.5576C34.1648 28.704 33.8369 28.7773 33.4473 28.7773H32.6104V24.5615H33.4502Z" fill="#D9D8D8"/></svg>';
+
+// Huge-icon/multimedia and audio/solid「HD」素材(32 视窗)—— 与 FHD 点击互切;
+// 缩放取 20/22≈0.909:HD 圆角框高 20、y 17→37,与 FHD 圆角框完全等高对齐
+const FS_HD =
+  '<svg viewBox="0 0 54 54" fill="none"><rect width="54" height="54" rx="27" fill="#878787" fill-opacity="0.4"/><g transform="translate(12.45 12.45) scale(0.9091)"><path d="M26 5C28.2091 5 30 6.79086 30 9V23C30 25.2091 28.2091 27 26 27H6C3.79086 27 2 25.2091 2 23V9C2 6.79086 3.79086 5 6 5H26ZM8.43164 20.2002H10.3701V17.1953H13.0908V20.2002H15.0254V12.5273H13.0908V15.5283H10.3701V12.5273H8.43164V20.2002ZM17.4316 12.5273V20.2002H20.21C20.9749 20.2002 21.6443 20.0489 22.21 19.7383C22.7775 19.4279 23.2135 18.9812 23.5156 18.4023L23.623 18.1807C23.8554 17.651 23.9688 17.0412 23.9688 16.3564C23.9687 15.6737 23.8556 15.0658 23.623 14.5381L23.5156 14.3174C23.2136 13.7411 22.7789 13.2963 22.2158 12.9883C21.6529 12.6782 20.989 12.5273 20.2314 12.5273H17.4316ZM20.3135 18.6787L20.1465 18.6826C20.2342 18.6826 20.319 18.6778 20.4014 18.6719C20.3724 18.674 20.3431 18.6773 20.3135 18.6787ZM20.1494 14.2451C20.5812 14.2451 20.9307 14.3214 21.2051 14.4639C21.4724 14.6027 21.6754 14.8188 21.8145 15.1221L21.8154 15.123C21.9576 15.4287 22.0342 15.8366 22.0342 16.3564C22.0342 16.8813 21.9568 17.2924 21.8145 17.6006C21.6754 17.9039 21.4708 18.1222 21.2002 18.2637C20.926 18.4058 20.5778 18.4824 20.1465 18.4824H19.3701V14.2451H20.1494Z" fill="#D9D8D8"/></g></svg>';
 const FS_SNAP =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M34.667 21.167C36.876 21.1672 38.667 22.958 38.667 25.167V33.5C38.667 35.709 36.876 37.4998 34.667 37.5H19.333C17.124 37.4998 15.333 35.709 15.333 33.5V25.167C15.333 22.958 17.124 21.1672 19.333 21.167H34.667ZM27 25.833C25.0671 25.833 23.5002 27.4002 23.5 29.333C23.5 31.266 25.067 32.833 27 32.833C28.933 32.833 30.5 31.266 30.5 29.333C30.4998 27.4002 28.9329 25.833 27 25.833ZM29.4297 16.5C30.0982 16.5001 30.7229 16.8344 31.0938 17.3906L32.4443 19.417H21.5547L22.9062 17.3906C23.2771 16.8344 23.9018 16.5001 24.5703 16.5H29.4297Z" fill="#D9D8D8"/></svg>';
 const FS_REC =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M27.667 17.667C29.876 17.6672 31.667 19.458 31.667 21.667V32.333C31.667 34.542 29.876 36.3328 27.667 36.333H19.333C17.124 36.3328 15.333 34.542 15.333 32.333V21.667C15.333 19.458 17.124 17.6672 19.333 17.667H27.667ZM35.208 21.3564C36.4481 20.0341 38.667 20.9117 38.667 22.7246V31.2764C38.6665 33.089 36.4479 33.9659 35.208 32.6436L33.417 30.7334V23.2656L35.208 21.3564Z" fill="#D9D8D8"/></svg>';
 const FS_MIC =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M35.5332 26.3662C35.975 26.3662 36.333 26.7252 36.333 27.167V29.2998C36.333 34.4545 32.1547 38.6338 27 38.6338C21.8453 38.6338 17.667 34.4545 17.667 29.2998V27.167C17.667 26.7252 18.025 26.3662 18.4668 26.3662C18.9086 26.3663 19.2666 26.7252 19.2666 27.167V29.2998C19.2666 33.5708 22.729 37.0332 27 37.0332C31.271 37.0332 34.7334 33.5708 34.7334 29.2998V27.167C34.7334 26.7252 35.0914 26.3663 35.5332 26.3662ZM27 16.5C29.9454 16.5 32.3328 18.8876 32.333 21.833V29.2998C32.333 32.2453 29.9455 34.6338 27 34.6338C24.0545 34.6338 21.667 32.2453 21.667 29.2998V21.833C21.6672 18.8876 24.0546 16.5 27 16.5Z" fill="#D9D8D8"/></svg>';
+// 声音开启态:同款圆底 + PHOTOICONS.speakerSolid 素材(21.6×18.77)居中,纯白
+const FS_SPK_ON =
+  '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><g transform="translate(16.2 17.62)"><path fill-rule="evenodd" clip-rule="evenodd" d="M 10.60 1.79 C 11.92 0.80 13.80 1.75 13.80 3.39 L 13.80 15.39 C 13.80 17.03 11.92 17.98 10.60 16.99 L 6.33 13.79 C 5.99 13.53 5.57 13.39 5.13 13.39 L 2.80 13.39 C 1.70 13.39 0.80 12.49 0.80 11.39 L 0.80 7.39 C 0.80 6.29 1.70 5.39 2.80 5.39 L 5.13 5.39 C 5.57 5.39 5.99 5.25 6.33 4.99 L 10.60 1.79 Z M 15.31 4.34 C 15.40 3.94 15.79 3.67 16.20 3.76 C 18.82 4.29 20.80 6.61 20.80 9.39 C 20.80 12.17 18.82 14.49 16.20 15.02 C 15.79 15.11 15.40 14.84 15.31 14.44 C 15.23 14.03 15.49 13.64 15.90 13.56 C 17.84 13.16 19.30 11.45 19.30 9.39 C 19.30 7.33 17.84 5.62 15.90 5.23 C 15.49 5.14 15.23 4.75 15.31 4.34 Z M 15.40 7.28 C 15.61 6.92 16.07 6.80 16.43 7.01 C 17.25 7.48 17.80 8.37 17.80 9.39 C 17.80 10.41 17.25 11.30 16.43 11.77 C 16.07 11.98 15.61 11.86 15.40 11.50 C 15.19 11.14 15.32 10.68 15.67 10.47 C 16.05 10.26 16.30 9.85 16.30 9.39 C 16.30 8.93 16.05 8.52 15.67 8.31 C 15.32 8.10 15.19 7.64 15.40 7.28 Z" fill="#FFFFFF"/></g></svg>';
+
+// 激活态:切片玻璃色 #D9D8D8 → 纯白
+const fsActive = (xml: string) => xml.replace(/#D9D8D8/g, '#FFFFFF');
+
 const FS_MUTE =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M17.048 17.0479C17.3897 16.7063 17.9436 16.7063 18.2853 17.0479L36.9523 35.7149C37.2937 36.0567 37.2939 36.6106 36.9523 36.9522C36.6107 37.2939 36.0567 37.2937 35.715 36.9522L32.8302 34.0675C32.777 35.9452 30.6189 37.0013 29.0998 35.8624L24.0334 32.0636C23.6874 31.8043 23.2664 31.6643 22.8341 31.6642H20.0002C18.7116 31.6642 17.6673 30.6201 17.6671 29.3321V24.6671C17.6674 23.3792 18.7117 22.3351 20.0002 22.3351H21.0978L17.048 18.2852C16.7063 17.9435 16.7063 17.3896 17.048 17.0479ZM29.0998 18.1368C30.6379 16.984 32.8329 18.0814 32.8332 20.003V29.2618L24.8751 21.3038L29.0998 18.1368Z" fill="#D9D8D8"/></svg>';
 const FS_DPAD =
@@ -221,6 +233,23 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     setSnapFlash(true);
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setSnapFlash(false), 260);
+  };
+
+  // 全屏清晰度钮:FHD ↔ HD 点击互切,切换瞬间闪白(不常亮)
+  const [fsHd, setFsHd] = useState(false);
+  const [fhdFlash, setFhdFlash] = useState(false);
+  const fhdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (fhdTimer.current) clearTimeout(fhdTimer.current);
+    },
+    [],
+  );
+  const toggleRes = () => {
+    setFsHd((v) => !v);
+    setFhdFlash(true);
+    if (fhdTimer.current) clearTimeout(fhdTimer.current);
+    fhdTimer.current = setTimeout(() => setFhdFlash(false), 260);
   };
   const [msgM, setMsgM] = useState(3);
   const [msgD, setMsgD] = useState(23);
@@ -519,34 +548,17 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         </View>
       )}
 
-      {/* 全屏预览 —— Figma 830:1018:全出血画面 + 左上返回 + 右侧竖排控钮 + 左下方向盘 */}
+      {/* 全屏预览 —— Figma 830:1018:全出血画面 + 左上返回 + 右侧竖排控钮 + 左下方向盘。
+          注意:iOS 上旋转 90° 的祖先会让内部按钮收不到触摸,因此拆成两层——
+          旋转层只放视觉(画面/方向盘/toast,pointerEvents none),
+          按钮放在不旋转的竖屏坐标层,图标各自旋转,视觉与原来完全一致。 */}
       <Modal visible={fullscreen} animationType="fade" onRequestClose={() => setFullscreen(false)}>
         <View style={st.fsRoot}>
-          <View style={[st.fsStage, { width: WIN.height, height: WIN.width }]}>
+          {/* 视觉层(旋转,不接收触摸) */}
+          <View pointerEvents="none" style={[st.fsStage, { width: WIN.height, height: WIN.width }]}>
             {/* 画面全出血 */}
             <View style={StyleSheet.absoluteFill}>
               <CamPreview height={WIN.width} showBox={false} tag="" />
-            </View>
-
-            {/* 返回 */}
-            <Tap style={st.fsBack} onPress={() => setFullscreen(false)} hitSlop={10}>
-              <Icon name="chevL" size={18} color="#fff" sw={2.2} />
-            </Tap>
-
-            {/* 右侧控钮列 */}
-            <View style={st.fsRail}>
-              <Tap onPress={() => toggleCtl('ctlSpk')}><SvgXml xml={FS_MUTE} width={54} height={54} /></Tap>
-              <Tap
-                onPress={() => {
-                  if (ctl.ctlRec) trySave('video', true);
-                  toggleCtl('ctlRec');
-                }}
-              >
-                <SvgXml xml={FS_REC} width={54} height={54} />
-              </Tap>
-              <Tap onPress={() => snap(true)}><SvgXml xml={FS_SNAP} width={54} height={54} /></Tap>
-              <Tap onPress={() => toggleCtl('ctlMic')}><SvgXml xml={FS_MIC} width={54} height={54} /></Tap>
-              <SvgXml xml={FS_FHD} width={54} height={54} />
             </View>
 
             {/* 左下方向盘 */}
@@ -558,7 +570,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             {saveToast != null && (
               <View style={st.fsToast}>
                 <View style={st.fsToastThumb}>
-                  <CamPreview height={40} showBox={false} tag="" />
+                  {/* 填满 72×44 容器,避免底部露出胶囊底色形成遮挡感 */}
+                  <CamPreview height={44} showBox={false} tag="" />
                 </View>
                 <Text style={st.fsToastTxt} numberOfLines={1}>
                   {saveToast === 'photo' ? 'Photo saved to album' : 'Video saved to album'}{' '}
@@ -576,6 +589,53 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                 <Text style={st.fsToastTxt} numberOfLines={1}>{fsError}</Text>
               </View>
             )}
+          </View>
+
+          {/* 交互层(竖屏坐标,无旋转祖先):
+              横屏 {left:56, top:24} 的返回钮 ≡ 竖屏 {top:56, right:24};
+              横屏右侧竖列(上→下)≡ 竖屏底部横行(右→左)。 */}
+          <Tap style={st.fsBackP} onPress={() => setFullscreen(false)} hitSlop={10}>
+            <View style={st.fsRot}>
+              <Icon name="chevL" size={18} color="#fff" sw={2.2} />
+            </View>
+          </Tap>
+
+          <View style={st.fsRailP}>
+            <Tap onPress={toggleRes}>
+              <View style={st.fsRot}>
+                <SvgXml
+                  xml={fhdFlash ? fsActive(fsHd ? FS_HD : FS_FHD) : fsHd ? FS_HD : FS_FHD}
+                  width={54}
+                  height={54}
+                />
+              </View>
+            </Tap>
+            {/* 开启态 → 图标纯白;声音钮在 斜线静音/实心喇叭 间切换 */}
+            <Tap onPress={() => toggleCtl('ctlMic')}>
+              <View style={st.fsRot}>
+                <SvgXml xml={ctl.ctlMic ? fsActive(FS_MIC) : FS_MIC} width={54} height={54} />
+              </View>
+            </Tap>
+            <Tap onPress={() => snap(true)}>
+              <View style={st.fsRot}>
+                <SvgXml xml={snapFlash ? fsActive(FS_SNAP) : FS_SNAP} width={54} height={54} />
+              </View>
+            </Tap>
+            <Tap
+              onPress={() => {
+                if (ctl.ctlRec) trySave('video', true);
+                toggleCtl('ctlRec');
+              }}
+            >
+              <View style={st.fsRot}>
+                <SvgXml xml={ctl.ctlRec ? fsActive(FS_REC) : FS_REC} width={54} height={54} />
+              </View>
+            </Tap>
+            <Tap onPress={() => toggleCtl('ctlSpk')}>
+              <View style={st.fsRot}>
+                <SvgXml xml={ctl.ctlSpk ? FS_SPK_ON : FS_MUTE} width={54} height={54} />
+              </View>
+            </Tap>
           </View>
         </View>
       </Modal>
@@ -1163,12 +1223,23 @@ const st = StyleSheet.create({
     justifyContent: 'space-between', alignItems: 'center',
   },
   fsDpad: { position: 'absolute', left: 56, bottom: 22 },
-  fsToast: {
-    position: 'absolute', bottom: 34, alignSelf: 'center',
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: 'rgba(28,28,30,0.72)', borderRadius: 14, padding: 8, paddingRight: 16,
+  // 竖屏坐标的交互层(横屏位置换算:{left:a,top:b} → {top:a,right:b})
+  fsBackP: {
+    position: 'absolute', top: 56, right: 24, width: 44, height: 44, borderRadius: 22,
+    backgroundColor: 'rgba(80,80,80,0.45)', alignItems: 'center', justifyContent: 'center',
   },
-  fsToastThumb: { width: 64, height: 40, borderRadius: 8, overflow: 'hidden' },
+  fsRailP: {
+    position: 'absolute', left: 40, right: 40, bottom: 56,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
+  fsRot: { transform: [{ rotate: '90deg' }] },
+  // 全屏保存提示:与控制钮同款半透明灰底(#777 40%);缩略图圆角与胶囊同心(外 20 - padding 8 = 内 12)
+  fsToast: {
+    position: 'absolute', bottom: 34, alignSelf: 'center', maxWidth: 420,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: 'rgba(119,119,119,0.4)', borderRadius: 20, padding: 8, paddingRight: 14,
+  },
+  fsToastThumb: { width: 72, height: 44, borderRadius: 12, overflow: 'hidden' },
   fsErrMark: {
     width: 22,
     height: 22,
@@ -1177,7 +1248,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  fsToastTxt: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  fsToastTxt: { flexShrink: 1, fontSize: 15, fontWeight: '600', color: '#fff' },
   fsToastLink: { color: '#6EA8FF', fontWeight: '600' },
 
   presetPopupBtn: {

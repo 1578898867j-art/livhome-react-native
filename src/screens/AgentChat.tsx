@@ -348,7 +348,9 @@ export default function AgentChat({ navigation }: AppScreenProps) {
       showHint('Already in new chat');
       return;
     }
+    // 从会话开启新聊天:跳到新页面并弹提示
     reset();
+    showHint('New chat started');
   };
 
   const showCopied = (text: string) => {
@@ -716,13 +718,13 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 )}
               </ScrollView>
 
-              {/* scroll-to-latest (悬浮在输入栏渐变之上) */}
+              {/* scroll-to-latest (悬浮在输入栏渐变之上,相对屏幕水平居中) */}
               <Animated.View
                 pointerEvents={scrollBtnActive ? 'auto' : 'none'}
                 style={[
                   styles.scrollDownWrap,
                   {
-                    left: inputLeft,
+                    left: INPUT_HORIZONTAL_INSET,
                     right: INPUT_HORIZONTAL_INSET,
                     bottom: conversationInputBottom + INPUT_HEIGHT + 20,
                     opacity: scrollBtnAnim,
@@ -905,8 +907,9 @@ export default function AgentChat({ navigation }: AppScreenProps) {
               <Pressable
                 style={styles.newConvBtn}
                 onPress={() => {
-                  reset();
+                  // 与右上角新聊天按钮同一套提示逻辑
                   closeDrawer();
+                  onNewChat();
                 }}
               >
                 <Icon name="plus" size={18} color={colors.textPrimary} sw={2.2} />
@@ -1205,11 +1208,11 @@ const styles = StyleSheet.create({
   },
   copiedText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
 
-  // 新聊天提示胶囊(参考稿:浅灰底、灰字、无图标;缩小版)
+  // 新聊天提示胶囊 —— 底色与建议胶囊(cardSoft)一致
   hintToast: {
     position: 'absolute', alignSelf: 'center', zIndex: 90,
     height: 34, paddingHorizontal: 16, borderRadius: 17,
-    backgroundColor: '#EBEBF1', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'rgba(120,120,128,0.05)', alignItems: 'center', justifyContent: 'center',
   },
   hintText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
 
