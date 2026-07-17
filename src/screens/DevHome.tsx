@@ -107,7 +107,7 @@ export default function DevHome({ navigation }: AppScreenProps) {
       <View style={{ padding: 12, paddingHorizontal: 14 }}>
         {/* 静态按钮:点击无响应 */}
         <View style={st.troubleBtn}>
-          <Text style={st.troubleText}>Reconnect</Text>
+          <Text style={st.troubleText}>Please check the device</Text>
         </View>
       </View>
     </View>
