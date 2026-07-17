@@ -105,12 +105,10 @@ export default function DevHome({ navigation }: AppScreenProps) {
         <Text style={st.offlineText}>The device is offline</Text>
       </View>
       <View style={{ padding: 12, paddingHorizontal: 14 }}>
-        <Pressable
-          onPress={go('bind-find')}
-          style={({ pressed }) => [st.troubleBtn, pressed && { opacity: 0.85 }]}
-        >
+        {/* 静态按钮:点击无响应 */}
+        <View style={st.troubleBtn}>
           <Text style={st.troubleText}>Reconnect</Text>
-        </Pressable>
+        </View>
       </View>
     </View>
   );
