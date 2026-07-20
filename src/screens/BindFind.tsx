@@ -1,23 +1,24 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, Modal, Pressable, Image } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Screen, Tap, Row, Header } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { PermissionDialog } from '../components/PermissionDialog';
 import type { PermType } from '../components/PermissionDialog';
 import { getDemoFlags } from '../features/app/demoStore';
+import { CAMAVATAR } from '../assets/images';
 import { colors, shadow } from '../theme';
 
 // 搜索超时时长(无结果 → 未找到设备页)
 const SEARCH_TIMEOUT = 12000;
 
-/* manual-add device tile (bDeviceTile) → continue/next */
+/* manual-add device tile (bDeviceTile) → continue/next;图标为产品图(与首页设备头像同素材) */
 function DeviceTile({ name, onPress }: { name: string; onPress?: () => void }) {
   return (
     <Tap style={st.tile} onPress={onPress}>
       <View style={st.tileIcon}>
-        <Icon name="camera" size={22} color={colors.textSecondary} sw={1.8} />
+        <Image source={{ uri: CAMAVATAR }} resizeMode="contain" style={st.tileImg} />
       </View>
       <Text style={st.tileLabel}>{name}</Text>
     </Tap>
@@ -192,7 +193,8 @@ const st = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: 20,
   },
-  tileIcon: { width: 46, height: 46, borderRadius: 14, backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
+  tileIcon: { width: 46, height: 46, borderRadius: 14, backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center', padding: 8 },
+  tileImg: { width: '100%', height: '100%' },
   tileLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textAlign: 'center', lineHeight: 16 },
 
   // 已被绑定弹窗(App 弹窗规范)
