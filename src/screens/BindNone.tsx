@@ -1,30 +1,17 @@
 import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { Screen, Header, Tap, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { CAMAVATAR } from '../assets/images';
 import { colors } from '../theme';
 
-/* Stepper: 4 segments, first `n` filled with brand, the rest border-strong. */
-function Stepper({ n }: { n: number }) {
-  return (
-    <View style={st.stepper}>
-      {[1, 2, 3, 4].map((i) => (
-        <View
-          key={i}
-          style={[st.step, { backgroundColor: i <= n ? colors.brand : colors.borderStrong }]}
-        />
-      ))}
-    </View>
-  );
-}
-
-/* Manual-add device tile → bind-prep */
+/* Manual-add device tile → bind-prep;图标为产品图(与搜索页一致) */
 function DeviceTile({ name, onPress }: { name: string; onPress?: () => void }) {
   return (
     <Tap style={st.tile} onPress={onPress}>
       <View style={st.tileIcon}>
-        <Icon name="camera" size={22} color={colors.textSecondary} sw={1.8} />
+        <Image source={{ uri: CAMAVATAR }} resizeMode="contain" style={st.tileImg} />
       </View>
       <Text style={st.tileLabel}>{name}</Text>
     </Tap>
@@ -36,9 +23,7 @@ export default function BindNone({ navigation }: AppScreenProps) {
 
   return (
     <Screen header={<Header title="Add Device" onBack={() => navigation.goBack()} />}>
-      <Stepper n={1} />
-
-      {/* empty-state icon */}
+      {/* empty-state icon(与搜索页同环节,不显示流程步进条) */}
       <View style={st.iconWrap}>
         <View style={st.iconCircle}>
           <Icon name="router" size={40} color={colors.textTertiary} sw={1.6} />
@@ -58,7 +43,7 @@ export default function BindNone({ navigation }: AppScreenProps) {
         <PrimaryBtn label="Retry" onPress={() => navigation.navigate('bind-find')} />
       </View>
 
-      {/* manual add */}
+      {/* manual add —— marginTop 130 使卡片落在与搜索页相同的屏幕位置 */}
       <View style={st.manual}>
         <View style={st.dividerRow}>
           <View style={st.dividerLine} />
@@ -76,14 +61,6 @@ export default function BindNone({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  stepper: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 6,
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  step: { width: 20, height: 3, borderRadius: 2 },
   iconWrap: { alignItems: 'center', paddingTop: 48, paddingBottom: 4 },
   iconCircle: {
     width: 92,
@@ -104,7 +81,7 @@ const st = StyleSheet.create({
     textAlign: 'center',
   },
   btnWrap: { paddingHorizontal: 22, paddingTop: 26 },
-  manual: { marginTop: 32, paddingHorizontal: 22, paddingBottom: 30 },
+  manual: { marginTop: 130, paddingHorizontal: 22, paddingBottom: 30 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerText: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
@@ -127,6 +104,8 @@ const st = StyleSheet.create({
     backgroundColor: colors.bgSecondary,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: 8,
   },
+  tileImg: { width: '100%', height: '100%' },
   tileLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textAlign: 'center', lineHeight: 16 },
 });
