@@ -98,9 +98,19 @@ export default function BindFind({ navigation }: AppScreenProps) {
       <View style={st.radar}>
         <Animated.View style={[st.ring, ringStyle(ping1)]} />
         <Animated.View style={[st.ring, ringStyle(ping2)]} />
-        <View style={st.core}>
+        {/* 白色圆 + 蓝点整体随呼吸节拍缩放 */}
+        <Animated.View
+          style={[
+            st.core,
+            {
+              transform: [
+                { scale: breathe.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }) },
+              ],
+            },
+          ]}
+        >
           <View style={st.coreDot} />
-        </View>
+        </Animated.View>
       </View>
 
       <Row style={st.searchRow}>
