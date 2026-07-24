@@ -30,12 +30,13 @@ export function useDeviceDetailPrototype() {
     setPresets((p) => p.filter((_, idx) => idx !== i));
     setActivePreset((a) => (a === i ? null : a != null && a > i ? a - 1 : a));
   };
+  // 进入页面默认全部关闭
   const [tilt, setTilt] = useState<Record<TiltKey, boolean>>({
-    smartTrack: true,
+    smartTrack: false,
     nightVision: false,
-    motionOn: true,
-    soundOn: true,
-    sirenOn: true,
+    motionOn: false,
+    soundOn: false,
+    sirenOn: false,
     privacyOn: false,
   });
   const [msgs, setMsgs] = useState(INITIAL_MESSAGES);

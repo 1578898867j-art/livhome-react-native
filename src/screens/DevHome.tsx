@@ -6,6 +6,7 @@ import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { StateView, Spinner } from '../components/states';
 import { useDemoFlags } from '../features/app/demoStore';
+import { requestTalk } from '../features/devices/talkIntent';
 import { colors } from '../theme';
 import { CAMAVATAR } from '../assets/images';
 
@@ -67,10 +68,17 @@ export default function DevHome({ navigation }: AppScreenProps) {
           <Icon name="play" size={19} color="#fff" sw={1.6} />
           <Text style={[st.actText, { color: colors.textInverse }]}>Live view</Text>
         </Pressable>
-        <View style={[st.actBtn, st.actBtnOutline]}>
+        <Pressable
+          onPress={() => {
+            // 进详情页并自动开启对讲
+            requestTalk();
+            navigateTo(navigation, 'dev-detail');
+          }}
+          style={({ pressed }) => [st.actBtn, st.actBtnOutline, pressed && { opacity: 0.85 }]}
+        >
           <Icon name="mic" size={18} color={colors.textPrimary} />
           <Text style={[st.actText, { color: colors.textPrimary }]}>Talk</Text>
-        </View>
+        </Pressable>
         <Pressable
           onPress={go('dev-messages')}
           style={({ pressed }) => [st.actBtn, st.actBtnOutline, pressed && { opacity: 0.85 }]}
