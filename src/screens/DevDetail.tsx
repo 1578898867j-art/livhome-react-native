@@ -909,7 +909,8 @@ function TiltPanel({
     <View style={st.tiltGrid}>
       {TILT_ITEMS.map((it) => {
         const on = tilt[it.key];
-        const glyph = it.icon === 'privacy' && on ? 'privacyOn' : it.icon;
+        // Privacy:关闭 = 睁眼(可见),开启 = 斜线遮蔽眼
+        const glyph = it.icon === 'privacy' ? (on ? 'privacy' : 'privacyOn') : it.icon;
         return (
           <Tap
             key={it.key}
