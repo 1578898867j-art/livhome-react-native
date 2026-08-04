@@ -1,6 +1,16 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Modal, Pressable, Dimensions } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +31,7 @@ import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS, MOVEICONS } from '../icons/
 import { ZOOMICON, SELICON, SELICON2 } from '../icons/protoIcons';
 import { colors } from '../theme';
 import { useDeviceDetailPrototype } from '../features/devices/useDeviceDetailPrototype';
+import { useTalkMeter } from '../features/devices/useTalkMeter';
 import {
   setNightVisionMode,
   setSmartTrackingEnabled,
@@ -126,6 +137,44 @@ function CamPreview({
   );
 }
 
+const TALK_WAVE_WEIGHTS = [0.5, 0.72, 0.9, 1, 0.84, 0.66, 0.46] as const;
+
+function TalkWaveform({ level, fullscreen = false }: { level: number; fullscreen?: boolean }) {
+  const bars = useRef(TALK_WAVE_WEIGHTS.map(() => new Animated.Value(0.2))).current;
+  const frame = useRef(0);
+
+  useEffect(() => {
+    frame.current += 1;
+    bars.forEach((bar, index) => {
+      const ripple = 0.76 + Math.sin(frame.current * 0.84 + index * 1.12) * 0.24;
+      const scale = Math.min(1, 0.2 + level * TALK_WAVE_WEIGHTS[index] * ripple * 0.8);
+      Animated.timing(bar, {
+        toValue: scale,
+        duration: 110,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => bars.forEach((bar) => bar.stopAnimation());
+  }, [bars, level]);
+
+  return (
+    <View
+      accessible={false}
+      pointerEvents="none"
+      style={[st.talkWave, fullscreen && st.talkWaveFullscreen]}
+    >
+      {bars.map((bar, index) => (
+        <Animated.View
+          key={index}
+          style={[st.talkWaveBar, { transform: [{ scaleY: bar }] }]}
+        />
+      ))}
+    </View>
+  );
+}
+
 export default function DevDetail({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   const {
@@ -158,6 +207,18 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   const [presetPopup, setPresetPopup] = useState(false);
   const [nightVisionOpen, setNightVisionOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const {
+    level: talkLevel,
+    start: startTalkMeter,
+    starting: talkStarting,
+    stop: stopTalkMeter,
+  } = useTalkMeter();
+  const talkEnabledRef = useRef(ctl.ctlMic);
+  const talkStartingRef = useRef(talkStarting);
+  const toggleCtlRef = useRef(toggleCtl);
+  talkEnabledRef.current = ctl.ctlMic;
+  talkStartingRef.current = talkStarting;
+  toggleCtlRef.current = toggleCtl;
   const nightVisionMode = useNightVisionMode();
   const smartTrackingEnabled = useSmartTrackingEnabled();
   // 拍照/录像保存提示条(截图为瞬时动作,不保持常亮)
@@ -204,18 +265,6 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     }, [connectStream]),
   );
 
-  // 首页 Talk 进入:自动开启对讲(权限被拒演示则弹麦克风引导)
-  useFocusEffect(
-    useCallback(() => {
-      if (!consumeTalkIntent()) return;
-      if (getDemoFlags().permsDenied) {
-        setPermDlg('microphone');
-        return;
-      }
-      if (!ctl.ctlMic) toggleCtl('ctlMic');
-    }, [ctl.ctlMic, toggleCtl]),
-  );
-
   useEffect(
     () => () => {
       if (fsErrTimer.current) clearTimeout(fsErrTimer.current);
@@ -224,11 +273,11 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   );
 
   // 全屏内失败提示(全局 toast 在 Modal 之下,需用全屏本地深色提示)
-  const showFsError = (text: string) => {
+  const showFsError = useCallback((text: string) => {
     setFsError(text);
     if (fsErrTimer.current) clearTimeout(fsErrTimer.current);
     fsErrTimer.current = setTimeout(() => setFsError(null), 2400);
-  };
+  }, []);
 
   // 保存截图/录像:相册权限被拒 → 引导弹窗;failOps → 失败提示;否则成功提示条
   const trySave = (kind: 'photo' | 'video', inFullscreen = false): boolean => {
@@ -247,16 +296,80 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     return true;
   };
 
-  // 对讲:麦克风权限被拒 → 引导弹窗(仅开启时拦截)
-  const tryTalk = () => {
-    if (!ctl.ctlMic && getDemoFlags().permsDenied) {
-      setPermDlg('microphone');
-      return;
+  const enableTalk = useCallback(
+    async (inFullscreen = false) => {
+      if (getDemoFlags().permsDenied) {
+        if (inFullscreen) showFsError('Microphone access is required for two-way talk.');
+        else setPermDlg('microphone');
+        return;
+      }
+
+      const result = await startTalkMeter();
+      if (result === 'denied') {
+        if (inFullscreen) showFsError('Microphone access is disabled in Settings.');
+        else setPermDlg('microphone');
+        return;
+      }
+      if (result === 'failed') {
+        const message = 'Unable to start the microphone. Please try again.';
+        if (inFullscreen) showFsError(message);
+        else showToast(message, 'error');
+        return;
+      }
+
+      if (!talkEnabledRef.current) {
+        toggleCtlRef.current('ctlMic');
+        talkEnabledRef.current = true;
+      }
+    },
+    [showFsError, startTalkMeter],
+  );
+
+  const disableTalk = useCallback(() => {
+    if (talkEnabledRef.current) {
+      toggleCtlRef.current('ctlMic');
+      talkEnabledRef.current = false;
     }
-    toggleCtl('ctlMic');
-  };
+    void stopTalkMeter();
+  }, [stopTalkMeter]);
+
+  const tryTalk = useCallback(
+    (inFullscreen = false) => {
+      if (talkStartingRef.current) return;
+      if (talkEnabledRef.current) disableTalk();
+      else void enableTalk(inFullscreen);
+    },
+    [disableTalk, enableTalk],
+  );
+
+  // 首页 Talk 进入时使用同一套真实麦克风权限和音量监听逻辑。
+  useFocusEffect(
+    useCallback(() => {
+      if (consumeTalkIntent()) void enableTalk(false);
+    }, [enableTalk]),
+  );
+
+  // 离开直播页时释放录音资源，避免麦克风在后台继续占用。
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        if (talkEnabledRef.current) {
+          toggleCtlRef.current('ctlMic');
+          talkEnabledRef.current = false;
+        }
+        void stopTalkMeter();
+      },
+      [stopTalkMeter],
+    ),
+  );
 
   const snap = (inFullscreen = false) => {
+    if (ctl.ctlRec) {
+      const message = 'Stop recording before taking a snapshot.';
+      if (inFullscreen) showFsError(message);
+      else showToast(message, 'info');
+      return;
+    }
     if (!trySave('photo', inFullscreen)) return;
     setSnapFlash(true);
     if (flashTimer.current) clearTimeout(flashTimer.current);
@@ -351,8 +464,9 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           {pState === 'ready' ? (
             <CamPreview live tag="Person · sofa" label="14:22:08">
               <View style={st.resBadge}>
-                <Text style={st.resTxt}>1080P</Text>
+                <Text style={st.resTxt}>{fsHd ? '720P' : '1080P'}</Text>
               </View>
+              {ctl.ctlMic && <TalkWaveform level={talkLevel} />}
               <Tap style={st.scanBtn} onPress={() => setFullscreen(true)} hitSlop={8}>
                 <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
               </Tap>
@@ -396,7 +510,12 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                   toggleCtl('ctlRec');
                 }}
               />
-              <PhotoBtn icon="camera" on={snapFlash} onPress={() => snap()} />
+              <PhotoBtn
+                icon="camera"
+                on={snapFlash}
+                unavailable={ctl.ctlRec}
+                onPress={() => snap()}
+              />
             </Row>
           </View>
         </View>
@@ -625,6 +744,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               <CamPreview height={WIN.width} showBox={false} tag="" />
             </View>
 
+            {ctl.ctlMic && <TalkWaveform level={talkLevel} fullscreen />}
+
             {/* 左下方向盘 */}
             <View style={st.fsDpad}>
               <SvgXml xml={FS_DPAD} width={174} height={174} />
@@ -675,13 +796,13 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               </View>
             </Tap>
             {/* 开启态 → 图标纯白;声音钮在 斜线静音/实心喇叭 间切换 */}
-            <Tap onPress={() => toggleCtl('ctlMic')}>
+            <Tap onPress={() => tryTalk(true)}>
               <View style={st.fsRot}>
                 <SvgXml xml={ctl.ctlMic ? fsActive(FS_MIC) : FS_MIC} width={54} height={54} />
               </View>
             </Tap>
             <Tap onPress={() => snap(true)}>
-              <View style={st.fsRot}>
+              <View style={[st.fsRot, ctl.ctlRec && st.controlUnavailable]}>
                 <SvgXml xml={snapFlash ? fsActive(FS_SNAP) : FS_SNAP} width={54} height={54} />
               </View>
             </Tap>
@@ -821,10 +942,20 @@ export default function DevDetail({ navigation }: AppScreenProps) {
 }
 
 /* ---- player control button (PHOTOICONS; solid variant while ON) ---- */
-function PhotoBtn({ icon, on, onPress }: { icon: string; on: boolean; onPress: () => void }) {
+function PhotoBtn({
+  icon,
+  on,
+  onPress,
+  unavailable = false,
+}: {
+  icon: string;
+  on: boolean;
+  onPress: () => void;
+  unavailable?: boolean;
+}) {
   const glyph = on ? (icon === 'speaker' ? 'speakerSolid' : icon === 'mic' ? 'micSolid' : icon) : icon;
   return (
-    <Tap style={st.photoBtn} onPress={onPress}>
+    <Tap style={[st.photoBtn, unavailable && st.controlUnavailable]} onPress={onPress}>
       <SvgXml xml={PHOTOICONS[glyph]} width={18} height={18} color={on ? colors.brand : colors.textPrimary} />
     </Tap>
   );
@@ -1237,6 +1368,28 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  talkWave: {
+    position: 'absolute',
+    bottom: 8,
+    alignSelf: 'center',
+    height: 36,
+    minWidth: 78,
+    paddingHorizontal: 13,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.52)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  talkWaveFullscreen: { bottom: 28 },
+  talkWaveBar: {
+    width: 3,
+    height: 22,
+    borderRadius: 2,
+    backgroundColor: colors.textInverse,
+  },
+  controlUnavailable: { opacity: 0.35 },
   photoBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
 
   // controls d-pad
