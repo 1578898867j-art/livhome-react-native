@@ -9,6 +9,11 @@ import { Icon } from '../components/Icon';
 import { DarkPlayerState } from '../components/states';
 import { PermissionDialog } from '../components/PermissionDialog';
 import type { PermType } from '../components/PermissionDialog';
+import {
+  SettingsOptionDoneButton,
+  SettingsOptionRow,
+  SettingsOptionSheet,
+} from '../components/SettingsOptionSheet';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 import { consumeTalkIntent } from '../features/devices/talkIntent';
@@ -16,6 +21,13 @@ import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS, MOVEICONS } from '../icons/
 import { ZOOMICON, SELICON, SELICON2 } from '../icons/protoIcons';
 import { colors } from '../theme';
 import { useDeviceDetailPrototype } from '../features/devices/useDeviceDetailPrototype';
+import {
+  setNightVisionMode,
+  setSmartTrackingEnabled,
+  useNightVisionMode,
+  useSmartTrackingEnabled,
+} from '../features/devices/deviceSettingsStore';
+import type { NightVisionMode } from '../features/devices/deviceSettingsStore';
 import type {
   ControlKey as CtlKey,
   DeviceDetailTab as Tab,
@@ -68,7 +80,7 @@ const MSGFILTERS: Record<string, string> = {
 };
 const FILTER_KEYS = ['motion', 'sound', 'cross', 'fence'];
 
-const TILT_ITEMS: { icon: string; label: string; key: TiltKey }[] = [
+const TILT_ITEMS: { icon: string; label: string; key: TiltKey | 'smartTrack' | 'nightVision' }[] = [
   { icon: 'smartTrack', label: 'Smart Tracking', key: 'smartTrack' },
   { icon: 'nightVision', label: 'Night Vision', key: 'nightVision' },
   { icon: 'motion', label: 'Motion Detection', key: 'motionOn' },
@@ -144,7 +156,10 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [delConfirm, setDelConfirm] = useState(false);
   const [presetPopup, setPresetPopup] = useState(false);
+  const [nightVisionOpen, setNightVisionOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const nightVisionMode = useNightVisionMode();
+  const smartTrackingEnabled = useSmartTrackingEnabled();
   // 拍照/录像保存提示条(截图为瞬时动作,不保持常亮)
   const [saveToast, setSaveToast] = useState<null | 'photo' | 'video'>(null);
   const [snapFlash, setSnapFlash] = useState(false);
@@ -412,7 +427,16 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             }}
           />
         )}
-        {tab === 'tilt' && <TiltPanel tilt={tilt} onToggle={toggleTilt} />}
+        {tab === 'tilt' && (
+          <TiltPanel
+            tilt={tilt}
+            nightVisionMode={nightVisionMode}
+            smartTrackingEnabled={smartTrackingEnabled}
+            onNightVision={() => setNightVisionOpen(true)}
+            onSmartTracking={() => setSmartTrackingEnabled(!smartTrackingEnabled)}
+            onToggle={toggleTilt}
+          />
+        )}
         {tab === 'messages' && (
           <MessagesPanel
             msgs={msgs}
@@ -514,6 +538,33 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <SettingsOptionSheet
+        visible={nightVisionOpen}
+        title="Night Vision"
+        desc="Used to improve picture visibility in low-light conditions for clear 24-hour monitoring."
+        onClose={() => setNightVisionOpen(false)}
+      >
+        <SettingsOptionRow
+          label="Auto"
+          sub="Automatically switch night vision mode based on ambient light."
+          selected={nightVisionMode === 'auto'}
+          onPress={() => setNightVisionMode('auto')}
+        />
+        <SettingsOptionRow
+          label="On"
+          sub="Always on night vision."
+          selected={nightVisionMode === 'on'}
+          onPress={() => setNightVisionMode('on')}
+        />
+        <SettingsOptionRow
+          label="Off"
+          sub="Turn off night vision."
+          selected={nightVisionMode === 'off'}
+          onPress={() => setNightVisionMode('off')}
+        />
+        <SettingsOptionDoneButton onPress={() => setNightVisionOpen(false)} />
+      </SettingsOptionSheet>
 
       {/* delete confirm dialog */}
       <Modal visible={delConfirm} transparent animationType="fade" onRequestClose={() => setDelConfirm(false)}>
@@ -900,22 +951,39 @@ function CtrlAction({
 /* ---- TILT tab (3-col feature grid) ---- */
 function TiltPanel({
   tilt,
+  nightVisionMode,
+  smartTrackingEnabled,
+  onNightVision,
+  onSmartTracking,
   onToggle,
 }: {
   tilt: Record<TiltKey, boolean>;
+  nightVisionMode: NightVisionMode;
+  smartTrackingEnabled: boolean;
+  onNightVision: () => void;
+  onSmartTracking: () => void;
   onToggle: (k: TiltKey) => void;
 }) {
   return (
     <View style={st.tiltGrid}>
       {TILT_ITEMS.map((it) => {
-        const on = tilt[it.key];
+        const on =
+          it.key === 'nightVision'
+            ? nightVisionMode !== 'off'
+            : it.key === 'smartTrack'
+              ? smartTrackingEnabled
+              : tilt[it.key];
         // Privacy:关闭 = 睁眼(可见),开启 = 斜线遮蔽眼
         const glyph = it.icon === 'privacy' ? (on ? 'privacy' : 'privacyOn') : it.icon;
         return (
           <Tap
             key={it.key}
             style={[st.tiltCell, { backgroundColor: on ? colors.brandSoft : colors.surface }]}
-            onPress={() => onToggle(it.key)}
+            onPress={() => {
+              if (it.key === 'nightVision') onNightVision();
+              else if (it.key === 'smartTrack') onSmartTracking();
+              else onToggle(it.key);
+            }}
           >
             <View style={[st.tiltIcon, { backgroundColor: on ? colors.brand : colors.bgSecondary }]}>
               <SvgXml xml={TILTICONS[glyph]} width={22} height={22} color={on ? '#fff' : colors.textSecondary} />

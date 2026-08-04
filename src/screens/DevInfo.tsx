@@ -164,9 +164,7 @@ export default function DevInfo({ navigation }: AppScreenProps) {
               <Icon name="chevR" size={14} color={colors.textTertiary} sw={2} />
             </View>
           </Tap>
-          <View style={st.divider} />
         </View>
-        <InfoRow label="Embedded Application" value="1.0.8" last />
       </Card>
 
       {/* 新版本弹窗 */}

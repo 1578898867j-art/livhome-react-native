@@ -1,118 +1,28 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Modal, Pressable, Animated, Easing } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Screen, Header, Eyebrow, Card, Row, Tap, SettingRow, ToggleRow } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 import { CAMGLYPH } from '../icons/protoIcons';
+import {
+  setNightVisionMode,
+  setSmartTrackingEnabled,
+  useNightVisionMode,
+  useSmartTrackingEnabled,
+} from '../features/devices/deviceSettingsStore';
+import {
+  SettingsOptionDoneButton,
+  SettingsOptionRow,
+  SettingsOptionSheet,
+} from '../components/SettingsOptionSheet';
 
 // Label maps mirrored from the prototype
 const IDLE_LABELS: Record<string, string> = { '5': '5 min', '10': '10 min', '15': '15 min' };
 const NV_LABELS: Record<string, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
 type SheetKey = null | 'idle' | 'flip' | 'nv' | 'af' | 'vol';
-
-/* ---- bottom sheet shell — port of cfgSheet() ---- */
-// 交互:遮罩原地淡入淡出,白色面板单独从屏幕底部滑入/滑出。
-// (Modal 自带的 slide 会把遮罩连同内容整体滑动,观感是"幕布"在动 —— 不用)
-function CfgSheet({
-  visible,
-  title,
-  desc,
-  onClose,
-  children,
-}: {
-  visible: boolean;
-  title: string;
-  desc?: string;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  const [mounted, setMounted] = useState(visible);
-  const [sheetH, setSheetH] = useState(0);
-  const anim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      setMounted(true);
-      Animated.timing(anim, {
-        toValue: 1,
-        duration: 300,
-        easing: Easing.bezier(0.22, 1, 0.36, 1),
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(anim, {
-        toValue: 0,
-        duration: 220,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }).start(() => setMounted(false));
-    }
-  }, [visible, anim]);
-
-  if (!mounted) return null;
-  return (
-    <Modal transparent visible animationType="none" onRequestClose={onClose}>
-      <Animated.View style={[StyleSheet.absoluteFillObject, st.backdrop, { opacity: anim }]}>
-        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
-      </Animated.View>
-      <View style={st.ovl} pointerEvents="box-none">
-        <Animated.View
-          onLayout={(e) => setSheetH(e.nativeEvent.layout.height)}
-          style={{
-            transform: [
-              { translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [sheetH || 600, 0] }) },
-            ],
-          }}
-        >
-          <View style={st.sheet}>
-            <View style={st.grabberWrap}>
-              <View style={st.grabber} />
-            </View>
-            <Text style={st.sheetTitle}>{title}</Text>
-            {!!desc && <Text style={st.sheetDesc}>{desc}</Text>}
-            {children}
-          </View>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-}
-
-/* ---- radio option row — port of cfgRadio() ---- */
-function CfgRadio({
-  label,
-  sub,
-  on,
-  onPress,
-}: {
-  label: string;
-  sub?: string;
-  on: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Tap onPress={onPress} style={[st.radioRow, { alignItems: sub ? 'flex-start' : 'center' }]}>
-      <View style={{ flex: 1 }}>
-        <Text style={[st.radioLabel, on && { color: colors.brand }]}>{label}</Text>
-        {!!sub && <Text style={st.radioSub}>{sub}</Text>}
-      </View>
-      <View style={[st.radioCircle, on && { borderColor: colors.brand }, sub ? { marginTop: 2 } : null]}>
-        {on && <View style={st.radioDot} />}
-      </View>
-    </Tap>
-  );
-}
-
-function DoneBtn({ onPress }: { onPress: () => void }) {
-  return (
-    <Pressable onPress={onPress} style={({ pressed }) => [st.doneBtn, pressed && { opacity: 0.85 }]}>
-      <Text style={st.doneBtnTxt}>Done</Text>
-    </Pressable>
-  );
-}
 
 /* ---- flip preview card — port of flipCard() ---- */
 function FlipCard({
@@ -152,10 +62,10 @@ export default function DevConfig({ navigation }: AppScreenProps) {
   const [offTime] = useState('None');
   const [idleTime, setIdleTime] = useState('5');
   const [imgFlip, setImgFlip] = useState<'normal' | 'flipped'>('normal');
-  const [nvMode, setNvMode] = useState<'auto' | 'on' | 'off'>('auto');
+  const nvMode = useNightVisionMode();
+  const smartTrack = useSmartTrackingEnabled();
   const [antiFlicker, setAntiFlicker] = useState('50');
   const [volume, setVolume] = useState(10);
-  const [smartTrack, setSmartTrack] = useState(true);
   const [sheet, setSheet] = useState<SheetKey>(null);
 
   const closeSheet = () => setSheet(null);
@@ -218,7 +128,7 @@ export default function DevConfig({ navigation }: AppScreenProps) {
           name="Smart Tracking"
           sub="The camera will automatically follow moving targets"
           on={smartTrack}
-          onToggle={() => setSmartTrack((v) => !v)}
+          onToggle={() => setSmartTrackingEnabled(!smartTrack)}
           last
         />
       </Card>
@@ -226,25 +136,25 @@ export default function DevConfig({ navigation }: AppScreenProps) {
       <View style={{ height: 54 }} />
 
       {/* Idle Time — 与其他弹层一致:点选只切换选中,Done 确认关闭 */}
-      <CfgSheet
+      <SettingsOptionSheet
         visible={sheet === 'idle'}
         title="Idle Time"
         desc="Choose how long the device waits before entering standby mode."
         onClose={closeSheet}
       >
         {(['5', '10', '15'] as const).map((v) => (
-          <CfgRadio
+          <SettingsOptionRow
             key={v}
             label={`${v} minutes`}
-            on={idleTime === v}
+            selected={idleTime === v}
             onPress={() => setIdleTime(v)}
           />
         ))}
-        <DoneBtn onPress={closeSheet} />
-      </CfgSheet>
+        <SettingsOptionDoneButton onPress={closeSheet} />
+      </SettingsOptionSheet>
 
       {/* Image Flip 180° */}
-      <CfgSheet
+      <SettingsOptionSheet
         visible={sheet === 'flip'}
         title="Image Flip 180°"
         desc="Turn this on if the camera is installed upside down."
@@ -259,51 +169,61 @@ export default function DevConfig({ navigation }: AppScreenProps) {
             onPress={() => setImgFlip('flipped')}
           />
         </Row>
-        <DoneBtn onPress={closeSheet} />
-      </CfgSheet>
+        <SettingsOptionDoneButton onPress={closeSheet} />
+      </SettingsOptionSheet>
 
       {/* Night Vision */}
-      <CfgSheet
+      <SettingsOptionSheet
         visible={sheet === 'nv'}
         title="Night Vision"
         desc="Used to improve picture visibility in low-light conditions for clear 24-hour monitoring."
         onClose={closeSheet}
       >
-        <CfgRadio
+        <SettingsOptionRow
           label="Auto"
           sub="Automatically switch night vision mode based on ambient light."
-          on={nvMode === 'auto'}
-          onPress={() => setNvMode('auto')}
+          selected={nvMode === 'auto'}
+          onPress={() => setNightVisionMode('auto')}
         />
-        <CfgRadio label="On" sub="Always on night vision." on={nvMode === 'on'} onPress={() => setNvMode('on')} />
-        <CfgRadio label="Off" sub="Turn off night vision." on={nvMode === 'off'} onPress={() => setNvMode('off')} />
-        <DoneBtn onPress={closeSheet} />
-      </CfgSheet>
+        <SettingsOptionRow
+          label="On"
+          sub="Always on night vision."
+          selected={nvMode === 'on'}
+          onPress={() => setNightVisionMode('on')}
+        />
+        <SettingsOptionRow
+          label="Off"
+          sub="Turn off night vision."
+          selected={nvMode === 'off'}
+          onPress={() => setNightVisionMode('off')}
+        />
+        <SettingsOptionDoneButton onPress={closeSheet} />
+      </SettingsOptionSheet>
 
       {/* Anti-Flicker */}
-      <CfgSheet
+      <SettingsOptionSheet
         visible={sheet === 'af'}
         title="Anti-Flicker Setting"
         desc="Used to reduce picture flickering or horizontal lines. If unsure, keep the default setting."
         onClose={closeSheet}
       >
-        <CfgRadio
+        <SettingsOptionRow
           label="50Hz"
           sub="Suitable for most regions; try this option first if the picture flickers."
-          on={antiFlicker === '50'}
+          selected={antiFlicker === '50'}
           onPress={() => setAntiFlicker('50')}
         />
-        <CfgRadio
+        <SettingsOptionRow
           label="60Hz"
           sub="If flickering persists after switching to 50Hz, try this option."
-          on={antiFlicker === '60'}
+          selected={antiFlicker === '60'}
           onPress={() => setAntiFlicker('60')}
         />
-        <DoneBtn onPress={closeSheet} />
-      </CfgSheet>
+        <SettingsOptionDoneButton onPress={closeSheet} />
+      </SettingsOptionSheet>
 
       {/* Volume — 1..10 grid, 5 per row */}
-      <CfgSheet
+      <SettingsOptionSheet
         visible={sheet === 'vol'}
         title="Volume Setting"
         desc="Adjust the sound volume of the camera speaker."
@@ -328,8 +248,8 @@ export default function DevConfig({ navigation }: AppScreenProps) {
             })}
           </Row>
         ))}
-        <DoneBtn onPress={closeSheet} />
-      </CfgSheet>
+        <SettingsOptionDoneButton onPress={closeSheet} />
+      </SettingsOptionSheet>
     </Screen>
   );
 }
@@ -337,58 +257,6 @@ export default function DevConfig({ navigation }: AppScreenProps) {
 const st = StyleSheet.create({
   wrap: {},
   card: { marginHorizontal: 18 },
-
-  /* sheet shell */
-  backdrop: { backgroundColor: 'rgba(0,0,0,0.4)' },
-  ovl: { flex: 1, justifyContent: 'flex-end' },
-  sheet: {
-    width: '100%',
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
-    paddingHorizontal: 22,
-    paddingBottom: 40,
-  },
-  grabberWrap: { alignItems: 'center', paddingTop: 10, paddingBottom: 8 },
-  grabber: { width: 38, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong },
-  sheetTitle: { fontSize: 19, fontWeight: '800', color: colors.textPrimary },
-  // marginBottom 10:说明文字与第一行选项的分隔线拉开距离
-  sheetDesc: { fontSize: 13, fontWeight: '500', color: colors.textTertiary, marginTop: 5, marginBottom: 10, lineHeight: 19 },
-
-  /* radio rows */
-  radioRow: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 2,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  radioLabel: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
-  radioSub: { fontSize: 12, fontWeight: '500', color: colors.textTertiary, marginTop: 3, lineHeight: 17 },
-  radioCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: colors.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  radioDot: { width: 11, height: 11, borderRadius: 6, backgroundColor: colors.brand },
-
-  /* buttons */
-  doneBtn: {
-    width: '100%',
-    height: 50,
-    borderRadius: 99,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 18,
-  },
-  doneBtnTxt: { color: '#fff', fontSize: 16, fontWeight: '700' },
 
   /* flip cards */
   flipCard: {

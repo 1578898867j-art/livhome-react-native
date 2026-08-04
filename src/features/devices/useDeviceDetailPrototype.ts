@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 export type DeviceDetailTab = 'messages' | 'controls' | 'tilt' | 'playback';
 export type DeviceMessage = { icon: string; title: string; time: string };
-export type TiltKey = 'smartTrack' | 'nightVision' | 'motionOn' | 'soundOn' | 'sirenOn' | 'privacyOn';
+export type TiltKey = 'motionOn' | 'soundOn' | 'sirenOn' | 'privacyOn';
 export type ControlKey = 'ctlSpk' | 'ctlMic' | 'ctlRec' | 'ctlSnap';
 
 const INITIAL_MESSAGES: DeviceMessage[] = [
@@ -32,8 +32,6 @@ export function useDeviceDetailPrototype() {
   };
   // 进入页面默认全部关闭
   const [tilt, setTilt] = useState<Record<TiltKey, boolean>>({
-    smartTrack: false,
-    nightVision: false,
     motionOn: false,
     soundOn: false,
     sirenOn: false,

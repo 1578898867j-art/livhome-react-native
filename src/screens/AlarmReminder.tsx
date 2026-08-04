@@ -68,8 +68,15 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
   const [alarmPeriod, setAlarmPeriod] = useState('All Day');
   const [sheet, setSheet] = useState<null | 'period' | 'cv'>(null);
 
+  const toggleAlarmNotification = () => {
+    const nextNotifOn = !notifOn;
+    setNotifOn(nextNotifOn);
+    if (!nextNotifOn) setVoiceAlarm(false);
+  };
+
   // 自定义语音(原型 cv*):最多 3 条录音
   const [recs, setRecs] = useState<Rec[]>([]);
+  const nextRecordingNumber = useRef(1);
   const [sel, setSel] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [sec, setSec] = useState(0);
@@ -121,7 +128,9 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
       return;
     }
     const id = `r${Date.now()}`;
-    setRecs((prev) => prev.concat({ id, name: `Recording ${prev.length + 1}` }));
+    const recordingNumber = nextRecordingNumber.current;
+    nextRecordingNumber.current += 1;
+    setRecs((prev) => prev.concat({ id, name: `Recording ${recordingNumber}` }));
     // 首条录音自动选用并切到自定义语音(对齐原型)
     if (!sel) {
       setSel(id);
@@ -161,7 +170,7 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
     <Screen header={<Header title="Alarm Reminder" onBack={() => navigation.goBack()} />}>
       <Eyebrow>Alarm settings</Eyebrow>
       <Card style={st.card}>
-        <ToggleRow name="Alarm Notification" on={notifOn} onToggle={() => setNotifOn((v) => !v)} />
+        <ToggleRow name="Alarm Notification" on={notifOn} onToggle={toggleAlarmNotification} />
         <ToggleRow name="Voice Alarm" on={voiceAlarm} onToggle={() => setVoiceAlarm((v) => !v)} last />
       </Card>
 
