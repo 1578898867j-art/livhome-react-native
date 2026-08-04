@@ -10,7 +10,13 @@ import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { StateView, Spinner, DarkPlayerState } from '../components/states';
 import { PermissionDialog } from '../components/PermissionDialog';
+import { RecordingIndicator, useRecordingElapsed } from '../components/RecordingIndicator';
 import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
+import {
+  EVENT_ICON_FILTERS,
+  EVENT_ICON_TILES,
+  type EventIconKey,
+} from '../features/notifications/demoEvents';
 import { showToast } from '../features/app/toastStore';
 import { PHOTOICONS, PBTABICONS, FEICONS } from '../icons/protoSets';
 import { CALICON, FILTERICON, CLIPGRIP } from '../icons/protoIcons';
@@ -19,26 +25,25 @@ import { colors } from '../theme';
 
 // ── Ported from the prototype's devPlayback() (SD PLAYBACK).
 // Timeline segments (0..50 range → mapped to % of the 24h track).
-type Seg = { s: number; e: number; t: 'reg' | 'evt'; ev?: string };
+type Seg = { s: number; e: number; t: 'reg' | 'evt'; ev?: EventIconKey };
 const PBSEGS: Seg[] = [
-  { s: 0, e: 20, t: 'reg' },
-  { s: 20, e: 24, t: 'evt', ev: 'motion' },
-  { s: 24, e: 33, t: 'reg' },
-  { s: 33, e: 37, t: 'evt', ev: 'sound' },
-  { s: 37, e: 40, t: 'reg' },
+  { s: 0, e: 8, t: 'reg' },
+  { s: 8, e: 12, t: 'evt', ev: 'activity' },
+  { s: 12, e: 18, t: 'reg' },
+  { s: 18, e: 22, t: 'evt', ev: 'obstructed' },
+  { s: 22, e: 28, t: 'reg' },
+  { s: 28, e: 32, t: 'evt', ev: 'lineCrossing' },
+  { s: 32, e: 38, t: 'reg' },
+  { s: 38, e: 42, t: 'evt', ev: 'intrusion' },
+  { s: 42, e: 44, t: 'reg' },
   { s: 44, e: 50, t: 'reg' },
 ];
 const PB_REG = 'rgba(35,130,255,0.22)';
 const CLIP_RAIL = '#7C828C';
 const TIME_LABELS = ['06:00', '06:10', '06:20', '06:30', '06:40', '06:50'];
-const EVFILTER_COUNT = 4; // motion / sound / lineCross / geofence
+const EVFILTER_COUNT = EVENT_ICON_FILTERS.length;
 // 原型 EVFILTERS + FEICONS 底部筛选面板
-const EV_FILTERS = [
-  { key: 'motion', label: 'Motion', icon: 'motion' },
-  { key: 'sound', label: 'Sound', icon: 'sound' },
-  { key: 'lineCross', label: 'Line Crossing', icon: 'lineCross' },
-  { key: 'geofence', label: 'Geofence', icon: 'geofence' },
-];
+const EV_FILTERS = EVENT_ICON_FILTERS;
 const MONTHS_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const SCREEN_W = Dimensions.get('window').width;
@@ -73,19 +78,20 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   // playhead position + active recording-event filters (mirrors S.pbHead / S.pbEvents)
   const [pbHead, setPbHead] = useState(6 * 60 + 23); // 06:23
-  const [pbEvents, setPbEvents] = useState<string[]>(['motion', 'sound']);
-  // date (mirrors S.pbM/pbD; TODAY = 2026-04-23) + overlays
+  const [pbEvents, setPbEvents] = useState<EventIconKey[]>(EV_FILTERS.map((event) => event.key));
+  // date (mirrors S.pbM/pbD; TODAY = 2026-04-24) + overlays
   const [pbM, setPbM] = useState(3);
   const [pbD, setPbD] = useState(23);
   const [calOpen, setCalOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const toggleEvt = (k: string) =>
+  const toggleEvt = (k: EventIconKey) =>
     setPbEvents((ev) => (ev.indexOf(k) >= 0 ? ev.filter((v) => v !== k) : ev.concat(k)));
   const toggleAllEvt = () =>
     setPbEvents((ev) => (ev.length === EV_FILTERS.length ? [] : EV_FILTERS.map((e) => e.key)));
   const [ctlSpk, setCtlSpk] = useState(false);
   const [ctlMic, setCtlMic] = useState(false);
   const [ctlRec, setCtlRec] = useState(false);
+  const recordingElapsed = useRecordingElapsed(ctlRec);
   const [ctlSnap, setCtlSnap] = useState(false);
 
   // clip (trim) mode — mirrors S.pbClip / S.pbClipS / S.pbClipE
@@ -359,6 +365,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
               <Text style={st.noRecTxt}>No recordings in this time period</Text>
             </View>
           )}
+          {ctlRec && <RecordingIndicator elapsedSeconds={recordingElapsed} />}
         </View>
         <Row style={st.ctlRow}>
           <Tap style={st.ctlBtn} onPress={() => setCtlSpk((v) => !v)}>
@@ -631,6 +638,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           >
             <LinearGradient colors={['#2A2520', '#15110D'] as const} style={StyleSheet.absoluteFill} />
             <Text style={st.fsStamp}>{stamp}</Text>
+            {ctlRec && <RecordingIndicator elapsedSeconds={recordingElapsed} style={{ bottom: 16 }} />}
           </View>
           {/* 横屏 {left:56, top:16} ≡ 竖屏 {top:56, right:16} */}
           <Tap style={st.fsBackP} onPress={() => setFsOpen(false)} hitSlop={10}>
@@ -678,18 +686,26 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
               <View style={st.feIcon}>
                 <SvgXml xml={FEICONS.allMotion} width={18} height={18} color={colors.textSecondary} />
               </View>
-              <Text style={st.feLabel}>All Motion</Text>
-              {pbEvents.length === EV_FILTERS.length && <Icon name="check" size={18} color={colors.brand} sw={2.4} />}
+              <Text style={st.feLabel}>All Events</Text>
+              <View style={st.feCheck}>
+                {pbEvents.length === EV_FILTERS.length && (
+                  <Icon name="check" size={18} color={colors.brand} sw={2.4} />
+                )}
+              </View>
             </Tap>
             {EV_FILTERS.map((e) => (
               <View key={e.key}>
                 <View style={st.feDivider} />
                 <Tap style={st.feRow} onPress={() => toggleEvt(e.key)}>
                   <View style={st.feIcon}>
-                    <SvgXml xml={FEICONS[e.icon]} width={18} height={18} color={colors.textSecondary} />
+                    <SvgXml xml={EVENT_ICON_TILES[e.key]} width={34} height={34} />
                   </View>
                   <Text style={st.feLabel}>{e.label}</Text>
-                  {pbEvents.indexOf(e.key) >= 0 && <Icon name="check" size={18} color={colors.brand} sw={2.4} />}
+                  <View style={st.feCheck}>
+                    {pbEvents.indexOf(e.key) >= 0 && (
+                      <Icon name="check" size={18} color={colors.brand} sw={2.4} />
+                    )}
+                  </View>
                 </Tap>
               </View>
             ))}
@@ -727,7 +743,8 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  feLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  feLabel: { flex: 1, textAlign: 'center', fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  feCheck: { width: 34, alignItems: 'flex-end', justifyContent: 'center' },
   feDivider: { height: 1, backgroundColor: colors.border, marginLeft: 69 },
   nav: { paddingHorizontal: 16, paddingVertical: 8, gap: 10 },
   navIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },

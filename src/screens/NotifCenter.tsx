@@ -7,6 +7,7 @@ import { Icon } from '../components/Icon';
 import { StateView, Spinner } from '../components/states';
 import { PermissionDialog } from '../components/PermissionDialog';
 import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
+import { NOTIFICATION_DAYS } from '../features/notifications/demoEvents';
 import { showToast } from '../features/app/toastStore';
 import { SELICON } from '../icons/protoIcons';
 import { CAMAVATAR, MAILBOX_EMPTY } from '../assets/images';
@@ -17,19 +18,17 @@ import { colors } from '../theme';
 type Msg = { id: number; title: string; time: string; body: string; unread?: boolean };
 type DayGroup = { day: string; mon: string; msgs: Msg[] };
 
-const DEVICE_INIT: DayGroup[] = [
-  {
-    day: '24', mon: 'Jan',
-    msgs: [
-      { id: 1, title: 'Message Title', time: '17:40:20', body: 'Living Room | Congratulations! Your registration was succes', unread: true },
-      { id: 2, title: 'Message Title', time: '17:40:20', body: 'Living Room | Congratulations! Your registration was succes' },
-    ],
-  },
-  {
-    day: '23', mon: 'Jan',
-    msgs: [{ id: 3, title: 'Message Title', time: '17:40:20', body: 'Backyard | Congratulations! Your registration was succes' }],
-  },
-];
+const DEVICE_INIT: DayGroup[] = NOTIFICATION_DAYS.map((group) => ({
+  day: group.day,
+  mon: group.mon,
+  msgs: group.events.map((event) => ({
+    id: event.id,
+    title: event.title,
+    time: event.time,
+    body: `Living Room | ${event.title}`,
+    unread: event.unread,
+  })),
+}));
 
 const SYSTEM_INIT: DayGroup[] = [
   {

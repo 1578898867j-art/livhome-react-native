@@ -1,5 +1,5 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Modal, Pressable, Dimensions } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
@@ -9,10 +9,17 @@ import { Icon } from '../components/Icon';
 import { DarkPlayerState } from '../components/states';
 import { PermissionDialog } from '../components/PermissionDialog';
 import type { PermType } from '../components/PermissionDialog';
+import { RecordingIndicator, useRecordingElapsed } from '../components/RecordingIndicator';
+import { TalkIndicator } from '../components/TalkIndicator';
 import { getDemoFlags } from '../features/app/demoStore';
+import {
+  EVENT_ICON_FILTERS,
+  EVENT_ICON_TILES,
+  type EventIconKey,
+} from '../features/notifications/demoEvents';
 import { showToast } from '../features/app/toastStore';
 import { consumeTalkIntent } from '../features/devices/talkIntent';
-import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS, MOVEICONS } from '../icons/protoSets';
+import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS } from '../icons/protoSets';
 import { ZOOMICON, SELICON, SELICON2 } from '../icons/protoIcons';
 import { colors } from '../theme';
 import { useDeviceDetailPrototype } from '../features/devices/useDeviceDetailPrototype';
@@ -47,8 +54,12 @@ const FS_MIC =
 const FS_SPK_ON =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><g transform="translate(16.2 17.62)"><path fill-rule="evenodd" clip-rule="evenodd" d="M 10.60 1.79 C 11.92 0.80 13.80 1.75 13.80 3.39 L 13.80 15.39 C 13.80 17.03 11.92 17.98 10.60 16.99 L 6.33 13.79 C 5.99 13.53 5.57 13.39 5.13 13.39 L 2.80 13.39 C 1.70 13.39 0.80 12.49 0.80 11.39 L 0.80 7.39 C 0.80 6.29 1.70 5.39 2.80 5.39 L 5.13 5.39 C 5.57 5.39 5.99 5.25 6.33 4.99 L 10.60 1.79 Z M 15.31 4.34 C 15.40 3.94 15.79 3.67 16.20 3.76 C 18.82 4.29 20.80 6.61 20.80 9.39 C 20.80 12.17 18.82 14.49 16.20 15.02 C 15.79 15.11 15.40 14.84 15.31 14.44 C 15.23 14.03 15.49 13.64 15.90 13.56 C 17.84 13.16 19.30 11.45 19.30 9.39 C 19.30 7.33 17.84 5.62 15.90 5.23 C 15.49 5.14 15.23 4.75 15.31 4.34 Z M 15.40 7.28 C 15.61 6.92 16.07 6.80 16.43 7.01 C 17.25 7.48 17.80 8.37 17.80 9.39 C 17.80 10.41 17.25 11.30 16.43 11.77 C 16.07 11.98 15.61 11.86 15.40 11.50 C 15.19 11.14 15.32 10.68 15.67 10.47 C 16.05 10.26 16.30 9.85 16.30 9.39 C 16.30 8.93 16.05 8.52 15.67 8.31 C 15.32 8.10 15.19 7.64 15.40 7.28 Z" fill="#FFFFFF"/></g></svg>';
 
-// 激活态:切片玻璃色 #D9D8D8 → 纯白
-const fsActive = (xml: string) => xml.replace(/#D9D8D8/g, '#FFFFFF');
+// 激活态:圆形按钮切换为品牌蓝,图标变白;持续开关保持蓝色,瞬时操作短暂闪蓝。
+const fsActive = (xml: string) =>
+  xml
+    .replace(/#D9D8D8/g, '#FFFFFF')
+    .replace(/#777777|#878787/g, colors.brand)
+    .replace(/fill-opacity="0.4"/g, 'fill-opacity="1"');
 
 const FS_MUTE =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M17.048 17.0479C17.3897 16.7063 17.9436 16.7063 18.2853 17.0479L36.9523 35.7149C37.2937 36.0567 37.2939 36.6106 36.9523 36.9522C36.6107 37.2939 36.0567 37.2937 35.715 36.9522L32.8302 34.0675C32.777 35.9452 30.6189 37.0013 29.0998 35.8624L24.0334 32.0636C23.6874 31.8043 23.2664 31.6643 22.8341 31.6642H20.0002C18.7116 31.6642 17.6673 30.6201 17.6671 29.3321V24.6671C17.6674 23.3792 18.7117 22.3351 20.0002 22.3351H21.0978L17.048 18.2852C16.7063 17.9435 16.7063 17.3896 17.048 17.0479ZM29.0998 18.1368C30.6379 16.984 32.8329 18.0814 32.8332 20.003V29.2618L24.8751 21.3038L29.0998 18.1368Z" fill="#D9D8D8"/></svg>';
@@ -59,14 +70,10 @@ const FS_DPAD =
 const WIN = Dimensions.get('window');
 const PRESET_W = Math.floor((WIN.width - 18 * 2 - 10 * 2) / 3);
 
-// Prototype MSGFILTERS map — keys match the message icon keys.
-const MSGFILTERS: Record<string, string> = {
-  motion: 'Motion',
-  sound: 'Sound',
-  cross: 'Line Crossing',
-  fence: 'Intrusion Zone',
-};
-const FILTER_KEYS = ['motion', 'sound', 'cross', 'fence'];
+const MSGFILTERS = Object.fromEntries(
+  EVENT_ICON_FILTERS.map((filter) => [filter.key, filter.label]),
+) as Record<EventIconKey, string>;
+const FILTER_KEYS = EVENT_ICON_FILTERS.map((filter) => filter.key);
 
 const TILT_ITEMS: { icon: string; label: string; key: TiltKey }[] = [
   { icon: 'smartTrack', label: 'Smart Tracking', key: 'smartTrack' },
@@ -127,9 +134,11 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     msgChecked,
     msgs,
     presets,
+    resetting,
     removePreset,
     setActivePreset,
     setCruising,
+    setResetting,
     setCtrlView,
     setTab,
     tab,
@@ -138,9 +147,34 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     toggleCtl,
     toggleTilt,
   } = useDeviceDetailPrototype();
+  const recordingElapsed = useRecordingElapsed(ctl.ctlRec);
+
+  const sirenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toggleTiltRef = useRef(toggleTilt);
+  toggleTiltRef.current = toggleTilt;
+
+  const clearSirenTimer = useCallback(() => {
+    if (!sirenTimer.current) return;
+    clearTimeout(sirenTimer.current);
+    sirenTimer.current = null;
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!tilt.sirenOn) return undefined;
+
+      clearSirenTimer();
+      sirenTimer.current = setTimeout(() => {
+        sirenTimer.current = null;
+        toggleTiltRef.current('sirenOn');
+      }, 10_000);
+
+      return clearSirenTimer;
+    }, [clearSirenTimer, tilt.sirenOn]),
+  );
 
   const [msgSelect, setMsgSelect] = useState(false);
-  const [msgFilter, setMsgFilter] = useState<string | null>(null);
+  const [msgFilter, setMsgFilter] = useState<EventIconKey | null>(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [delConfirm, setDelConfirm] = useState(false);
   const [presetPopup, setPresetPopup] = useState(false);
@@ -148,15 +182,31 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   // 拍照/录像保存提示条(截图为瞬时动作,不保持常亮)
   const [saveToast, setSaveToast] = useState<null | 'photo' | 'video'>(null);
   const [snapFlash, setSnapFlash] = useState(false);
+  const [talkCompact, setTalkCompact] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const talkPhaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
       if (flashTimer.current) clearTimeout(flashTimer.current);
+      if (talkPhaseTimer.current) clearTimeout(talkPhaseTimer.current);
     },
     [],
   );
+
+  useEffect(() => {
+    if (talkPhaseTimer.current) clearTimeout(talkPhaseTimer.current);
+    if (!ctl.ctlMic) {
+      setTalkCompact(false);
+      return undefined;
+    }
+    setTalkCompact(false);
+    talkPhaseTimer.current = setTimeout(() => setTalkCompact(true), 900);
+    return () => {
+      if (talkPhaseTimer.current) clearTimeout(talkPhaseTimer.current);
+    };
+  }, [ctl.ctlMic]);
   const showSaveToast = (kind: 'photo' | 'video') => {
     setSaveToast(kind);
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -187,6 +237,13 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         if (pTimer.current) clearTimeout(pTimer.current);
       };
     }, [connectStream]),
+  );
+
+  // 每次进入设备详情都从六大功能的 Tilt 页开始，避免复用上次停留的标签。
+  useFocusEffect(
+    useCallback(() => {
+      setTab('tilt');
+    }, [setTab]),
   );
 
   // 首页 Talk 进入:自动开启对讲(权限被拒演示则弹麦克风引导)
@@ -233,19 +290,27 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   };
 
   // 对讲:麦克风权限被拒 → 引导弹窗(仅开启时拦截)
-  const tryTalk = () => {
+  const tryTalk = (inFullscreen = false) => {
     if (!ctl.ctlMic && getDemoFlags().permsDenied) {
-      setPermDlg('microphone');
+      if (inFullscreen) showFsError('Microphone permission is required.');
+      else setPermDlg('microphone');
       return;
     }
     toggleCtl('ctlMic');
   };
 
   const snap = (inFullscreen = false) => {
+    if (ctl.ctlRec) return;
     if (!trySave('photo', inFullscreen)) return;
     setSnapFlash(true);
     if (flashTimer.current) clearTimeout(flashTimer.current);
     flashTimer.current = setTimeout(() => setSnapFlash(false), 260);
+  };
+
+  const openSavedAlbumFromFullscreen = () => {
+    setSaveToast(null);
+    setFullscreen(false);
+    requestAnimationFrame(() => navigation.navigate('album'));
   };
 
   // 全屏清晰度钮:FHD ↔ HD 点击互切,切换瞬间闪白(不常亮)
@@ -265,18 +330,23 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     fhdTimer.current = setTimeout(() => setFhdFlash(false), 260);
   };
   const [msgM, setMsgM] = useState(3);
-  const [msgD, setMsgD] = useState(23);
+  const [msgD, setMsgD] = useState(24);
+  const messageDays = useMemo(() => new Set(msgs.map((message) => message.day)), [msgs]);
+  const previousMessageDay = messageDays.has(msgD - 1) ? msgD - 1 : null;
+  const nextMessageDay = messageDays.has(msgD + 1) ? msgD + 1 : null;
   // calendar picker (prototype msg-cal overlay; TODAY = 2026-04-23)
-  const TODAY = { y: 2026, m: 3, d: 23 };
+  const TODAY = { y: 2026, m: 3, d: 24 };
   const [calOpen, setCalOpen] = useState(false);
   const [calY, setCalY] = useState(2026);
   const [calM, setCalM] = useState(3);
   const [calSel, setCalSel] = useState({ y: 2026, m: 3, d: 23 });
+  const [emptyDateNotice, setEmptyDateNotice] = useState(false);
 
   const openCal = () => {
     setCalY(2026);
     setCalM(msgM);
     setCalSel({ y: 2026, m: msgM, d: msgD });
+    setEmptyDateNotice(false);
     setCalOpen(true);
   };
   const calPrevM = () => {
@@ -291,6 +361,10 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   };
   const calNextDisabled = calY > TODAY.y || (calY === TODAY.y && calM >= TODAY.m);
   const calConfirm = () => {
+    if (calSel.m !== 3 || !messageDays.has(calSel.d)) {
+      showToast('No messages on this day.', 'info');
+      return;
+    }
     setMsgM(calSel.m);
     setMsgD(calSel.d);
     setCalOpen(false);
@@ -302,7 +376,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     setDelConfirm(false);
   };
 
-  const pickFilter = (k: string) => {
+  const pickFilter = (k: EventIconKey) => {
     setMsgFilter((f) => (f === k ? null : k));
     clearChecked();
     setFilterOpen(false);
@@ -341,6 +415,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               <Tap style={st.scanBtn} onPress={() => setFullscreen(true)} hitSlop={8}>
                 <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
               </Tap>
+              {ctl.ctlRec && <RecordingIndicator elapsedSeconds={recordingElapsed} compact />}
+              {!fullscreen && ctl.ctlMic && <TalkIndicator compact={talkCompact} />}
             </CamPreview>
           ) : (
             <View style={st.playerStateBox}>
@@ -381,7 +457,13 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                   toggleCtl('ctlRec');
                 }}
               />
-              <PhotoBtn icon="camera" on={snapFlash} onPress={() => snap()} />
+              <PhotoBtn
+                icon="camera"
+                on={snapFlash}
+                onPress={() => snap()}
+                disabled={ctl.ctlRec}
+                accessibilityLabel="Take snapshot"
+              />
             </Row>
           </View>
         </View>
@@ -391,6 +473,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           <ControlsPanel
             view={ctrlView}
             cruising={cruising}
+            resetting={resetting}
             presets={presets}
             activePreset={activePreset}
             onPresets={() => setCtrlView('presets')}
@@ -405,10 +488,13 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             }}
             onDelete={removePreset}
             onView={setActivePreset}
+            onReset={() => setResetting((active) => !active)}
             onCruise={() => {
-              // 原型 cruise-try:少于 2 个预置位先提示添加
-              if (presets.length < 2) setPresetPopup(true);
-              else setCruising((c) => !c);
+              if (presets.length < 2) {
+                setPresetPopup(true);
+                return;
+              }
+              setCruising((active) => !active);
             }}
           />
         )}
@@ -421,8 +507,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             filter={msgFilter}
             month={MONTHS_ABBR[msgM]}
             day={msgD}
-            onPrev={() => setMsgD((d) => Math.max(1, d - 1))}
-            onNext={() => setMsgD((d) => d + 1)}
+            onPrev={previousMessageDay == null ? undefined : () => setMsgD(previousMessageDay)}
+            onNext={nextMessageDay == null ? undefined : () => setMsgD(nextMessageDay)}
             onFilterOpen={() => setFilterOpen(true)}
             onFilterClear={() => setMsgFilter(null)}
             onToggleSelect={() => {
@@ -490,17 +576,16 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                 return (
                   <View key={k}>
                     {i > 0 && <View style={st.sheetLine} />}
-                    <Tap style={st.sheetRow} onPress={() => pickFilter(k)}>
+                    <Tap style={[st.sheetRow, st.sheetFilterRow]} onPress={() => pickFilter(k)}>
+                      <View style={st.sheetIconSlot} />
                       <Text
-                        style={{
-                          fontSize: 16,
-                          fontWeight: '500',
-                          color: on ? colors.brand : colors.textPrimary,
-                        }}
+                        style={[st.sheetFilterText, { color: on ? colors.brand : colors.textPrimary }]}
                       >
                         {MSGFILTERS[k]}
                       </Text>
-                      {on && <Icon name="check" size={17} color={colors.brand} sw={2.2} />}
+                      <View style={st.sheetCheckSlot}>
+                        {on && <Icon name="check" size={17} color={colors.brand} sw={2.2} />}
+                      </View>
                     </Tap>
                   </View>
                 );
@@ -571,7 +656,9 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           <View pointerEvents="none" style={[st.fsStage, { width: WIN.height, height: WIN.width }]}>
             {/* 画面全出血 */}
             <View style={StyleSheet.absoluteFill}>
-              <CamPreview height={WIN.width} showBox={false} tag="" />
+              <CamPreview height={WIN.width} showBox={false} tag="">
+                {ctl.ctlMic && <TalkIndicator compact={talkCompact} />}
+              </CamPreview>
             </View>
 
             {/* 左下方向盘 */}
@@ -579,19 +666,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               <SvgXml xml={FS_DPAD} width={174} height={174} />
             </View>
 
-            {/* 保存成功 toast(全屏深色变体) */}
-            {saveToast != null && (
-              <View style={st.fsToast}>
-                <View style={st.fsToastThumb}>
-                  {/* 填满 72×44 容器,避免底部露出胶囊底色形成遮挡感 */}
-                  <CamPreview height={44} showBox={false} tag="" />
-                </View>
-                <Text style={st.fsToastTxt} numberOfLines={1}>
-                  {saveToast === 'photo' ? 'Photo saved to album' : 'Video saved to album'}{' '}
-                  <Text style={st.fsToastLink}>Tap to view</Text>
-                </Text>
-              </View>
-            )}
+            {ctl.ctlRec && <RecordingIndicator elapsedSeconds={recordingElapsed} style={{ bottom: 16 }} />}
 
             {/* 保存失败 toast(全屏本地,全局 toast 位于 Modal 之下) */}
             {fsError != null && (
@@ -624,12 +699,19 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               </View>
             </Tap>
             {/* 开启态 → 图标纯白;声音钮在 斜线静音/实心喇叭 间切换 */}
-            <Tap onPress={() => toggleCtl('ctlMic')}>
+            <Tap onPress={() => tryTalk(true)}>
               <View style={st.fsRot}>
                 <SvgXml xml={ctl.ctlMic ? fsActive(FS_MIC) : FS_MIC} width={54} height={54} />
               </View>
             </Tap>
-            <Tap onPress={() => snap(true)}>
+            <Tap
+              onPress={() => snap(true)}
+              disabled={ctl.ctlRec}
+              accessibilityRole="button"
+              accessibilityLabel="Take snapshot"
+              accessibilityState={{ disabled: ctl.ctlRec }}
+              style={ctl.ctlRec ? st.fsDisabled : undefined}
+            >
               <View style={st.fsRot}>
                 <SvgXml xml={snapFlash ? fsActive(FS_SNAP) : FS_SNAP} width={54} height={54} />
               </View>
@@ -650,6 +732,26 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               </View>
             </Tap>
           </View>
+
+          {/* 成功提示位于未旋转的交互层；点击整条提示先关闭全屏，再进入相册。 */}
+          {saveToast != null && (
+            <Tap
+              style={st.fsToastTapP}
+              onPress={openSavedAlbumFromFullscreen}
+              accessibilityRole="button"
+              accessibilityLabel={`${saveToast === 'photo' ? 'Photo' : 'Video'} saved. Open album`}
+            >
+              <View style={st.fsToastInteractive}>
+                <View style={st.fsToastThumb}>
+                  <CamPreview height={44} showBox={false} tag="" />
+                </View>
+                <Text style={st.fsToastTxt} numberOfLines={1}>
+                  {saveToast === 'photo' ? 'Photo saved to album' : 'Video saved to album'}{' '}
+                  <Text style={st.fsToastLink}>Tap to view</Text>
+                </Text>
+              </View>
+            </Tap>
+          )}
         </View>
       </Modal>
 
@@ -662,15 +764,17 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         />
       )}
 
-      {/* 巡航前置条件弹窗(原型 preset-popup):预置位不足 2 个 */}
       <Modal visible={presetPopup} transparent animationType="fade" onRequestClose={() => setPresetPopup(false)}>
         <Pressable style={st.ovlCenter} onPress={() => setPresetPopup(false)}>
-          <Pressable style={[st.dialog, { paddingHorizontal: 22, paddingTop: 26, paddingBottom: 22 }]} onPress={(e) => e.stopPropagation()}>
+          <Pressable
+            style={[st.dialog, { paddingHorizontal: 22, paddingTop: 26, paddingBottom: 22 }]}
+            onPress={(event) => event.stopPropagation()}
+          >
             <Text style={{ fontSize: 18, fontWeight: '800', color: colors.textPrimary, textAlign: 'center' }}>
               Please add preset points first
             </Text>
             <Text style={[st.dialogDesc, { textAlign: 'center' }]}>
-              At least 2 different preset points are required to see the screen switching effect
+              At least 2 different preset points are required to start cruising
             </Text>
             <Tap
               style={st.presetPopupBtn}
@@ -715,17 +819,21 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                 const cells: React.ReactNode[] = [];
                 for (let b = 0; b < firstDow; b++) cells.push(<View key={'b' + b} style={st.calCell} />);
                 for (let d = 1; d <= dim; d++) {
-                  const isFut =
-                    calY > TODAY.y ||
-                    (calY === TODAY.y && calM > TODAY.m) ||
-                    (calY === TODAY.y && calM === TODAY.m && d > TODAY.d);
-                  const onSel = !isFut && calSel.y === calY && calSel.m === calM && calSel.d === d;
+                  const hasMessages = calY === TODAY.y && calM === 3 && messageDays.has(d);
+                  const onSel = hasMessages && calSel.y === calY && calSel.m === calM && calSel.d === d;
                   const isToday = calY === TODAY.y && calM === TODAY.m && d === TODAY.d;
                   cells.push(
                     <Tap
                       key={d}
-                      style={[st.calCell, isFut && { opacity: 0.4 }]}
-                      onPress={isFut ? undefined : () => setCalSel({ y: calY, m: calM, d })}
+                      style={[st.calCell, !hasMessages && st.calCellUnavailable]}
+                      onPress={() => {
+                        if (!hasMessages) {
+                          setEmptyDateNotice(true);
+                          return;
+                        }
+                        setCalSel({ y: calY, m: calM, d });
+                      }}
+                      accessibilityLabel={hasMessages ? `April ${d}` : `April ${d}, no messages`}
                     >
                       <View
                         style={[
@@ -741,7 +849,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                           style={{
                             fontSize: 16,
                             fontWeight: onSel ? '700' : '500',
-                            color: isFut ? colors.textTertiary : onSel ? '#fff' : colors.textPrimary,
+                            color: !hasMessages ? colors.textTertiary : onSel ? '#fff' : colors.textPrimary,
                           }}
                         >
                           {d}
@@ -762,6 +870,17 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                 <Text style={{ fontSize: 16, fontWeight: '700', color: '#fff' }}>Confirm</Text>
               </Tap>
             </Row>
+            {emptyDateNotice && (
+              <View style={st.calNoticeLayer}>
+                <View style={st.calNoticeCard}>
+                  <Text style={st.calNoticeTitle}>No messages</Text>
+                  <Text style={st.calNoticeText}>No messages on this day.</Text>
+                  <Tap style={st.calNoticeBtn} onPress={() => setEmptyDateNotice(false)}>
+                    <Text style={st.calNoticeBtnText}>OK</Text>
+                  </Tap>
+                </View>
+              </View>
+            )}
           </Pressable>
         </Pressable>
       </Modal>
@@ -770,11 +889,35 @@ export default function DevDetail({ navigation }: AppScreenProps) {
 }
 
 /* ---- player control button (PHOTOICONS; solid variant while ON) ---- */
-function PhotoBtn({ icon, on, onPress }: { icon: string; on: boolean; onPress: () => void }) {
+function PhotoBtn({
+  icon,
+  on,
+  onPress,
+  disabled = false,
+  accessibilityLabel,
+}: {
+  icon: string;
+  on: boolean;
+  onPress: () => void;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+}) {
   const glyph = on ? (icon === 'speaker' ? 'speakerSolid' : icon === 'mic' ? 'micSolid' : icon) : icon;
   return (
-    <Tap style={st.photoBtn} onPress={onPress}>
-      <SvgXml xml={PHOTOICONS[glyph]} width={18} height={18} color={on ? colors.brand : colors.textPrimary} />
+    <Tap
+      style={[st.photoBtn, disabled && st.photoBtnDisabled]}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled }}
+    >
+      <SvgXml
+        xml={PHOTOICONS[glyph]}
+        width={18}
+        height={18}
+        color={disabled ? colors.textTertiary : on ? colors.brand : colors.textPrimary}
+      />
     </Tap>
   );
 }
@@ -783,6 +926,7 @@ function PhotoBtn({ icon, on, onPress }: { icon: string; on: boolean; onPress: (
 function ControlsPanel({
   view,
   cruising,
+  resetting,
   presets,
   activePreset,
   onPresets,
@@ -790,10 +934,12 @@ function ControlsPanel({
   onAdd,
   onDelete,
   onView,
+  onReset,
   onCruise,
 }: {
   view: 'pad' | 'presets';
   cruising: boolean;
+  resetting: boolean;
   presets: string[];
   activePreset: number | null;
   onPresets: () => void;
@@ -801,6 +947,7 @@ function ControlsPanel({
   onAdd: () => void;
   onDelete: (i: number) => void;
   onView: (i: number) => void;
+  onReset: () => void;
   onCruise: () => void;
 }) {
   if (view === 'presets') {
@@ -822,14 +969,14 @@ function ControlsPanel({
             </View>
             <Text style={st.addTxt}>{'Add Preset\nPosition'}</Text>
           </Tap>
-          {presets.map((name, i) => (
+          {presets.map((_, i) => (
             <Tap
-              key={name + i}
+              key={`preset-${i}`}
               style={[st.presetCard, activePreset === i && st.presetCardSel]}
               onPress={() => onView(i)}
             >
               <CamPreview height={99} showBox={false} tag="" />
-              <Text style={st.presetName} numberOfLines={1}>{name}</Text>
+              <Text style={st.presetName} numberOfLines={1}>{`Preset ${i + 1}`}</Text>
               <Tap style={st.presetDel} onPress={() => onDelete(i)} hitSlop={6}>
                 <Icon name="x" size={12} color="#fff" sw={2.6} />
               </Tap>
@@ -859,9 +1006,9 @@ function ControlsPanel({
         </Tap>
       </View>
       <Row style={{ gap: 12, marginTop: 24, width: '100%' }}>
-        <CtrlAction icon="presets" label="Presets" hl={false} onPress={onPresets} />
-        <CtrlAction icon="reset" label="Reset" hl onPress={() => {}} />
-        <CtrlAction icon="cruise" label="Cruise" hl={cruising} onPress={onCruise} />
+        <CtrlAction icon="cruise" label="Presets" hl={false} onPress={onPresets} />
+        <CtrlAction icon="reset" label="Reset" hl={resetting} onPress={onReset} isSwitch />
+        <CtrlAction icon="presets" label="Cruise" hl={cruising} onPress={onCruise} isSwitch />
       </Row>
     </View>
   );
@@ -877,16 +1024,24 @@ function CtrlAction({
   label,
   hl,
   onPress,
+  isSwitch = false,
 }: {
   icon: string;
   label: string;
   hl: boolean;
   onPress: () => void;
+  isSwitch?: boolean;
 }) {
   // presets 字形是宽扁 viewBox(29.55×20.8),等宽渲染会显小 — 放大补偿到与另两个视觉等高
   const sz = icon === 'presets' ? 25 : 17;
   return (
-    <Tap style={[st.ctrlAction, { backgroundColor: hl ? colors.brandSoft : colors.surface }]} onPress={onPress}>
+    <Tap
+      style={[st.ctrlAction, { backgroundColor: hl ? colors.brandSoft : colors.surface }]}
+      onPress={onPress}
+      accessibilityLabel={label}
+      accessibilityRole={isSwitch ? 'switch' : 'button'}
+      accessibilityState={isSwitch ? { checked: hl } : undefined}
+    >
       <View style={[st.ctrlActionIcon, { backgroundColor: hl ? colors.brand : colors.bgSecondary }]}>
         <SvgXml xml={CTRLICONS[icon]} width={sz} height={sz} color={hl ? '#fff' : colors.textSecondary} />
       </View>
@@ -957,11 +1112,11 @@ function MessagesPanel({
   msgs: Msg[];
   select: boolean;
   checked: number[];
-  filter: string | null;
+  filter: EventIconKey | null;
   month: string;
   day: number;
-  onPrev: () => void;
-  onNext: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
   onFilterOpen: () => void;
   onFilterClear: () => void;
   onToggleSelect: () => void;
@@ -969,11 +1124,18 @@ function MessagesPanel({
   onOpenMsg: () => void;
   onCalOpen: () => void;
 }) {
-  const visible = msgs.map((m, i) => ({ m, i })).filter((o) => !filter || o.m.icon === filter);
+  const visible = msgs
+    .map((m, i) => ({ m, i }))
+    .filter((item) => item.m.day === day && (!filter || item.m.icon === filter));
   return (
     <View style={{ paddingHorizontal: 18, paddingTop: 16 }}>
       <Row style={{ gap: 6, marginBottom: 14 }}>
-        <Tap style={st.msgNavBtn} onPress={onPrev}>
+        <Tap
+          style={[st.msgNavBtn, !onPrev && st.msgNavBtnDisabled]}
+          onPress={onPrev}
+          disabled={!onPrev}
+          accessibilityLabel="Previous day"
+        >
           <Icon name="chevL" size={16} color={colors.textSecondary} sw={2.2} />
         </Tap>
         <Tap onPress={onCalOpen}>
@@ -981,7 +1143,12 @@ function MessagesPanel({
             {month} {day}
           </Text>
         </Tap>
-        <Tap style={st.msgNavBtn} onPress={onNext}>
+        <Tap
+          style={[st.msgNavBtn, !onNext && st.msgNavBtnDisabled]}
+          onPress={onNext}
+          disabled={!onNext}
+          accessibilityLabel="Next day"
+        >
           <Icon name="chevR" size={16} color={colors.textSecondary} sw={2.2} />
         </Tap>
         <View style={{ flex: 1 }} />
@@ -1006,6 +1173,7 @@ function MessagesPanel({
 
       {!!filter && (
         <Tap style={st.filterChip} onPress={onFilterClear}>
+          <SvgXml xml={EVENT_ICON_TILES[filter]} width={22} height={22} />
           <Text style={{ fontSize: 13, fontWeight: '700', color: colors.brand }}>
             {MSGFILTERS[filter]}
           </Text>
@@ -1025,9 +1193,7 @@ function MessagesPanel({
                 onPress={() => (select ? onCheck(i) : onOpenMsg())}
               >
                 <Card style={st.msgCard}>
-                  <View style={st.msgIcon}>
-                    <SvgXml xml={MOVEICONS[m.icon]} width={17} height={17} color="#fff" />
-                  </View>
+                  <SvgXml xml={EVENT_ICON_TILES[m.icon]} width={36} height={36} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={{ fontSize: 15, fontWeight: '700', color: colors.textPrimary }}>
                       {m.title}
@@ -1170,6 +1336,7 @@ const st = StyleSheet.create({
     justifyContent: 'center',
   },
   photoBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
+  photoBtnDisabled: { opacity: 0.4 },
 
   // controls d-pad
   dpad: { position: 'relative', width: 188, height: 188, borderRadius: 94, backgroundColor: colors.bgSecondary },
@@ -1247,11 +1414,34 @@ const st = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
   fsRot: { transform: [{ rotate: '90deg' }] },
+  fsDisabled: { opacity: 0.35 },
   // 全屏保存提示:与控制钮同款半透明灰底(#777 40%);缩略图圆角与胶囊同心(外 20 - padding 8 = 内 12)
   fsToast: {
     position: 'absolute', bottom: 34, alignSelf: 'center', maxWidth: 420,
     flexDirection: 'row', alignItems: 'center', gap: 12,
     backgroundColor: 'rgba(119,119,119,0.4)', borderRadius: 20, padding: 8, paddingRight: 14,
+  },
+  fsToastTapP: {
+    position: 'absolute',
+    left: 34,
+    top: '50%',
+    width: 64,
+    height: 350,
+    marginTop: -175,
+    zIndex: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fsToastInteractive: {
+    width: 350,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(119,119,119,0.4)',
+    borderRadius: 20,
+    padding: 8,
+    paddingRight: 14,
+    transform: [{ rotate: '90deg' }],
   },
   fsToastThumb: { width: 72, height: 44, borderRadius: 12, overflow: 'hidden' },
   fsErrMark: {
@@ -1305,6 +1495,7 @@ const st = StyleSheet.create({
 
   // messages
   msgNavBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  msgNavBtnDisabled: { opacity: 0.3 },
   msgHeadBtn: {
     width: 36,
     height: 36,
@@ -1325,14 +1516,6 @@ const st = StyleSheet.create({
     borderRadius: 99,
   },
   msgCard: { padding: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  msgIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   msgThumb: { width: 96, height: 60, borderRadius: 12, overflow: 'hidden' },
   msgCheck: { width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   emptyMsg: { textAlign: 'center', paddingVertical: 60, fontSize: 14, fontWeight: '700', color: colors.textTertiary },
@@ -1417,8 +1600,37 @@ const st = StyleSheet.create({
     paddingVertical: 6,
   },
   calCell: { width: `${100 / 7}%` as any, height: 44, alignItems: 'center', justifyContent: 'center' },
+  calCellUnavailable: { opacity: 0.4 },
   calDay: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   calFootBtn: { flex: 1, height: 52, borderRadius: 99, alignItems: 'center', justifyContent: 'center' },
+  calNoticeLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 2,
+    borderRadius: 26,
+    backgroundColor: 'rgba(0,0,0,.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+  },
+  calNoticeCard: {
+    width: '100%',
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    padding: 20,
+    alignItems: 'center',
+  },
+  calNoticeTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  calNoticeText: { marginTop: 8, fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+  calNoticeBtn: {
+    marginTop: 18,
+    width: '100%',
+    height: 46,
+    borderRadius: 99,
+    backgroundColor: colors.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calNoticeBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
   sheetWrap: { paddingHorizontal: 10, paddingBottom: 40 },
   sheetGroup: { backgroundColor: colors.surface, borderRadius: 16, overflow: 'hidden' },
   sheetTitle: {
@@ -1439,6 +1651,10 @@ const st = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
+  sheetFilterRow: { paddingHorizontal: 16, gap: 0 },
+  sheetIconSlot: { width: 40, alignItems: 'flex-start', justifyContent: 'center' },
+  sheetFilterText: { flex: 1, textAlign: 'center', fontSize: 16, fontWeight: '500' },
+  sheetCheckSlot: { width: 40, alignItems: 'flex-end', justifyContent: 'center' },
   dialog: {
     width: '100%',
     maxWidth: 322,

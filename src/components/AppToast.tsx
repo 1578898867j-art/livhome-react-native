@@ -1,11 +1,10 @@
 // 全局 toast host —— 白色胶囊 + 状态圆标(成功绿勾 / 失败红叉 / 信息蓝),
-// 顶部居中出现,自动消失(toastStore 控制时长)。挂在 App 根部。
+// 底部导航上方居中出现,自动消失(toastStore 控制时长)。挂在 App 根部。
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from './Icon';
 import { useToastMsg } from '../features/app/toastStore';
-import { useDemoFlags } from '../features/app/demoStore';
 import { colors, shadow } from '../theme';
 import type { ToastMsg } from '../features/app/toastStore';
 
@@ -17,7 +16,6 @@ const TONE = {
 
 export function AppToastHost() {
   const msg = useToastMsg();
-  const { offline } = useDemoFlags();
   const insets = useSafeAreaInsets();
 
   // 退场动画期间保留最后一条内容
@@ -51,14 +49,14 @@ export function AppToastHost() {
   return (
     <View
       pointerEvents="none"
-      style={[st.layer, { top: insets.top + 10 + (offline ? 44 : 0) }]}
+      style={[st.layer, { bottom: Math.max(insets.bottom, 12) + 88 }]}
     >
       <Animated.View
         style={[
           st.pill,
           {
             opacity: anim,
-            transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
+            transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [8, 0] }) }],
           },
         ]}
       >

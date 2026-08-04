@@ -1,8 +1,9 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, DimensionValue } from 'react-native';
 import { Screen, NavBar } from '../components/kit';
 import { Icon } from '../components/Icon';
+import { showToast } from '../features/app/toastStore';
 import { colors } from '../theme';
 
 const COLS = 4;
@@ -27,8 +28,6 @@ const DOTS: { left: DimensionValue; top: DimensionValue }[] = [];
 export default function DetectionArea({ navigation }: AppScreenProps) {
   const [cells, setCells] = useState<boolean[]>(DEFAULT_CELLS);
   const [notify, setNotify] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const allOn = cells.every((v) => v);
 
@@ -38,18 +37,7 @@ export default function DetectionArea({ navigation }: AppScreenProps) {
   const toggleAll = () => setCells(DEFAULT_CELLS.map(() => !allOn));
 
   // Prototype det-refresh only shows a toast — it never touches the cells.
-  const refresh = () => {
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    setToast('Snapshot refreshed');
-    toastTimer.current = setTimeout(() => setToast(null), 1400);
-  };
-
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-    },
-    []
-  );
+  const refresh = () => showToast('Snapshot refreshed', 'success');
 
   return (
     <Screen
@@ -118,13 +106,6 @@ export default function DetectionArea({ navigation }: AppScreenProps) {
           <Text style={st.footerBtnText}>{allOn ? 'Clear All' : 'Select All'}</Text>
         </Pressable>
       </View>
-
-      {/* toast (port of showToast) */}
-      {toast && (
-        <View style={st.toast} pointerEvents="none">
-          <Text style={st.toastText}>{toast}</Text>
-        </View>
-      )}
     </Screen>
   );
 }
@@ -230,16 +211,4 @@ const st = StyleSheet.create({
     justifyContent: 'center',
   },
   footerBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-
-  toast: {
-    position: 'absolute',
-    top: 68,
-    alignSelf: 'center',
-    zIndex: 90,
-    backgroundColor: 'rgba(20,20,22,0.9)',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 99,
-  },
-  toastText: { color: '#fff', fontSize: 13, fontWeight: '600' },
 });
