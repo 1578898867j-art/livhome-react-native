@@ -23,7 +23,13 @@
           "backgroundColor": "#FBFBFB"
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow LIVHOME to access your microphone for two-way talk."
+        }
+      ]
     ]
   }
 }

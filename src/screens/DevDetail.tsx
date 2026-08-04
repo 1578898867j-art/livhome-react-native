@@ -1,6 +1,16 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Modal, Pressable, Dimensions } from 'react-native';
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +21,11 @@ import { PermissionDialog } from '../components/PermissionDialog';
 import type { PermType } from '../components/PermissionDialog';
 import { RecordingIndicator, useRecordingElapsed } from '../components/RecordingIndicator';
 import { TalkIndicator } from '../components/TalkIndicator';
+import {
+  SettingsOptionDoneButton,
+  SettingsOptionRow,
+  SettingsOptionSheet,
+} from '../components/SettingsOptionSheet';
 import { getDemoFlags } from '../features/app/demoStore';
 import {
   EVENT_ICON_FILTERS,
@@ -23,6 +38,14 @@ import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS } from '../icons/protoSets';
 import { ZOOMICON, SELICON, SELICON2 } from '../icons/protoIcons';
 import { colors } from '../theme';
 import { useDeviceDetailPrototype } from '../features/devices/useDeviceDetailPrototype';
+import { useTalkMeter } from '../features/devices/useTalkMeter';
+import {
+  setNightVisionMode,
+  setSmartTrackingEnabled,
+  useNightVisionMode,
+  useSmartTrackingEnabled,
+} from '../features/devices/deviceSettingsStore';
+import type { NightVisionMode } from '../features/devices/deviceSettingsStore';
 import type {
   ControlKey as CtlKey,
   DeviceDetailTab as Tab,
@@ -75,7 +98,7 @@ const MSGFILTERS = Object.fromEntries(
 ) as Record<EventIconKey, string>;
 const FILTER_KEYS = EVENT_ICON_FILTERS.map((filter) => filter.key);
 
-const TILT_ITEMS: { icon: string; label: string; key: TiltKey }[] = [
+const TILT_ITEMS: { icon: string; label: string; key: TiltKey | 'smartTrack' | 'nightVision' }[] = [
   { icon: 'smartTrack', label: 'Smart Tracking', key: 'smartTrack' },
   { icon: 'nightVision', label: 'Night Vision', key: 'nightVision' },
   { icon: 'motion', label: 'Motion Detection', key: 'motionOn' },
@@ -117,6 +140,44 @@ function CamPreview({
       )}
       {!!label && <Text style={st.camLabel}>{label}</Text>}
       {children}
+    </View>
+  );
+}
+
+const TALK_WAVE_WEIGHTS = [0.5, 0.72, 0.9, 1, 0.84, 0.66, 0.46] as const;
+
+function TalkWaveform({ level, fullscreen = false }: { level: number; fullscreen?: boolean }) {
+  const bars = useRef(TALK_WAVE_WEIGHTS.map(() => new Animated.Value(0.2))).current;
+  const frame = useRef(0);
+
+  useEffect(() => {
+    frame.current += 1;
+    bars.forEach((bar, index) => {
+      const ripple = 0.76 + Math.sin(frame.current * 0.84 + index * 1.12) * 0.24;
+      const scale = Math.min(1, 0.2 + level * TALK_WAVE_WEIGHTS[index] * ripple * 0.8);
+      Animated.timing(bar, {
+        toValue: scale,
+        duration: 110,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => bars.forEach((bar) => bar.stopAnimation());
+  }, [bars, level]);
+
+  return (
+    <View
+      accessible={false}
+      pointerEvents="none"
+      style={[st.talkWave, fullscreen && st.talkWaveFullscreen]}
+    >
+      {bars.map((bar, index) => (
+        <Animated.View
+          key={index}
+          style={[st.talkWaveBar, { transform: [{ scaleY: bar }] }]}
+        />
+      ))}
     </View>
   );
 }
@@ -178,7 +239,22 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   const [filterOpen, setFilterOpen] = useState(false);
   const [delConfirm, setDelConfirm] = useState(false);
   const [presetPopup, setPresetPopup] = useState(false);
+  const [nightVisionOpen, setNightVisionOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const {
+    level: talkLevel,
+    start: startTalkMeter,
+    starting: talkStarting,
+    stop: stopTalkMeter,
+  } = useTalkMeter();
+  const talkEnabledRef = useRef(ctl.ctlMic);
+  const talkStartingRef = useRef(talkStarting);
+  const toggleCtlRef = useRef(toggleCtl);
+  talkEnabledRef.current = ctl.ctlMic;
+  talkStartingRef.current = talkStarting;
+  toggleCtlRef.current = toggleCtl;
+  const nightVisionMode = useNightVisionMode();
+  const smartTrackingEnabled = useSmartTrackingEnabled();
   // 拍照/录像保存提示条(截图为瞬时动作,不保持常亮)
   const [saveToast, setSaveToast] = useState<null | 'photo' | 'video'>(null);
   const [snapFlash, setSnapFlash] = useState(false);
@@ -245,19 +321,6 @@ export default function DevDetail({ navigation }: AppScreenProps) {
       setTab('tilt');
     }, [setTab]),
   );
-
-  // 首页 Talk 进入:自动开启对讲(权限被拒演示则弹麦克风引导)
-  useFocusEffect(
-    useCallback(() => {
-      if (!consumeTalkIntent()) return;
-      if (getDemoFlags().permsDenied) {
-        setPermDlg('microphone');
-        return;
-      }
-      if (!ctl.ctlMic) toggleCtl('ctlMic');
-    }, [ctl.ctlMic, toggleCtl]),
-  );
-
   useEffect(
     () => () => {
       if (fsErrTimer.current) clearTimeout(fsErrTimer.current);
@@ -266,11 +329,11 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   );
 
   // 全屏内失败提示(全局 toast 在 Modal 之下,需用全屏本地深色提示)
-  const showFsError = (text: string) => {
+  const showFsError = useCallback((text: string) => {
     setFsError(text);
     if (fsErrTimer.current) clearTimeout(fsErrTimer.current);
     fsErrTimer.current = setTimeout(() => setFsError(null), 2400);
-  };
+  }, []);
 
   // 保存截图/录像:相册权限被拒 → 引导弹窗;failOps → 失败提示;否则成功提示条
   const trySave = (kind: 'photo' | 'video', inFullscreen = false): boolean => {
@@ -289,18 +352,80 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     return true;
   };
 
-  // 对讲:麦克风权限被拒 → 引导弹窗(仅开启时拦截)
-  const tryTalk = (inFullscreen = false) => {
-    if (!ctl.ctlMic && getDemoFlags().permsDenied) {
-      if (inFullscreen) showFsError('Microphone permission is required.');
-      else setPermDlg('microphone');
-      return;
+  const enableTalk = useCallback(
+    async (inFullscreen = false) => {
+      if (getDemoFlags().permsDenied) {
+        if (inFullscreen) showFsError('Microphone access is required for two-way talk.');
+        else setPermDlg('microphone');
+        return;
+      }
+
+      const result = await startTalkMeter();
+      if (result === 'denied') {
+        if (inFullscreen) showFsError('Microphone access is disabled in Settings.');
+        else setPermDlg('microphone');
+        return;
+      }
+      if (result === 'failed') {
+        const message = 'Unable to start the microphone. Please try again.';
+        if (inFullscreen) showFsError(message);
+        else showToast(message, 'error');
+        return;
+      }
+
+      if (!talkEnabledRef.current) {
+        toggleCtlRef.current('ctlMic');
+        talkEnabledRef.current = true;
+      }
+    },
+    [showFsError, startTalkMeter],
+  );
+
+  const disableTalk = useCallback(() => {
+    if (talkEnabledRef.current) {
+      toggleCtlRef.current('ctlMic');
+      talkEnabledRef.current = false;
     }
-    toggleCtl('ctlMic');
-  };
+    void stopTalkMeter();
+  }, [stopTalkMeter]);
+
+  const tryTalk = useCallback(
+    (inFullscreen = false) => {
+      if (talkStartingRef.current) return;
+      if (talkEnabledRef.current) disableTalk();
+      else void enableTalk(inFullscreen);
+    },
+    [disableTalk, enableTalk],
+  );
+
+  // 首页 Talk 进入时使用同一套真实麦克风权限和音量监听逻辑。
+  useFocusEffect(
+    useCallback(() => {
+      if (consumeTalkIntent()) void enableTalk(false);
+    }, [enableTalk]),
+  );
+
+  // 离开直播页时释放录音资源，避免麦克风在后台继续占用。
+  useFocusEffect(
+    useCallback(
+      () => () => {
+        if (talkEnabledRef.current) {
+          toggleCtlRef.current('ctlMic');
+          talkEnabledRef.current = false;
+        }
+        void stopTalkMeter();
+      },
+      [stopTalkMeter],
+    ),
+  );
 
   const snap = (inFullscreen = false) => {
-    if (ctl.ctlRec) return;
+    if (ctl.ctlRec) {
+      const message = 'Stop recording before taking a snapshot.';
+      if (inFullscreen) showFsError(message);
+      else showToast(message, 'info');
+      return;
+    }
     if (!trySave('photo', inFullscreen)) return;
     setSnapFlash(true);
     if (flashTimer.current) clearTimeout(flashTimer.current);
@@ -410,8 +535,9 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           {pState === 'ready' ? (
             <CamPreview live tag="Person · sofa" label="14:22:08">
               <View style={st.resBadge}>
-                <Text style={st.resTxt}>1080P</Text>
+                <Text style={st.resTxt}>{fsHd ? '720P' : '1080P'}</Text>
               </View>
+              {ctl.ctlMic && <TalkWaveform level={talkLevel} />}
               <Tap style={st.scanBtn} onPress={() => setFullscreen(true)} hitSlop={8}>
                 <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
               </Tap>
@@ -460,8 +586,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               <PhotoBtn
                 icon="camera"
                 on={snapFlash}
+                unavailable={ctl.ctlRec}
                 onPress={() => snap()}
-                disabled={ctl.ctlRec}
                 accessibilityLabel="Take snapshot"
               />
             </Row>
@@ -498,7 +624,16 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             }}
           />
         )}
-        {tab === 'tilt' && <TiltPanel tilt={tilt} onToggle={toggleTilt} />}
+        {tab === 'tilt' && (
+          <TiltPanel
+            tilt={tilt}
+            nightVisionMode={nightVisionMode}
+            smartTrackingEnabled={smartTrackingEnabled}
+            onNightVision={() => setNightVisionOpen(true)}
+            onSmartTracking={() => setSmartTrackingEnabled(!smartTrackingEnabled)}
+            onToggle={toggleTilt}
+          />
+        )}
         {tab === 'messages' && (
           <MessagesPanel
             msgs={msgs}
@@ -600,6 +735,33 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         </Pressable>
       </Modal>
 
+      <SettingsOptionSheet
+        visible={nightVisionOpen}
+        title="Night Vision"
+        desc="Used to improve picture visibility in low-light conditions for clear 24-hour monitoring."
+        onClose={() => setNightVisionOpen(false)}
+      >
+        <SettingsOptionRow
+          label="Auto"
+          sub="Automatically switch night vision mode based on ambient light."
+          selected={nightVisionMode === 'auto'}
+          onPress={() => setNightVisionMode('auto')}
+        />
+        <SettingsOptionRow
+          label="On"
+          sub="Always on night vision."
+          selected={nightVisionMode === 'on'}
+          onPress={() => setNightVisionMode('on')}
+        />
+        <SettingsOptionRow
+          label="Off"
+          sub="Turn off night vision."
+          selected={nightVisionMode === 'off'}
+          onPress={() => setNightVisionMode('off')}
+        />
+        <SettingsOptionDoneButton onPress={() => setNightVisionOpen(false)} />
+      </SettingsOptionSheet>
+
       {/* delete confirm dialog */}
       <Modal visible={delConfirm} transparent animationType="fade" onRequestClose={() => setDelConfirm(false)}>
         <Pressable style={st.ovlCenter} onPress={() => setDelConfirm(false)}>
@@ -661,6 +823,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               </CamPreview>
             </View>
 
+            {ctl.ctlMic && <TalkWaveform level={talkLevel} fullscreen />}
+
             {/* 左下方向盘 */}
             <View style={st.fsDpad}>
               <SvgXml xml={FS_DPAD} width={174} height={174} />
@@ -706,11 +870,10 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             </Tap>
             <Tap
               onPress={() => snap(true)}
-              disabled={ctl.ctlRec}
               accessibilityRole="button"
               accessibilityLabel="Take snapshot"
               accessibilityState={{ disabled: ctl.ctlRec }}
-              style={ctl.ctlRec ? st.fsDisabled : undefined}
+              style={ctl.ctlRec ? st.controlUnavailable : undefined}
             >
               <View style={st.fsRot}>
                 <SvgXml xml={snapFlash ? fsActive(FS_SNAP) : FS_SNAP} width={54} height={54} />
@@ -893,30 +1056,29 @@ function PhotoBtn({
   icon,
   on,
   onPress,
-  disabled = false,
+  unavailable = false,
   accessibilityLabel,
 }: {
   icon: string;
   on: boolean;
   onPress: () => void;
-  disabled?: boolean;
+  unavailable?: boolean;
   accessibilityLabel?: string;
 }) {
   const glyph = on ? (icon === 'speaker' ? 'speakerSolid' : icon === 'mic' ? 'micSolid' : icon) : icon;
   return (
     <Tap
-      style={[st.photoBtn, disabled && st.photoBtnDisabled]}
+      style={[st.photoBtn, unavailable && st.controlUnavailable]}
       onPress={onPress}
-      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled }}
+      accessibilityState={{ disabled: unavailable }}
     >
       <SvgXml
         xml={PHOTOICONS[glyph]}
         width={18}
         height={18}
-        color={disabled ? colors.textTertiary : on ? colors.brand : colors.textPrimary}
+        color={unavailable ? colors.textTertiary : on ? colors.brand : colors.textPrimary}
       />
     </Tap>
   );
@@ -1055,22 +1217,39 @@ function CtrlAction({
 /* ---- TILT tab (3-col feature grid) ---- */
 function TiltPanel({
   tilt,
+  nightVisionMode,
+  smartTrackingEnabled,
+  onNightVision,
+  onSmartTracking,
   onToggle,
 }: {
   tilt: Record<TiltKey, boolean>;
+  nightVisionMode: NightVisionMode;
+  smartTrackingEnabled: boolean;
+  onNightVision: () => void;
+  onSmartTracking: () => void;
   onToggle: (k: TiltKey) => void;
 }) {
   return (
     <View style={st.tiltGrid}>
       {TILT_ITEMS.map((it) => {
-        const on = tilt[it.key];
+        const on =
+          it.key === 'nightVision'
+            ? nightVisionMode !== 'off'
+            : it.key === 'smartTrack'
+              ? smartTrackingEnabled
+              : tilt[it.key];
         // Privacy:关闭 = 睁眼(可见),开启 = 斜线遮蔽眼
         const glyph = it.icon === 'privacy' ? (on ? 'privacy' : 'privacyOn') : it.icon;
         return (
           <Tap
             key={it.key}
             style={[st.tiltCell, { backgroundColor: on ? colors.brandSoft : colors.surface }]}
-            onPress={() => onToggle(it.key)}
+            onPress={() => {
+              if (it.key === 'nightVision') onNightVision();
+              else if (it.key === 'smartTrack') onSmartTracking();
+              else onToggle(it.key);
+            }}
           >
             <View style={[st.tiltIcon, { backgroundColor: on ? colors.brand : colors.bgSecondary }]}>
               <SvgXml xml={TILTICONS[glyph]} width={22} height={22} color={on ? '#fff' : colors.textSecondary} />
@@ -1335,8 +1514,29 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  talkWave: {
+    position: 'absolute',
+    bottom: 8,
+    alignSelf: 'center',
+    height: 36,
+    minWidth: 78,
+    paddingHorizontal: 13,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.52)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  talkWaveFullscreen: { bottom: 28 },
+  talkWaveBar: {
+    width: 3,
+    height: 22,
+    borderRadius: 2,
+    backgroundColor: colors.textInverse,
+  },
+  controlUnavailable: { opacity: 0.35 },
   photoBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
-  photoBtnDisabled: { opacity: 0.4 },
 
   // controls d-pad
   dpad: { position: 'relative', width: 188, height: 188, borderRadius: 94, backgroundColor: colors.bgSecondary },
@@ -1414,7 +1614,6 @@ const st = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
   fsRot: { transform: [{ rotate: '90deg' }] },
-  fsDisabled: { opacity: 0.35 },
   // 全屏保存提示:与控制钮同款半透明灰底(#777 40%);缩略图圆角与胶囊同心(外 20 - padding 8 = 内 12)
   fsToast: {
     position: 'absolute', bottom: 34, alignSelf: 'center', maxWidth: 420,

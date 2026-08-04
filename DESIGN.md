@@ -98,6 +98,12 @@ components:
     typography: "{typography.body}"
     rounded: "{rounded.md}"
     padding: "{spacing.md}"
+  settings-option-sheet:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.text-primary}"
+    typography: "{typography.body}"
+    rounded: "{rounded.xl}"
+    padding: "{spacing.lg}"
   button-primary:
     backgroundColor: "{colors.btn-primary}"
     textColor: "{colors.text-inverse}"
@@ -220,6 +226,7 @@ Reuse `src/components/kit.tsx` before creating local versions of the same behavi
 - `PrimaryBtn` is a 54-unit dark pill button for the main decision in an area.
 - `SecondaryBtn` is a 54-unit neutral pill button for alternatives.
 - `SettingRow`, `ToggleRow`, `RadioRow`, `Toggle`, and `Segmented` are the standard settings controls.
+- `SettingsOptionSheet`, `SettingsOptionRow`, and `SettingsOptionDoneButton` provide the standard bottom-sheet pattern for choosing a compact settings mode. Reuse the same component and shared feature state when the same setting appears on multiple screens.
 - `Eyebrow` and `Hint` provide compact supporting hierarchy; they must not replace clear labels.
 - `Tap` uses the shared pressed-opacity response. New interactive wrappers need an equivalent visible pressed state.
 - Global success, error, and information toasts appear centered above the bottom navigation, aligned with media-save confirmation banners. Keep modal-local and full-screen feedback inside its active surface when the global layer would be obscured.
