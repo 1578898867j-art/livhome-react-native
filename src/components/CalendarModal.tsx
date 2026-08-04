@@ -5,7 +5,7 @@ import { Icon } from './Icon';
 import { colors } from '../theme';
 
 // 原型 msg-cal 日历弹层(dev-detail 消息页与 SD 回放共用;calTarget=msg/pb)
-export const CAL_TODAY = { y: 2026, m: 3, d: 23 };
+export const CAL_TODAY = { y: 2026, m: 3, d: 24 };
 
 export default function CalendarModal({
   visible,

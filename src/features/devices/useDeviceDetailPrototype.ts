@@ -1,19 +1,22 @@
 import { useState } from 'react';
+import { NOTIFICATION_DAYS, type EventIconKey } from '../notifications/demoEvents';
 
 export type DeviceDetailTab = 'messages' | 'controls' | 'tilt' | 'playback';
-export type DeviceMessage = { icon: string; title: string; time: string };
+export type DeviceMessage = { day: number; icon: EventIconKey; title: string; time: string };
 export type TiltKey = 'smartTrack' | 'nightVision' | 'motionOn' | 'soundOn' | 'sirenOn' | 'privacyOn';
 export type ControlKey = 'ctlSpk' | 'ctlMic' | 'ctlRec' | 'ctlSnap';
 
-const INITIAL_MESSAGES: DeviceMessage[] = [
-  { icon: 'cross', title: 'Line Crossing Detected', time: '09:41' },
-  { icon: 'motion', title: 'Motion Detected', time: '09:41' },
-  { icon: 'sound', title: 'Sound Detected', time: '08:12' },
-  { icon: 'fence', title: 'Geofence Alert', time: '07:15' },
-];
+const INITIAL_MESSAGES: DeviceMessage[] = NOTIFICATION_DAYS.flatMap((group) =>
+  group.events.map((event) => ({
+    day: Number(group.day),
+    icon: event.iconKey,
+    title: event.title,
+    time: event.time.slice(0, 5),
+  })),
+);
 
 export function useDeviceDetailPrototype() {
-  const [tab, setTab] = useState<DeviceDetailTab>('controls');
+  const [tab, setTab] = useState<DeviceDetailTab>('tilt');
   const [ctl, setCtl] = useState<Record<ControlKey, boolean>>({
     ctlSpk: false,
     ctlMic: false,
@@ -22,12 +25,15 @@ export function useDeviceDetailPrototype() {
   });
   const [ctrlView, setCtrlView] = useState<'pad' | 'presets'>('pad');
   const [cruising, setCruising] = useState(false);
+  const [resetting, setResetting] = useState(false);
   // 预置位(原型 S.presets / S.activePreset)
   const [presets, setPresets] = useState<string[]>([]);
   const [activePreset, setActivePreset] = useState<number | null>(null);
-  const addPreset = () => setPresets((p) => p.concat(`Preset ${p.length + 1}`));
+  const addPreset = () => setPresets((current) => current.concat(`Preset ${current.length + 1}`));
   const removePreset = (i: number) => {
-    setPresets((p) => p.filter((_, idx) => idx !== i));
+    setPresets((current) => current
+      .filter((_, index) => index !== i)
+      .map((_, index) => `Preset ${index + 1}`));
     setActivePreset((a) => (a === i ? null : a != null && a > i ? a - 1 : a));
   };
   // 进入页面默认全部关闭
@@ -64,9 +70,11 @@ export function useDeviceDetailPrototype() {
     msgChecked,
     msgs,
     presets,
+    resetting,
     removePreset,
     setActivePreset,
     setCruising,
+    setResetting,
     setCtrlView,
     setTab,
     tab,

@@ -6,6 +6,8 @@ import {
   Pressable,
   ViewStyle,
   StyleProp,
+  AccessibilityRole,
+  AccessibilityState,
   ScrollView,
   Keyboard,
 } from 'react-native';
@@ -105,17 +107,29 @@ export function Tap({
   style,
   onPress,
   hitSlop,
+  disabled = false,
+  accessibilityLabel,
+  accessibilityRole,
+  accessibilityState,
 }: {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
   hitSlop?: number;
+  disabled?: boolean;
+  accessibilityLabel?: string;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityState?: AccessibilityState;
 }) {
   return (
     <Pressable
       onPress={onPress}
       hitSlop={hitSlop}
-      style={({ pressed }) => [pressed && { opacity: 0.55 }, style]}
+      disabled={disabled}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole={accessibilityRole}
+      accessibilityState={disabled ? { ...accessibilityState, disabled: true } : accessibilityState}
+      style={({ pressed }) => [pressed && !disabled && { opacity: 0.55 }, style]}
     >
       {children}
     </Pressable>

@@ -323,11 +323,8 @@ export default function AgentChat({ navigation }: AppScreenProps) {
   const [msgMenu, setMsgMenu] = useState<{ idx: number; y: number } | null>(null);
   const [editMsg, setEditMsg] = useState<number | null>(null);
   const [editVal, setEditVal] = useState('');
-  const [copied, setCopied] = useState(false);
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
     () => () => {
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
       if (hintTimer.current) clearTimeout(hintTimer.current);
     },
     [],
@@ -355,9 +352,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
 
   const showCopied = (text: string) => {
     Clipboard.setStringAsync(text.replace(/<\/?b>/g, '')).catch(() => {});
-    setCopied(true);
-    if (copiedTimer.current) clearTimeout(copiedTimer.current);
-    copiedTimer.current = setTimeout(() => setCopied(false), 1500);
+    showToast('Copied', 'success');
   };
 
   const openEditMsg = () => {
@@ -868,16 +863,6 @@ export default function AgentChat({ navigation }: AppScreenProps) {
         </View>
       )}
 
-      {/* Copied toast(与图片保存 toast 同款) */}
-      {copied && (
-        <View style={[styles.copiedToast, { top: insets.top + 10 }]} pointerEvents="none">
-          <View style={styles.copiedCheck}>
-            <Icon name="check" size={12} color="#fff" sw={3} />
-          </View>
-          <Text style={styles.copiedText}>Copied</Text>
-        </View>
-      )}
-
       {/* chat drawer overlay(zIndex 高于顶部渐变栏的 40,盖住 Assistant 标题) */}
       {drawerOpen && (
         <TabOverlay>
@@ -1193,20 +1178,6 @@ const styles = StyleSheet.create({
     marginTop: 8, width: 30, height: 30, borderRadius: 15,
     backgroundColor: colors.brand, alignItems: 'center', justifyContent: 'center',
   },
-
-  // Copied toast(顶部居中,同「保存到相册」款式)
-  copiedToast: {
-    position: 'absolute', alignSelf: 'center', zIndex: 90,
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: colors.surface,
-    shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 22, shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
-  },
-  copiedCheck: {
-    width: 22, height: 22, borderRadius: 11, backgroundColor: '#22A45D',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  copiedText: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
 
   // 新聊天提示胶囊 —— 底色与建议胶囊(cardSoft)一致
   hintToast: {

@@ -222,6 +222,8 @@ Reuse `src/components/kit.tsx` before creating local versions of the same behavi
 - `SettingRow`, `ToggleRow`, `RadioRow`, `Toggle`, and `Segmented` are the standard settings controls.
 - `Eyebrow` and `Hint` provide compact supporting hierarchy; they must not replace clear labels.
 - `Tap` uses the shared pressed-opacity response. New interactive wrappers need an equivalent visible pressed state.
+- Global success, error, and information toasts appear centered above the bottom navigation, aligned with media-save confirmation banners. Keep modal-local and full-screen feedback inside its active surface when the global layer would be obscured.
+- `TalkIndicator` provides two-way-talk feedback over camera media. It enters as a 92-by-94 translucent dark panel with a microphone and animated seven-bar waveform, then contracts after 900 ms to a 92-by-52 waveform-only panel and remains visible until talk is turned off. Use the same behavior in normal and full-screen camera views.
 - Full-screen transient surfaces opened from a tab screen use `TabOverlay` so they cover bottom navigation without unmounting or visually shifting it.
 - Activating the currently selected bottom tab collapses the capsule into a 72-unit icon-only circle. Devices and Assistant anchor left, Profile anchors right, and one activation of the circle expands the full navigation again. Sending a non-empty typed Assistant message also collapses an expanded capsule; voice and suggestion actions do not. When Assistant is collapsed, its composer shares the circle's row, leaves the standard gap clear, and returns to its original size and position with the expanded capsule. Preserve immediate navigation for unselected tabs and reduced-motion behavior.
 

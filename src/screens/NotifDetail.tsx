@@ -6,42 +6,47 @@ import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { CamPreview } from '../components/CamPreview';
 import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
+import {
+  ALL_NOTIFICATION_EVENTS,
+  NOTIFICATION_DAYS,
+  type NotificationDayKey,
+} from '../features/notifications/demoEvents';
 import { showToast } from '../features/app/toastStore';
-import { NT_MOTION, NT_CROSSING, NT_FENCE, NT_OFFLINE } from '../icons/notifIcons';
 import { colors, shadow } from '../theme';
-
-// 设备消息列表(点击消息中心的设备卡进入,相当于加上该设备筛选)
-// Figma 4531:944「设备消息详情页面」:日期 + All Read、All/Cloud/SD Card 分段、
-// 时间线事件卡(图标 48 tile + 连接线 + 状态 tag + 标题 + 预览图)。
-type Src = 'cloud' | 'sd';
-type Ev = {
-  id: number;
-  icon: string;
-  tag: 'Info' | 'Critical';
-  title: string;
-  time: string;
-  src: Src;
-  unread?: boolean;
-};
-
-const EVENTS: Ev[] = [
-  { id: 1, icon: NT_MOTION, tag: 'Info', title: 'Motion detected', time: '18:00', src: 'cloud', unread: true },
-  { id: 2, icon: NT_CROSSING, tag: 'Critical', title: 'Line Crossing', time: '18:00', src: 'sd' },
-  { id: 3, icon: NT_FENCE, tag: 'Info', title: 'Virtual Fence', time: '18:00', src: 'cloud' },
-  { id: 4, icon: NT_OFFLINE, tag: 'Critical', title: 'Device Offline', time: '17:32', src: 'sd' },
-];
 
 const FILTERS = ['All', 'Cloud', 'SD Card'] as const;
 
 export default function NotifDetail({ navigation }: AppScreenProps) {
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('All');
+  const [selectedDay, setSelectedDay] = useState<NotificationDayKey>('24');
   const [readIds, setReadIds] = useState<number[]>([]);
-  // 事件图片加载失败占位(failLoad 演示)
   const { failLoad } = useDemoFlags();
 
-  const list = EVENTS.filter(
-    (e) => filter === 'All' || (filter === 'Cloud' ? e.src === 'cloud' : e.src === 'sd'),
-  );
+  const groups = NOTIFICATION_DAYS.map((group) => ({
+    ...group,
+    events: group.events.filter(
+      (event) => filter === 'All' || (filter === 'Cloud' ? event.src === 'cloud' : event.src === 'sd'),
+    ),
+  }));
+  const selectedGroup = groups.find((group) => group.day === selectedDay) ?? groups[0];
+  const availableDays = groups
+    .filter((group) => group.events.length > 0)
+    .map((group) => group.day)
+    .sort((a, b) => Number(a) - Number(b));
+  const selectedDayIndex = availableDays.indexOf(selectedDay);
+  const previousDay = selectedDayIndex > 0 ? availableDays[selectedDayIndex - 1] : null;
+  const nextDay =
+    selectedDayIndex >= 0 && selectedDayIndex < availableDays.length - 1
+      ? availableDays[selectedDayIndex + 1]
+      : null;
+
+  const markAllRead = () => {
+    if (getDemoFlags().failOps) {
+      showToast('Failed to mark all as read.', 'error');
+      return;
+    }
+    setReadIds(ALL_NOTIFICATION_EVENTS.map((event) => event.id));
+  };
 
   return (
     <Screen
@@ -59,22 +64,39 @@ export default function NotifDetail({ navigation }: AppScreenProps) {
         </Row>
       }
     >
-      {/* 日期 + All Read */}
+      <View style={st.segWrap}>
+        {FILTERS.map((item) => (
+          <Tap
+            key={item}
+            style={[st.segBtn, filter === item && st.segBtnOn]}
+            onPress={() => setFilter(item)}
+          >
+            <Text style={[st.segTxt, filter === item && st.segTxtOn]}>{item}</Text>
+          </Tap>
+        ))}
+      </View>
+
       <Row style={st.dayRow}>
-        <Text style={st.dayNum}>24</Text>
-        <Text style={st.dayMon}> Jan</Text>
-        <View style={{ flex: 1 }} />
         <Tap
-          style={st.allReadPill}
-          onPress={() => {
-            // 全部已读失败演示:错误提示,不改状态
-            if (getDemoFlags().failOps) {
-              showToast('Failed to mark all as read.', 'error');
-              return;
-            }
-            setReadIds(EVENTS.map((e) => e.id));
-          }}
+          style={[st.dateNav, !previousDay && st.dateNavDisabled]}
+          onPress={previousDay ? () => setSelectedDay(previousDay) : undefined}
+          disabled={!previousDay}
+          accessibilityLabel="Previous day"
         >
+          <Icon name="chevL" size={16} color={colors.textSecondary} sw={2.2} />
+        </Tap>
+        <Text style={st.dayNum}>{selectedGroup.day}</Text>
+        <Text style={st.dayMon}> {selectedGroup.mon}</Text>
+        <Tap
+          style={[st.dateNav, !nextDay && st.dateNavDisabled]}
+          onPress={nextDay ? () => setSelectedDay(nextDay) : undefined}
+          disabled={!nextDay}
+          accessibilityLabel="Next day"
+        >
+          <Icon name="chevR" size={16} color={colors.textSecondary} sw={2.2} />
+        </Tap>
+        <View style={{ flex: 1 }} />
+        <Tap style={st.allReadPill} onPress={markAllRead}>
           <View style={st.allReadCheck}>
             <Icon name="check" size={10} color={colors.textTertiary} sw={2.4} />
           </View>
@@ -82,45 +104,40 @@ export default function NotifDetail({ navigation }: AppScreenProps) {
         </Tap>
       </Row>
 
-      {/* All / Cloud / SD Card 分段筛选 */}
-      <View style={st.segWrap}>
-        {FILTERS.map((f) => (
-          <Tap
-            key={f}
-            style={[st.segBtn, filter === f && st.segBtnOn]}
-            onPress={() => setFilter(f)}
-          >
-            <Text style={[st.segTxt, filter === f && st.segTxtOn]}>{f}</Text>
-          </Tap>
-        ))}
-      </View>
-
-      {/* 时间线事件卡 */}
       <View style={st.eventCard}>
-        {list.map((e, i) => {
-          const unread = e.unread && readIds.indexOf(e.id) < 0;
+        {selectedGroup.events.map((event, index) => {
+          const unread = event.unread && readIds.indexOf(event.id) < 0;
           return (
-            <Row key={e.id} style={[st.event, i === list.length - 1 && { marginBottom: 0 }]}>
-              {/* 连接线挂在整行上:图标下 12 起,到下一个图标上方 12 止 */}
-              {i < list.length - 1 && <View style={st.connector} />}
-              <View style={{ width: 48 }}>
-                <SvgXml xml={e.icon} width={48} height={48} />
-              </View>
+            <Row
+              key={event.id}
+              style={[st.event, index === selectedGroup.events.length - 1 && { marginBottom: 0 }]}
+            >
+              {index < selectedGroup.events.length - 1 && <View style={st.connector} />}
+              <SvgXml xml={event.icon} width={48} height={48} />
 
-              {/* 事件内容 */}
-              <View style={{ flex: 1, marginLeft: 16 }}>
+              <View style={st.eventContent}>
                 <Row>
-                  <View style={[st.tag, e.tag === 'Critical' ? st.tagCritical : st.tagInfo]}>
-                    <View style={[st.tagDot, { backgroundColor: e.tag === 'Critical' ? colors.warning : colors.success }]} />
-                    <Text style={[st.tagTxt, { color: e.tag === 'Critical' ? colors.warning : colors.success }]}>
-                      {e.tag}
+                  <View style={[st.tag, event.tag === 'Critical' ? st.tagCritical : st.tagInfo]}>
+                    <View
+                      style={[
+                        st.tagDot,
+                        { backgroundColor: event.tag === 'Critical' ? colors.warning : colors.success },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        st.tagTxt,
+                        { color: event.tag === 'Critical' ? colors.warning : colors.success },
+                      ]}
+                    >
+                      {event.tag}
                     </Text>
                   </View>
                   <View style={{ flex: 1 }} />
-                  <Text style={st.evTime}>{e.time}</Text>
+                  <Text style={st.evTime}>{event.time}</Text>
                 </Row>
                 {unread && <View style={st.unreadDot} />}
-                <Text style={st.evTitle} numberOfLines={1}>{e.title}</Text>
+                <Text style={st.evTitle}>{event.title}</Text>
                 {failLoad ? (
                   <View style={[st.preview, st.previewFail]}>
                     <Icon name="photo" size={22} color={colors.textTertiary} sw={1.6} />
@@ -144,62 +161,99 @@ const st = StyleSheet.create({
   nav: { paddingHorizontal: 16, height: 50, gap: 10 },
   navSlot: { width: 60, height: '100%', justifyContent: 'center' },
   iconbtn: {
-    width: 34, height: 34, borderRadius: 17,
-    // 灰底页上用白色圆底,否则与背景同色不可见
-    backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   navTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: colors.textPrimary },
-
-  dayRow: { paddingHorizontal: 20, marginTop: 12, height: 32 },
+  dayRow: { paddingHorizontal: 20, marginTop: 18, height: 32 },
+  dateNav: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  dateNavDisabled: { opacity: 0.3 },
   dayNum: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, color: colors.textPrimary },
   dayMon: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
   allReadPill: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    height: 32, paddingHorizontal: 10, borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 32,
+    paddingHorizontal: 10,
+    borderRadius: 16,
     backgroundColor: colors.surface,
   },
   allReadCheck: {
-    width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: colors.textTertiary,
-    alignItems: 'center', justifyContent: 'center',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    borderWidth: 1.5,
+    borderColor: colors.textTertiary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   allReadTxt: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
-
   segWrap: {
-    marginHorizontal: 20, marginTop: 16, height: 42, borderRadius: 21,
-    backgroundColor: '#F9F9FA', flexDirection: 'row', padding: 4,
+    marginHorizontal: 20,
+    marginTop: 16,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#F9F9FA',
+    flexDirection: 'row',
+    padding: 4,
   },
   segBtn: { flex: 1, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   segBtnOn: { backgroundColor: colors.surface, ...shadow.sm },
   segTxt: { fontSize: 15, fontWeight: '500', color: colors.textTertiary },
   segTxtOn: { color: colors.textPrimary, fontWeight: '600' },
-
   eventCard: {
-    marginHorizontal: 20, marginTop: 16, borderRadius: 20,
-    backgroundColor: colors.surface, padding: 12, paddingTop: 12, paddingBottom: 16,
+    marginHorizontal: 20,
+    marginTop: 12,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    padding: 12,
+    paddingBottom: 16,
   },
   event: { alignItems: 'flex-start', marginBottom: 38 },
-  // 连接线(挂在事件行上):上端贴住图标底部(48),下端止于下一图标上方 12
   connector: {
-    position: 'absolute', left: 23, top: 48, bottom: -26, width: 2,
-    borderRadius: 1, backgroundColor: colors.border,
+    position: 'absolute',
+    left: 23,
+    top: 48,
+    bottom: -26,
+    width: 2,
+    borderRadius: 1,
+    backgroundColor: colors.border,
   },
-
+  eventContent: { flex: 1, marginLeft: 16, minWidth: 0 },
   tag: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    height: 24, paddingHorizontal: 10, borderRadius: 12, marginTop: -2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 24,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    marginTop: -2,
   },
   tagInfo: { backgroundColor: colors.successSoft },
   tagCritical: { backgroundColor: colors.warningSoft },
   tagDot: { width: 6, height: 6, borderRadius: 3 },
   tagTxt: { fontSize: 13, fontWeight: '600' },
-  evTime: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
+  evTime: { fontSize: 13, fontWeight: '500', color: colors.textTertiary },
   unreadDot: {
-    position: 'absolute', right: 0, top: 24,
-    width: 8, height: 8, borderRadius: 4, backgroundColor: colors.critical,
+    position: 'absolute',
+    right: 0,
+    top: 24,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.critical,
   },
-  evTitle: { marginTop: 8, fontSize: 18, fontWeight: '700', color: colors.textPrimary },
+  evTitle: { marginTop: 8, fontSize: 17, fontWeight: '700', color: colors.textPrimary },
   preview: {
-    marginTop: 6, height: 168, borderRadius: 12, overflow: 'hidden',
+    marginTop: 6,
+    height: 168,
+    borderRadius: 12,
+    overflow: 'hidden',
     backgroundColor: colors.bgSecondary,
   },
   previewFail: { alignItems: 'center', justifyContent: 'center', gap: 8 },

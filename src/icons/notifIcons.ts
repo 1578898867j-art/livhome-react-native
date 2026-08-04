@@ -18,5 +18,7 @@ export const NT_DOWNLOAD =
   '<svg viewBox="0 0 28 28" fill="none"><path d="M17.5 14L14 17.5L10.5 14M14 17.5L14 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.75 10.5L7.5 10.5C5.29086 10.5 3.5 12.2909 3.5 14.5L3.5 20.5C3.5 22.7091 5.29086 24.5 7.5 24.5L20.5 24.5C22.7091 24.5 24.5 22.7091 24.5 20.5L24.5 14.5C24.5 12.2909 22.7091 10.5 20.5 10.5L19.25 10.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 // Icon Tile-2.svg — 划线仪表(Device Offline)
-export const NT_OFFLINE =
+export const NT_OBSTRUCTED =
   '<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="16" fill="#F2F2F2"/><path d="M17.5 34.2915H30.5" stroke="#191B1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 31.0415V34.2915" stroke="#191B1F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.5518 20.5918C19.3305 21.1431 19.208 21.7447 19.208 22.375C19.2082 25.0211 21.3539 27.1658 24 27.166C24.709 27.166 25.3809 27.0097 25.9863 26.7334L28.9043 29.5186C27.5093 30.4781 25.821 31.042 24 31.042C19.2135 31.042 15.333 27.1615 15.333 22.375C15.333 20.6982 15.8102 19.1332 16.6348 17.8066L19.5518 20.5918ZM24 13.708C28.7865 13.708 32.667 17.5885 32.667 22.375C32.667 24.6169 31.815 26.6595 30.418 28.1982L27.6123 25.5195C28.3455 24.6779 28.7909 23.579 28.791 22.375C28.7908 19.7289 26.6461 17.5832 24 17.583C22.7159 17.5831 21.5499 18.0886 20.6895 18.9111L17.8838 16.2334C19.4512 14.6724 21.6132 13.708 24 13.708Z" fill="#191B1F"/><path d="M13 14L35 35" stroke="#191B1F" stroke-width="2" stroke-linecap="round"/></svg>';
+
+export const NT_OFFLINE = NT_OBSTRUCTED;
