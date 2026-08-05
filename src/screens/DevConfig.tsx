@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Screen, Header, Eyebrow, Card, Row, Tap, SettingRow, ToggleRow } from '../components/kit';
+import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 import { CAMGLYPH } from '../icons/protoIcons';
@@ -12,6 +13,7 @@ import {
   useNightVisionMode,
   useSmartTrackingEnabled,
 } from '../features/devices/deviceSettingsStore';
+import { useDeviceAvailability } from '../features/devices/useDeviceAvailability';
 import {
   SettingsOptionDoneButton,
   SettingsOptionRow,
@@ -69,8 +71,18 @@ export default function DevConfig({ navigation }: AppScreenProps) {
   const [antiFlicker, setAntiFlicker] = useState('50');
   const [volume, setVolume] = useState(10);
   const [sheet, setSheet] = useState<SheetKey>(null);
+  const [offlineDialog, setOfflineDialog] = useState(false);
+  const { device, isOffline } = useDeviceAvailability();
 
   const closeSheet = () => setSheet(null);
+  const runWhenOnline = (action: () => void) => {
+    if (isOffline) {
+      setSheet(null);
+      setOfflineDialog(true);
+      return;
+    }
+    action();
+  };
 
   return (
     <Screen
@@ -83,7 +95,7 @@ export default function DevConfig({ navigation }: AppScreenProps) {
           icon="globe"
           name="Device Time Zone"
           value={tzGmt}
-          onPress={() => navigation.navigate('timezone')}
+          onPress={() => runWhenOnline(() => navigation.navigate('timezone'))}
           last
         />
       </Card>
@@ -94,13 +106,13 @@ export default function DevConfig({ navigation }: AppScreenProps) {
           icon="power"
           name="Device off Time"
           value={offTime}
-          onPress={() => navigation.navigate('shutdown-list')}
+          onPress={() => runWhenOnline(() => navigation.navigate('shutdown-list'))}
         />
         <SettingRow
           icon="timer"
           name="Idle Time"
           value={IDLE_LABELS[idleTime]}
-          onPress={() => setSheet('idle')}
+          onPress={() => runWhenOnline(() => setSheet('idle'))}
           last
         />
       </Card>
@@ -111,26 +123,36 @@ export default function DevConfig({ navigation }: AppScreenProps) {
           icon="flip"
           name="Image Flip 180°"
           value={imgFlip === 'flipped' ? 'Flipped' : 'Normal'}
-          onPress={() => setSheet('flip')}
+          onPress={() => runWhenOnline(() => setSheet('flip'))}
         />
-        <SettingRow icon="moon" name="Night Vision" value={NV_LABELS[nvMode]} onPress={() => setSheet('nv')} />
+        <SettingRow
+          icon="moon"
+          name="Night Vision"
+          value={NV_LABELS[nvMode]}
+          onPress={() => runWhenOnline(() => setSheet('nv'))}
+        />
         <SettingRow
           icon="bulb"
           name="Anti-Flicker Setting"
           value={`${antiFlicker}Hz`}
-          onPress={() => setSheet('af')}
+          onPress={() => runWhenOnline(() => setSheet('af'))}
           last
         />
       </Card>
 
       <Eyebrow>Sound and tracking</Eyebrow>
       <Card style={st.card}>
-        <SettingRow icon="volume" name="Volume" value={`${volume}`} onPress={() => setSheet('vol')} />
+        <SettingRow
+          icon="volume"
+          name="Volume"
+          value={`${volume}`}
+          onPress={() => runWhenOnline(() => setSheet('vol'))}
+        />
         <ToggleRow
           name="Smart Tracking"
           sub="The camera will automatically follow moving targets"
           on={smartTrack}
-          onToggle={() => setSmartTrackingEnabled(!smartTrack)}
+          onToggle={() => runWhenOnline(() => setSmartTrackingEnabled(!smartTrack))}
           last
         />
       </Card>
@@ -149,7 +171,7 @@ export default function DevConfig({ navigation }: AppScreenProps) {
             key={v}
             label={`${v} minutes`}
             selected={idleTime === v}
-            onPress={() => setIdleTime(v)}
+            onPress={() => runWhenOnline(() => setIdleTime(v))}
           />
         ))}
         <SettingsOptionDoneButton onPress={closeSheet} />
@@ -163,12 +185,17 @@ export default function DevConfig({ navigation }: AppScreenProps) {
         onClose={closeSheet}
       >
         <Row style={{ gap: 12, alignItems: 'stretch', marginTop: 16 }}>
-          <FlipCard label="Normal" rot={0} on={imgFlip === 'normal'} onPress={() => setImgFlip('normal')} />
+          <FlipCard
+            label="Normal"
+            rot={0}
+            on={imgFlip === 'normal'}
+            onPress={() => runWhenOnline(() => setImgFlip('normal'))}
+          />
           <FlipCard
             label="Flipped 180°"
             rot={180}
             on={imgFlip === 'flipped'}
-            onPress={() => setImgFlip('flipped')}
+            onPress={() => runWhenOnline(() => setImgFlip('flipped'))}
           />
         </Row>
         <SettingsOptionDoneButton onPress={closeSheet} />
@@ -185,19 +212,19 @@ export default function DevConfig({ navigation }: AppScreenProps) {
           label="Auto"
           sub="Automatically switch night vision mode based on ambient light."
           selected={nvMode === 'auto'}
-          onPress={() => setNightVisionMode('auto')}
+          onPress={() => runWhenOnline(() => setNightVisionMode('auto'))}
         />
         <SettingsOptionRow
           label="On"
           sub="Always on night vision."
           selected={nvMode === 'on'}
-          onPress={() => setNightVisionMode('on')}
+          onPress={() => runWhenOnline(() => setNightVisionMode('on'))}
         />
         <SettingsOptionRow
           label="Off"
           sub="Turn off night vision."
           selected={nvMode === 'off'}
-          onPress={() => setNightVisionMode('off')}
+          onPress={() => runWhenOnline(() => setNightVisionMode('off'))}
         />
         <SettingsOptionDoneButton onPress={closeSheet} />
       </SettingsOptionSheet>
@@ -213,13 +240,13 @@ export default function DevConfig({ navigation }: AppScreenProps) {
           label="50Hz"
           sub="Suitable for most regions; try this option first if the picture flickers."
           selected={antiFlicker === '50'}
-          onPress={() => setAntiFlicker('50')}
+          onPress={() => runWhenOnline(() => setAntiFlicker('50'))}
         />
         <SettingsOptionRow
           label="60Hz"
           sub="If flickering persists after switching to 50Hz, try this option."
           selected={antiFlicker === '60'}
-          onPress={() => setAntiFlicker('60')}
+          onPress={() => runWhenOnline(() => setAntiFlicker('60'))}
         />
         <SettingsOptionDoneButton onPress={closeSheet} />
       </SettingsOptionSheet>
@@ -241,7 +268,7 @@ export default function DevConfig({ navigation }: AppScreenProps) {
               return (
                 <Tap
                   key={n}
-                  onPress={() => setVolume(n)}
+                  onPress={() => runWhenOnline(() => setVolume(n))}
                   style={[st.volCell, on && { backgroundColor: colors.brand }]}
                 >
                   <Text style={[st.volCellTxt, on && { color: '#fff' }]}>{n}</Text>
@@ -252,6 +279,12 @@ export default function DevConfig({ navigation }: AppScreenProps) {
         ))}
         <SettingsOptionDoneButton onPress={closeSheet} />
       </SettingsOptionSheet>
+
+      <DeviceOfflineDialog
+        visible={offlineDialog}
+        deviceName={device?.name}
+        onClose={() => setOfflineDialog(false)}
+      />
     </Screen>
   );
 }

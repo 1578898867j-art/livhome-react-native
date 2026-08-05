@@ -7,19 +7,37 @@ import { Icon } from '../components/Icon';
 import { StateView, Spinner } from '../components/states';
 import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
 import { useDemoFlags } from '../features/app/demoStore';
+import { selectDevice, useDeviceList } from '../features/devices/deviceListStore';
 import { requestTalk } from '../features/devices/talkIntent';
 import { colors } from '../theme';
 import { CAMAVATAR } from '../assets/images';
 
 type Prev = { tag: string; label: string };
 
+const DEVICE_PREVIEWS: Record<string, Prev> = {
+  'living-room': { tag: 'Person · sofa', label: '14:22' },
+  backyard: { tag: 'No motion', label: '14:20' },
+};
+
+const NEW_DEVICE_PREVIEW: Prev = { tag: 'No motion', label: 'Just now' };
+
 export default function DevHome({ navigation }: AppScreenProps) {
   const go = (id: StackRouteName) => () => navigateTo(navigation, id);
+  const openDevice = (deviceId: string, route: StackRouteName, beforeNavigate?: () => void) => () => {
+    selectDevice(deviceId);
+    beforeNavigate?.();
+    navigateTo(navigation, route);
+  };
 
   // 概率性状态:设备列表加载失败 / 无设备空态
   const { failLoad, noDevices } = useDemoFlags();
+  const devices = useDeviceList();
   const [retrying, setRetrying] = useState(false);
   const [offlineDialogOpen, setOfflineDialogOpen] = useState(false);
+  const showOfflineDialog = (deviceId: string) => {
+    selectDevice(deviceId);
+    setOfflineDialogOpen(true);
+  };
   const retryLoad = () => {
     setRetrying(true);
     setTimeout(() => setRetrying(false), 800);
@@ -46,9 +64,19 @@ export default function DevHome({ navigation }: AppScreenProps) {
   );
 
   /* ---- devCard(name, status, online:true, prev) ---- */
-  const DevCard = ({ name, status, prev }: { name: string; status: string; prev: Prev }) => (
+  const DevCard = ({
+    id,
+    name,
+    status,
+    prev,
+  }: {
+    id: string;
+    name: string;
+    status: string;
+    prev: Prev;
+  }) => (
     <View style={st.card}>
-      <Tap style={st.cardHead} onPress={go('dev-detail')}>
+      <Tap style={st.cardHead} onPress={openDevice(id, 'dev-detail')}>
         <View style={st.avatar}>
           <Image source={{ uri: CAMAVATAR }} resizeMode="contain" style={st.avatarImg} />
         </View>
@@ -64,25 +92,21 @@ export default function DevHome({ navigation }: AppScreenProps) {
       <CamPreview tag={prev.tag} label={prev.label} />
       <Row style={{ padding: 12, paddingHorizontal: 14, gap: 8 }}>
         <Pressable
-          onPress={go('dev-detail')}
+          onPress={openDevice(id, 'dev-detail')}
           style={({ pressed }) => [st.actBtn, st.actBtnDark, pressed && { opacity: 0.85 }]}
         >
           <Icon name="play" size={19} color="#fff" sw={1.6} />
           <Text style={[st.actText, { color: colors.textInverse }]}>Live view</Text>
         </Pressable>
         <Pressable
-          onPress={() => {
-            // 进详情页并自动开启对讲
-            requestTalk();
-            navigateTo(navigation, 'dev-detail');
-          }}
+          onPress={openDevice(id, 'dev-detail', requestTalk)}
           style={({ pressed }) => [st.actBtn, st.actBtnOutline, pressed && { opacity: 0.85 }]}
         >
           <Icon name="mic" size={18} color={colors.textPrimary} />
           <Text style={[st.actText, { color: colors.textPrimary }]}>Talk</Text>
         </Pressable>
         <Pressable
-          onPress={go('dev-messages')}
+          onPress={openDevice(id, 'dev-messages')}
           style={({ pressed }) => [st.actBtn, st.actBtnOutline, pressed && { opacity: 0.85 }]}
         >
           <Icon name="bell" size={16} color={colors.textPrimary} />
@@ -93,12 +117,12 @@ export default function DevHome({ navigation }: AppScreenProps) {
   );
 
   /* ---- devCardOffline(name) ---- */
-  const DevCardOffline = ({ name }: { name: string }) => (
+  const DevCardOffline = ({ id, name }: { id: string; name: string }) => (
     <View style={st.card}>
       <Row style={st.cardHeadRow}>
         <Pressable
           style={({ pressed }) => [st.offlineHeadEntry, pressed && { opacity: 0.62 }]}
-          onPress={() => setOfflineDialogOpen(true)}
+          onPress={() => showOfflineDialog(id)}
         >
           <View style={st.avatar}>
             <Image source={{ uri: CAMAVATAR }} resizeMode="contain" style={[st.avatarImg, { opacity: 0.55 }]} />
@@ -113,15 +137,16 @@ export default function DevHome({ navigation }: AppScreenProps) {
         </Pressable>
         <Tap
           style={st.gearBtn}
-          onPress={() => navigation.navigate('dev-settings', { deviceOffline: true })}
+          onPress={openDevice(id, 'dev-settings')}
           hitSlop={8}
+          accessibilityLabel={`Open settings for ${name}`}
         >
           <Icon name="gear" size={16} color={colors.textTertiary} />
         </Tap>
       </Row>
       <Pressable
         style={({ pressed }) => [st.offlinePlaceholder, pressed && { opacity: 0.7 }]}
-        onPress={() => setOfflineDialogOpen(true)}
+        onPress={() => showOfflineDialog(id)}
       >
         <Icon name="cloudOff" size={34} color={colors.textTertiary} sw={1.6} />
         <Text style={st.offlineText}>The device is offline</Text>
@@ -130,7 +155,7 @@ export default function DevHome({ navigation }: AppScreenProps) {
         {/* 静态按钮:点击无响应 */}
         <Pressable
           style={({ pressed }) => [st.troubleBtn, pressed && { opacity: 0.7 }]}
-          onPress={() => setOfflineDialogOpen(true)}
+          onPress={() => showOfflineDialog(id)}
         >
           <Text style={st.troubleText}>Please check the device</Text>
         </Pressable>
@@ -171,7 +196,7 @@ export default function DevHome({ navigation }: AppScreenProps) {
             style={{ paddingTop: 90 }}
           />
         )
-      ) : noDevices ? (
+      ) : noDevices || devices.length === 0 ? (
         <StateView
           variant="brand"
           icon="camera"
@@ -183,9 +208,19 @@ export default function DevHome({ navigation }: AppScreenProps) {
         />
       ) : (
         <View style={{ paddingHorizontal: 18, gap: 16 }}>
-          <DevCard name="Living Room" status="Online" prev={{ tag: 'Person · sofa', label: '14:22' }} />
-          <DevCard name="Backyard" status="Online" prev={{ tag: 'No motion', label: '14:20' }} />
-          <DevCardOffline name="Bedroom Cam" />
+          {devices.map((device) =>
+            device.status === 'online' ? (
+              <DevCard
+                key={device.id}
+                id={device.id}
+                name={device.name}
+                status="Online"
+                prev={DEVICE_PREVIEWS[device.id] ?? NEW_DEVICE_PREVIEW}
+              />
+            ) : (
+              <DevCardOffline key={device.id} id={device.id} name={device.name} />
+            ),
+          )}
         </View>
       )}
       <DeviceOfflineDialog visible={offlineDialogOpen} onClose={() => setOfflineDialogOpen(false)} />

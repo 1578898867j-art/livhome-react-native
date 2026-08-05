@@ -6,6 +6,10 @@ import { colors } from '../theme';
 
 // 原型 msg-cal 日历弹层(dev-detail 消息页与 SD 回放共用;calTarget=msg/pb)
 export const CAL_TODAY = { y: 2026, m: 3, d: 24 };
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
 export default function CalendarModal({
   visible,
@@ -60,6 +64,10 @@ export default function CalendarModal({
         key={d}
         style={[st.cell, isFut && { opacity: 0.4 }]}
         onPress={isFut ? undefined : () => setSel({ y: calY, m: calM, d })}
+        disabled={isFut}
+        accessibilityRole="button"
+        accessibilityLabel={`${MONTH_NAMES[calM]} ${d}, ${calY}`}
+        accessibilityState={{ selected: onSel, disabled: isFut }}
       >
         <View
           style={[
@@ -86,13 +94,20 @@ export default function CalendarModal({
       <Pressable style={st.ovl} onPress={onClose}>
         <Pressable style={st.card} onPress={(e) => e.stopPropagation()}>
           <Row style={{ marginBottom: 14 }}>
-            <Tap style={st.navBtn} onPress={prevM}>
+            <Tap style={st.navBtn} onPress={prevM} accessibilityRole="button" accessibilityLabel="Previous month">
               <Icon name="chevL" size={20} color={colors.textSecondary} sw={2} />
             </Tap>
             <Text style={st.mLabel}>
               {calY}-{String(calM + 1).padStart(2, '0')}
             </Text>
-            <Tap style={[st.navBtn, nextDisabled && { opacity: 0.3 }]} onPress={nextDisabled ? undefined : nextM}>
+            <Tap
+              style={[st.navBtn, nextDisabled && { opacity: 0.3 }]}
+              onPress={nextDisabled ? undefined : nextM}
+              disabled={nextDisabled}
+              accessibilityRole="button"
+              accessibilityLabel="Next month"
+              accessibilityState={{ disabled: nextDisabled }}
+            >
               <Icon name="chevR" size={20} color={colors.textSecondary} sw={2} />
             </Tap>
           </Row>

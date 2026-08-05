@@ -32,7 +32,7 @@ const GROUPS: { title: string; rows: RowDef[] }[] = [
     title: 'Live view',
     rows: [
       { key: 'failStream', name: 'Stream fails', sub: 'Live view / playback / album media error + retry' },
-      { key: 'deviceOffline', name: 'Device offline', sub: 'Device detail player shows offline placeholder' },
+      { key: 'deviceOffline', name: 'Device offline', sub: 'Offline player · device controls and settings locked' },
       { key: 'noDevices', name: 'No devices', sub: 'Device list empty state with add guide' },
     ],
   },

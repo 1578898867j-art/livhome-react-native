@@ -15,6 +15,7 @@ import { SvgXml } from 'react-native-svg';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, Tap, Row, Card } from '../components/kit';
+import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
 import { Icon } from '../components/Icon';
 import { DarkPlayerState } from '../components/states';
 import { PermissionDialog } from '../components/PermissionDialog';
@@ -34,6 +35,7 @@ import {
 } from '../features/notifications/demoEvents';
 import { showToast } from '../features/app/toastStore';
 import { consumeTalkIntent } from '../features/devices/talkIntent';
+import { getDeviceIsOffline, useDeviceAvailability } from '../features/devices/useDeviceAvailability';
 import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS } from '../icons/protoSets';
 import { ZOOMICON, SELICON, SELICON2 } from '../icons/protoIcons';
 import { colors } from '../theme';
@@ -187,6 +189,7 @@ function TalkWaveform({ level, fullscreen = false }: { level: number; fullscreen
 
 export default function DevDetail({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
+  const { device } = useDeviceAvailability();
   const {
     activePreset,
     addPreset,
@@ -314,6 +317,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   const [pState, setPState] = useState<'loading' | 'ready' | 'error' | 'offline'>('loading');
   const [permDlg, setPermDlg] = useState<PermType | null>(null);
   const [fsError, setFsError] = useState<string | null>(null);
+  const [offlineDialog, setOfflineDialog] = useState(false);
   const pTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fsErrTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -323,7 +327,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     if (pTimer.current) clearTimeout(pTimer.current);
     pTimer.current = setTimeout(() => {
       const f = getDemoFlags();
-      setPState(f.deviceOffline ? 'offline' : f.failStream ? 'error' : 'ready');
+      setPState(getDeviceIsOffline() ? 'offline' : f.failStream ? 'error' : 'ready');
     }, 1200);
   }, []);
 
@@ -354,6 +358,16 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     setFsError(text);
     if (fsErrTimer.current) clearTimeout(fsErrTimer.current);
     fsErrTimer.current = setTimeout(() => setFsError(null), 2400);
+  }, []);
+
+  const runWhenOnline = useCallback((action: () => void) => {
+    if (getDeviceIsOffline()) {
+      setNightVisionOpen(false);
+      setPresetPopup(false);
+      setOfflineDialog(true);
+      return;
+    }
+    action();
   }, []);
 
   // 保存截图/录像:相册权限被拒 → 引导弹窗;failOps → 失败提示;否则成功提示条
@@ -422,8 +436,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   // 首页 Talk 进入时使用同一套真实麦克风权限和音量监听逻辑。
   useFocusEffect(
     useCallback(() => {
-      if (consumeTalkIntent()) void enableTalk(false);
-    }, [enableTalk]),
+      if (consumeTalkIntent()) runWhenOnline(() => void enableTalk(false));
+    }, [enableTalk, runWhenOnline]),
   );
 
   // 离开直播页时释放录音资源，避免麦克风在后台继续占用。
@@ -592,33 +606,39 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             </View>
           )}
           <View
-            pointerEvents={pState === 'ready' ? 'auto' : 'none'}
+            pointerEvents={pState === 'ready' || pState === 'offline' ? 'auto' : 'none'}
             style={pState !== 'ready' ? { opacity: 0.4 } : undefined}
           >
             <Row style={{ gap: 8, padding: 12, backgroundColor: colors.surface }}>
-              <PhotoBtn icon="speaker" on={ctl.ctlSpk} onPress={() => toggleCtl('ctlSpk')} />
-              <PhotoBtn icon="mic" on={ctl.ctlMic} onPress={tryTalk} />
+              <PhotoBtn
+                icon="speaker"
+                on={ctl.ctlSpk}
+                onPress={() => runWhenOnline(() => toggleCtl('ctlSpk'))}
+              />
+              <PhotoBtn icon="mic" on={ctl.ctlMic} onPress={() => runWhenOnline(() => tryTalk())} />
               <PhotoBtn
                 icon="record"
                 on={ctl.ctlRec}
-                onPress={() => {
-                  if (ctl.ctlRec) {
-                    trySave('video');
+                onPress={() =>
+                  runWhenOnline(() => {
+                    if (ctl.ctlRec) {
+                      trySave('video');
+                      toggleCtl('ctlRec');
+                      return;
+                    }
+                    if (getDemoFlags().permsDenied) {
+                      setPermDlg('photos');
+                      return;
+                    }
                     toggleCtl('ctlRec');
-                    return;
-                  }
-                  if (getDemoFlags().permsDenied) {
-                    setPermDlg('photos');
-                    return;
-                  }
-                  toggleCtl('ctlRec');
-                }}
+                  })
+                }
               />
               <PhotoBtn
                 icon="camera"
                 on={snapFlash}
                 unavailable={ctl.ctlRec}
-                onPress={() => snap()}
+                onPress={() => runWhenOnline(() => snap())}
                 accessibilityLabel="Take snapshot"
               />
             </Row>
@@ -636,22 +656,27 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             onPresets={() => setCtrlView('presets')}
             onBack={() => setCtrlView('pad')}
             onAdd={() => {
-              // 预设位上限 6 个
-              if (presets.length >= 6) {
-                showToast('You can add up to 6 preset positions.', 'info');
-                return;
-              }
-              addPreset();
+              runWhenOnline(() => {
+                // 预设位上限 6 个
+                if (presets.length >= 6) {
+                  showToast('You can add up to 6 preset positions.', 'info');
+                  return;
+                }
+                addPreset();
+              });
             }}
-            onDelete={removePreset}
-            onView={setActivePreset}
-            onReset={() => setResetting((active) => !active)}
+            onDelete={(index) => runWhenOnline(() => removePreset(index))}
+            onView={(index) => runWhenOnline(() => setActivePreset(index))}
+            onMove={() => runWhenOnline(() => {})}
+            onReset={() => runWhenOnline(() => setResetting((active) => !active))}
             onCruise={() => {
-              if (presets.length < 2) {
-                setPresetPopup(true);
-                return;
-              }
-              setCruising((active) => !active);
+              runWhenOnline(() => {
+                if (presets.length < 2) {
+                  setPresetPopup(true);
+                  return;
+                }
+                setCruising((active) => !active);
+              });
             }}
           />
         )}
@@ -660,9 +685,9 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             tilt={panelTilt}
             nightVisionMode={nightVisionMode}
             smartTrackingEnabled={smartTrackingEnabled}
-            onNightVision={() => setNightVisionOpen(true)}
-            onSmartTracking={() => setSmartTrackingEnabled(!smartTrackingEnabled)}
-            onToggle={togglePanelTilt}
+            onNightVision={() => runWhenOnline(() => setNightVisionOpen(true))}
+            onSmartTracking={() => runWhenOnline(() => setSmartTrackingEnabled(!smartTrackingEnabled))}
+            onToggle={(key) => runWhenOnline(() => togglePanelTilt(key))}
           />
         )}
         {tab === 'messages' && (
@@ -776,19 +801,19 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           label="Auto"
           sub="Automatically switch night vision mode based on ambient light."
           selected={nightVisionMode === 'auto'}
-          onPress={() => setNightVisionMode('auto')}
+          onPress={() => runWhenOnline(() => setNightVisionMode('auto'))}
         />
         <SettingsOptionRow
           label="On"
           sub="Always on night vision."
           selected={nightVisionMode === 'on'}
-          onPress={() => setNightVisionMode('on')}
+          onPress={() => runWhenOnline(() => setNightVisionMode('on'))}
         />
         <SettingsOptionRow
           label="Off"
           sub="Turn off night vision."
           selected={nightVisionMode === 'off'}
-          onPress={() => setNightVisionMode('off')}
+          onPress={() => runWhenOnline(() => setNightVisionMode('off'))}
         />
         <SettingsOptionDoneButton onPress={() => setNightVisionOpen(false)} />
       </SettingsOptionSheet>
@@ -958,6 +983,15 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         />
       )}
 
+      {!fullscreen && (
+        <DeviceOfflineDialog
+          visible={offlineDialog}
+          deviceName={device?.name}
+          onClose={() => setOfflineDialog(false)}
+        />
+      )}
+
+      {/* 巡航前置条件弹窗(原型 preset-popup):预置位不足 2 个 */}
       <Modal visible={presetPopup} transparent animationType="fade" onRequestClose={() => setPresetPopup(false)}>
         <Pressable style={st.ovlCenter} onPress={() => setPresetPopup(false)}>
           <Pressable
@@ -1127,6 +1161,7 @@ function ControlsPanel({
   onAdd,
   onDelete,
   onView,
+  onMove,
   onReset,
   onCruise,
 }: {
@@ -1140,6 +1175,7 @@ function ControlsPanel({
   onAdd: () => void;
   onDelete: (i: number) => void;
   onView: (i: number) => void;
+  onMove: () => void;
   onReset: () => void;
   onCruise: () => void;
 }) {
@@ -1182,19 +1218,19 @@ function ControlsPanel({
   return (
     <View style={{ padding: 18, paddingTop: 20, alignItems: 'center' }}>
       <View style={st.dpad}>
-        <Tap style={[st.triWrap, { top: 18, left: '50%', marginLeft: -9 }]} onPress={() => {}} hitSlop={8}>
+        <Tap style={[st.triWrap, { top: 18, left: '50%', marginLeft: -9 }]} onPress={onMove} hitSlop={8}>
           <Tri dir="up" />
         </Tap>
-        <Tap style={[st.triWrap, { bottom: 18, left: '50%', marginLeft: -9 }]} onPress={() => {}} hitSlop={8}>
+        <Tap style={[st.triWrap, { bottom: 18, left: '50%', marginLeft: -9 }]} onPress={onMove} hitSlop={8}>
           <Tri dir="down" />
         </Tap>
-        <Tap style={[st.triWrap, { left: 18, top: '50%', marginTop: -8 }]} onPress={() => {}} hitSlop={8}>
+        <Tap style={[st.triWrap, { left: 18, top: '50%', marginTop: -8 }]} onPress={onMove} hitSlop={8}>
           <Tri dir="left" />
         </Tap>
-        <Tap style={[st.triWrap, { right: 18, top: '50%', marginTop: -8 }]} onPress={() => {}} hitSlop={8}>
+        <Tap style={[st.triWrap, { right: 18, top: '50%', marginTop: -8 }]} onPress={onMove} hitSlop={8}>
           <Tri dir="right" />
         </Tap>
-        <Tap style={st.dpadHome} onPress={() => {}} hitSlop={8}>
+        <Tap style={st.dpadHome} onPress={onMove} hitSlop={8}>
           <View />
         </Tap>
       </View>

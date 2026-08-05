@@ -10,7 +10,15 @@ const POWER_SOLUTION =
 const WIFI_SOLUTION =
   '<svg viewBox="0 0 260 196" fill="none"><g stroke="#1A1A1A" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round"><circle cx="130" cy="99" r="78" stroke-dasharray="4 5"/><path d="M91 127h78l-9-24h-60z"/><path d="M100 103l6-57m48 57l-6-57"/><path d="M102 128v8m17-8v8m17-8v8m17-8v8m17-8v8m17-8v8"/><circle cx="113" cy="115" r="2" fill="#1A1A1A"/><circle cx="121" cy="115" r="2" fill="#1A1A1A"/><circle cx="129" cy="115" r="2" fill="#1A1A1A"/><path d="M130 49v10m-9-7 9-9 9 9m27 9c6-6 15-6 21 0m-26 5c8-8 20-8 28 0m-19 4c3-3 7-3 10 0"/><circle cx="58" cy="154" r="20"/><path d="M58 143v22m-7-7 7 7 7-7"/><circle cx="201" cy="154" r="20"/><circle cx="201" cy="154" r="9"/><circle cx="201" cy="154" r="3"/><path d="M185 145c-4 6-4 13 0 19m32-19c4 6 4 13 0 19"/><path d="M70 158c8 0 11 7 16 7m-22-10c-7 0-10 3-10 9m4-15c-7 0-11 5-11 12"/></g></svg>';
 
-export function DeviceOfflineDialog({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export function DeviceOfflineDialog({
+  visible,
+  deviceName,
+  onClose,
+}: {
+  visible: boolean;
+  deviceName?: string;
+  onClose: () => void;
+}) {
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <View style={st.overlay}>
@@ -22,7 +30,7 @@ export function DeviceOfflineDialog({ visible, onClose }: { visible: boolean; on
         />
         <View style={st.sheet} accessibilityViewIsModal>
           <View style={st.content}>
-            <Text style={st.title}>Device offline</Text>
+            <Text style={st.title}>{deviceName ? `${deviceName} is offline` : 'Device offline'}</Text>
             <Text style={st.solution}>Solution:</Text>
             <Text style={st.step}>1. Please check if the device plug is properly connected and ensure it is powered on.</Text>
             <View style={st.illustration} accessible={false}>

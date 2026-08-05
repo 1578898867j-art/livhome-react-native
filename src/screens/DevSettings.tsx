@@ -4,10 +4,11 @@ import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
 import { Screen, Tap, Row, Card, Header, Eyebrow, SettingRow } from '../components/kit';
-import { Icon } from '../components/Icon';
 import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
-import { getDemoFlags, useDemoFlags } from '../features/app/demoStore';
+import { Icon } from '../components/Icon';
+import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
+import { useDeviceAvailability } from '../features/devices/useDeviceAvailability';
 import { colors } from '../theme';
 
 type Overlay = null | 'restart' | 'delete';
@@ -15,15 +16,17 @@ type Overlay = null | 'restart' | 'delete';
 export default function DevSettings({ navigation }: AppScreenProps) {
   const route = useRoute<RouteProp<AppParamList, 'dev-settings'>>();
   const [overlay, setOverlay] = useState<Overlay>(null);
-  const [offlineDialogOpen, setOfflineDialogOpen] = useState(false);
-  const { deviceOffline: demoDeviceOffline } = useDemoFlags();
-  const deviceOffline = route.params?.deviceOffline ?? demoDeviceOffline;
+  const [offlineDialog, setOfflineDialog] = useState(false);
+  const { device, isOffline: selectedDeviceOffline } = useDeviceAvailability();
+  const isOffline = route.params?.deviceOffline === true || selectedDeviceOffline;
 
   const closeOverlay = () => setOverlay(null);
-  const guardOffline = () => {
-    if (!deviceOffline) return false;
-    setOfflineDialogOpen(true);
-    return true;
+  const runWhenOnline = (action: () => void) => {
+    if (isOffline) {
+      setOfflineDialog(true);
+      return;
+    }
+    action();
   };
   const onRestartConfirm = () => {
     setOverlay(null);
@@ -59,14 +62,27 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       <Eyebrow>Basic settings</Eyebrow>
       <Card style={st.card}>
         <SettingRow icon="info" name="Device Details" onPress={() => navigation.navigate('dev-info')} />
-        <SettingRow icon="sliders" name="Device Settings" onPress={() => !guardOffline() && navigation.navigate('dev-config')} />
-        <SettingRow icon="bell" name="Notifications" onPress={() => !guardOffline() && navigation.navigate('notif-settings')} />
-        <SettingRow icon="warn" name="Alert Settings" onPress={() => !guardOffline() && navigation.navigate('alert-settings')} last />
+        <SettingRow
+          icon="sliders"
+          name="Device Settings"
+          onPress={() => runWhenOnline(() => navigation.navigate('dev-config'))}
+        />
+        <SettingRow
+          icon="bell"
+          name="Notifications"
+          onPress={() => runWhenOnline(() => navigation.navigate('notif-settings'))}
+        />
+        <SettingRow
+          icon="warn"
+          name="Alert Settings"
+          onPress={() => runWhenOnline(() => navigation.navigate('alert-settings'))}
+          last
+        />
       </Card>
 
       <Eyebrow>Smart</Eyebrow>
       <Card style={st.smartCard}>
-        <Tap style={st.smartRow} onPress={() => !guardOffline() && navigation.navigate('geofence')}>
+        <Tap style={st.smartRow} onPress={() => runWhenOnline(() => navigation.navigate('geofence'))}>
           <View style={st.smartIcon}>
             <Icon name="shield" size={17} color={colors.brand} />
           </View>
@@ -84,7 +100,7 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       <View style={st.actions}>
         <Pressable
           style={({ pressed }) => [st.flatBtn, pressed && { opacity: 0.7 }]}
-          onPress={() => !guardOffline() && setOverlay('restart')}
+          onPress={() => runWhenOnline(() => setOverlay('restart'))}
         >
           <Text style={[st.flatBtnText, { color: colors.brand }]}>Restart Device</Text>
         </Pressable>
@@ -130,7 +146,11 @@ export default function DevSettings({ navigation }: AppScreenProps) {
           </View>
         </View>
       </Modal>
-      <DeviceOfflineDialog visible={offlineDialogOpen} onClose={() => setOfflineDialogOpen(false)} />
+      <DeviceOfflineDialog
+        visible={offlineDialog}
+        deviceName={device?.name}
+        onClose={() => setOfflineDialog(false)}
+      />
     </Screen>
   );
 }

@@ -14,7 +14,7 @@ export const STACK_ROUTES = [
   'alarm-reminder', 'shutdown-list', 'shutdown-edit', 'shutdown-repeat',
   'edit-profile', 'settings', 'about', 'feedback', 'language', 'timezone', 'storage-settings', 'state-preview',
   'email-login', 'apple-bind', 'privacy-terms', 'privacy-agreement', 'privacy-policy', 'help-center',
-  'bind-find', 'bind-none', 'bind-prep', 'bind-wifi', 'bind-wifi-pick',
+  'bind-find', 'bind-none', 'bind-prep', 'bind-wifi',
   'bind-connecting', 'bind-success', 'bind-fail', 'bind-qr',
 ] as const;
 

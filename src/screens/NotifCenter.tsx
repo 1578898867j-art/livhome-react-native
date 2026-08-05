@@ -1,9 +1,10 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, Modal, Pressable } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Image, Modal, Pressable, ScrollView, Platform } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
+import CalendarModal from '../components/CalendarModal';
 import { StateView, Spinner } from '../components/states';
 import { PermissionDialog } from '../components/PermissionDialog';
 import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
@@ -17,6 +18,11 @@ import { colors } from '../theme';
 // 删除确认弹窗,清空后空态。设备消息缩略图用 App 内设备图(CAMAVATAR)。
 type Msg = { id: number; title: string; time: string; body: string; unread?: boolean };
 type DayGroup = { day: string; mon: string; msgs: Msg[] };
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+const groupKey = (tab: 'device' | 'system', group: DayGroup) => `${tab}-${group.mon}-${group.day}`;
+type WebScrollNode = { scrollTop: number };
 
 const DEVICE_INIT: DayGroup[] = NOTIFICATION_DAYS.map((group) => ({
   day: group.day,
@@ -54,6 +60,18 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
   const [deviceMsgs, setDeviceMsgs] = useState<DayGroup[]>(DEVICE_INIT);
   const [systemMsgs, setSystemMsgs] = useState<DayGroup[]>(SYSTEM_INIT);
   const [confirm, setConfirm] = useState<null | 'all' | 'sel'>(null);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarDate, setCalendarDate] = useState({ m: 0, d: 24 });
+  const scrollRef = useRef<ScrollView>(null);
+  const groupOffsets = useRef<Record<string, number>>({});
+  const calendarScrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (calendarScrollTimer.current) clearTimeout(calendarScrollTimer.current);
+    },
+    [],
+  );
 
   // 概率性状态:列表加载失败 / 推送权限关闭引导 / 删除失败
   const flags = useDemoFlags();
@@ -80,6 +98,45 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
     setChecked([]);
   };
 
+  const openCalendar = (group: DayGroup) => {
+    const month = MONTHS.indexOf(group.mon);
+    setCalendarDate({ m: month < 0 ? 0 : month, d: Number(group.day) });
+    setCalendarOpen(true);
+  };
+
+  const jumpToDate = (month: number, day: number) => {
+    const target = groups.find(
+      (group) => MONTHS.indexOf(group.mon) === month && Number(group.day) === day && group.msgs.length > 0,
+    );
+    if (!target) {
+      setCalendarOpen(false);
+      requestAnimationFrame(() => showToast('No notifications on this day.', 'info'));
+      return;
+    }
+
+    setCalendarDate({ m: month, d: day });
+    setCalendarOpen(false);
+    if (calendarScrollTimer.current) clearTimeout(calendarScrollTimer.current);
+    calendarScrollTimer.current = setTimeout(() => {
+      calendarScrollTimer.current = null;
+      const y = groupOffsets.current[groupKey(tab, target)];
+      if (y == null) return;
+      const scrollY = Math.max(0, y - 8);
+      if (Platform.OS === 'web') {
+        if (!scrollRef.current) return;
+        const scrollView = scrollRef.current as unknown as {
+          scrollTop: number;
+          getScrollableNode?: () => WebScrollNode;
+        };
+        const scrollNode = scrollView.getScrollableNode?.() ?? scrollView;
+        scrollView.scrollTop = scrollY;
+        scrollNode.scrollTop = scrollY;
+        return;
+      }
+      scrollRef.current?.scrollTo({ y: scrollY, animated: true });
+    }, Platform.OS === 'web' ? 300 : 0);
+  };
+
   const doDelete = () => {
     // 删除失败演示:提示错误,列表保持不变
     if (getDemoFlags().failOps) {
@@ -101,7 +158,7 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
 
   return (
     <Screen
-      contentStyle={{ paddingBottom: 40 }}
+      scroll={false}
       bg={colors.bgSecondary}
       header={
         <Row style={st.nav}>
@@ -121,8 +178,14 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
         </Row>
       }
     >
-      {/* tabs + 编辑态 Delete All */}
-      <Row style={st.tabRow}>
+      <ScrollView
+        ref={scrollRef}
+        style={st.scroll}
+        contentContainerStyle={st.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* tabs + 编辑态 Delete All */}
+        <Row style={st.tabRow}>
         <View>
           <Tap style={[st.tabPill, tab === 'device' && st.tabPillOn]} onPress={() => { setTab('device'); exitEdit(); }}>
             <Text style={[st.tabTxt, tab === 'device' && st.tabTxtOn]}>Device</Text>
@@ -150,7 +213,7 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
             </Tap>
           </Row>
         )}
-      </Row>
+        </Row>
 
       {/* 推送权限关闭引导条 */}
       {flags.permsDenied && (
@@ -195,13 +258,35 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
         </View>
       ) : (
         groups.map((g, gi) => (
-          <View key={gi}>
+          <View
+            key={`${g.mon}-${g.day}`}
+            onLayout={(event) => {
+              groupOffsets.current[groupKey(tab, g)] = event.nativeEvent.layout.y;
+            }}
+          >
             {g.msgs.length > 0 && (
               <Row style={st.dayRow}>
-                <Text style={st.dayNum}>{g.day}</Text>
-                <Text style={st.dayMon}> {g.mon}</Text>
+                <Tap
+                  style={st.dateButton}
+                  onPress={() => openCalendar(g)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Choose notification date, ${g.mon} ${g.day}`}
+                >
+                  <Text style={st.dayNum}>{g.day}</Text>
+                  <Text style={st.dayMon}> {g.mon}</Text>
+                  <View style={st.dateIcon}>
+                    <Icon name="calendar" size={16} color={colors.textTertiary} sw={1.8} />
+                  </View>
+                </Tap>
                 {gi === 0 && !edit && (
-                  <Tap style={st.selBtn} onPress={() => setEdit(true)} hitSlop={10}>
+                  <Tap
+                    style={st.selBtn}
+                    onPress={() => setEdit(true)}
+                    hitSlop={10}
+                    accessibilityRole="button"
+                    accessibilityLabel="Select notifications"
+                  >
                     <SvgXml xml={SELICON} width={22} height={22} color={colors.textPrimary} />
                   </Tap>
                 )}
@@ -251,6 +336,15 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
           </View>
         ))
       )}
+      </ScrollView>
+
+      <CalendarModal
+        visible={calendarOpen}
+        initM={calendarDate.m}
+        initD={calendarDate.d}
+        onClose={() => setCalendarOpen(false)}
+        onConfirm={jumpToDate}
+      />
 
       {/* 删除确认弹窗(设计稿两种文案) */}
       <Modal transparent visible={confirm !== null} animationType="fade" onRequestClose={() => setConfirm(null)}>
@@ -281,6 +375,8 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 40 },
   nav: { paddingHorizontal: 16, height: 50, gap: 10 },
   navSlot: { width: 60, height: '100%', justifyContent: 'center' },
   navSlotR: { alignItems: 'flex-end', paddingRight: 6 },
@@ -327,7 +423,9 @@ const st = StyleSheet.create({
   pushCta: { fontSize: 13, fontWeight: '700', color: colors.brand },
   retryWrap: { alignItems: 'center', paddingTop: 110 },
 
-  dayRow: { paddingHorizontal: 22, marginTop: 8, marginBottom: 16, height: 30, alignItems: 'baseline' },
+  dayRow: { paddingHorizontal: 22, marginTop: 8, marginBottom: 16, height: 30 },
+  dateButton: { flexDirection: 'row', alignItems: 'baseline', minHeight: 30, paddingRight: 8 },
+  dateIcon: { alignSelf: 'center', marginLeft: 6 },
   dayNum: { fontSize: 24, fontWeight: '700', letterSpacing: -0.4, color: colors.textPrimary },
   dayMon: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
   // 多选入口绝对定位在行右侧:出现/消失不参与布局

@@ -1,15 +1,33 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { Screen, Header, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
+import { addBoundDevice } from '../features/devices/deviceListStore';
 import { colors } from '../theme';
 
 
 export default function BindSuccess({ navigation }: AppScreenProps) {
   const [name, setName] = useState('Living Room Camera');
+  const saved = useRef(false);
+
+  const saveDevice = () => {
+    if (getDemoFlags().failOps) {
+      showToast('Failed to save the name. Please try again.', 'error');
+      return;
+    }
+    if (saved.current) return;
+
+    saved.current = true;
+    addBoundDevice(name);
+    showToast('Device added', 'success');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'dev-home' } }],
+    });
+  };
 
   return (
     <Screen
@@ -58,13 +76,7 @@ export default function BindSuccess({ navigation }: AppScreenProps) {
       <View style={st.footer}>
         <PrimaryBtn
           label="Save"
-          onPress={() => {
-            if (getDemoFlags().failOps) {
-              showToast('Failed to save the name. Please try again.', 'error');
-              return;
-            }
-            navigation.navigate('Main', { screen: 'dev-home' });
-          }}
+          onPress={saveDevice}
         />
       </View>
     </Screen>
