@@ -11,6 +11,7 @@ export function BottomSheet({
   onClose,
   children,
   overlay,
+  floating,
 }: {
   visible: boolean;
   title: string;
@@ -20,6 +21,8 @@ export function BottomSheet({
   // 渲染在同一个 Modal 里、盖在面板之上的浮层(如删除确认)。
   // iOS 下两个平级 Modal 无法同时展示,必须走这里。
   overlay?: React.ReactNode;
+  // 悬浮在弹层顶部上方的非阻塞反馈,随面板实际高度定位。
+  floating?: React.ReactNode;
 }) {
   const [mounted, setMounted] = useState(visible);
   const [sheetH, setSheetH] = useState(0);
@@ -70,6 +73,11 @@ export function BottomSheet({
           </Pressable>
         </Animated.View>
       </View>
+      {floating != null && (
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
+          <View style={[st.floating, { bottom: sheetH + 12 }]}>{floating}</View>
+        </View>
+      )}
       {/* 浮层必须绝对铺满:否则会作为兄弟节点和面板平分屏幕高度,把面板挤到上半屏 */}
       {overlay != null && (
         <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
@@ -83,6 +91,7 @@ export function BottomSheet({
 const st = StyleSheet.create({
   backdrop: { backgroundColor: 'rgba(0,0,0,0.4)' },
   wrap: { flex: 1, justifyContent: 'flex-end' },
+  floating: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   sheet: {
     backgroundColor: colors.surface,
     borderTopLeftRadius: 22,

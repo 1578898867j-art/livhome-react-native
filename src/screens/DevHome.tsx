@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, Image, Pressable } from 'react-native';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { StateView, Spinner } from '../components/states';
+import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
 import { useDemoFlags } from '../features/app/demoStore';
 import { requestTalk } from '../features/devices/talkIntent';
 import { colors } from '../theme';
@@ -18,6 +19,7 @@ export default function DevHome({ navigation }: AppScreenProps) {
   // 概率性状态:设备列表加载失败 / 无设备空态
   const { failLoad, noDevices } = useDemoFlags();
   const [retrying, setRetrying] = useState(false);
+  const [offlineDialogOpen, setOfflineDialogOpen] = useState(false);
   const retryLoad = () => {
     setRetrying(true);
     setTimeout(() => setRetrying(false), 800);
@@ -94,29 +96,44 @@ export default function DevHome({ navigation }: AppScreenProps) {
   const DevCardOffline = ({ name }: { name: string }) => (
     <View style={st.card}>
       <Row style={st.cardHeadRow}>
-        <View style={st.avatar}>
-          <Image source={{ uri: CAMAVATAR }} resizeMode="contain" style={[st.avatarImg, { opacity: 0.55 }]} />
-        </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={st.cardName}>{name}</Text>
-          <Row style={{ gap: 6, marginTop: 2 }}>
-            <View style={[st.dot, { backgroundColor: colors.textTertiary }]} />
-            <Text style={st.statusOffline}>Offline</Text>
-          </Row>
-        </View>
-        <Tap style={st.gearBtn} onPress={go('dev-settings')} hitSlop={8}>
+        <Pressable
+          style={({ pressed }) => [st.offlineHeadEntry, pressed && { opacity: 0.62 }]}
+          onPress={() => setOfflineDialogOpen(true)}
+        >
+          <View style={st.avatar}>
+            <Image source={{ uri: CAMAVATAR }} resizeMode="contain" style={[st.avatarImg, { opacity: 0.55 }]} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={st.cardName}>{name}</Text>
+            <Row style={{ gap: 6, marginTop: 2 }}>
+              <View style={[st.dot, { backgroundColor: colors.textTertiary }]} />
+              <Text style={st.statusOffline}>Offline</Text>
+            </Row>
+          </View>
+        </Pressable>
+        <Tap
+          style={st.gearBtn}
+          onPress={() => navigation.navigate('dev-settings', { deviceOffline: true })}
+          hitSlop={8}
+        >
           <Icon name="gear" size={16} color={colors.textTertiary} />
         </Tap>
       </Row>
-      <View style={st.offlinePlaceholder}>
+      <Pressable
+        style={({ pressed }) => [st.offlinePlaceholder, pressed && { opacity: 0.7 }]}
+        onPress={() => setOfflineDialogOpen(true)}
+      >
         <Icon name="cloudOff" size={34} color={colors.textTertiary} sw={1.6} />
         <Text style={st.offlineText}>The device is offline</Text>
-      </View>
+      </Pressable>
       <View style={{ padding: 12, paddingHorizontal: 14 }}>
         {/* 静态按钮:点击无响应 */}
-        <View style={st.troubleBtn}>
+        <Pressable
+          style={({ pressed }) => [st.troubleBtn, pressed && { opacity: 0.7 }]}
+          onPress={() => setOfflineDialogOpen(true)}
+        >
           <Text style={st.troubleText}>Please check the device</Text>
-        </View>
+        </Pressable>
       </View>
     </View>
   );
@@ -171,6 +188,7 @@ export default function DevHome({ navigation }: AppScreenProps) {
           <DevCardOffline name="Bedroom Cam" />
         </View>
       )}
+      <DeviceOfflineDialog visible={offlineDialogOpen} onClose={() => setOfflineDialogOpen(false)} />
     </Screen>
   );
 }
@@ -213,6 +231,7 @@ const st = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3 },
   statusOnline: { fontSize: 12, fontWeight: '600', color: colors.textSecondary },
   statusOffline: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },
+  offlineHeadEntry: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
 
   preview: { position: 'relative', width: '100%', aspectRatio: 16 / 9, backgroundColor: '#1E1A16', overflow: 'hidden' },
   box: {

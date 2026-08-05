@@ -23,7 +23,7 @@ export type StackRouteName = (typeof STACK_ROUTES)[number];
 export type ScreenName = 'login' | MainTabName | StackRouteName;
 
 type ScreenParamList = {
-  [Route in ScreenName]: undefined;
+  [Route in ScreenName]: Route extends 'dev-settings' ? { deviceOffline?: boolean } : undefined;
 };
 
 export type MainTabParamList = Pick<ScreenParamList, MainTabName>;

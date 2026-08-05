@@ -1,10 +1,17 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Screen, Tap, Row, Card, Header, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
-import { addSchedule, useDraftDays } from '../features/devices/shutdownStore';
+import {
+  formatRepeatLabel,
+  getEditingSchedule,
+  getEditingScheduleIndex,
+  hasScheduleConflict,
+  saveSchedule,
+  useDraftDays,
+} from '../features/devices/shutdownStore';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 import type { TM } from '../features/devices/shutdownStore';
@@ -14,24 +21,29 @@ type Unit = 'h' | 'm';
 
 const p2 = (n: number) => (n < 10 ? '0' : '') + n;
 
-function repeatLabel(days: boolean[]) {
-  const n = days.filter(Boolean).length;
-  if (n === 7) return 'Everyday';
-  if (n === 0) return 'Once';
-  if (days[1] && days[2] && days[3] && days[4] && days[5] && !days[0] && !days[6]) return 'Weekdays';
-  if (days[0] && days[6] && n === 2) return 'Weekends';
-  return 'Custom';
-}
-
 const ITEM_H = 48;
 
 // 可滑动滚轮列:snap 到行高,中间灰色胶囊为选中高亮
 function WheelCol({ count, value, onChange }: { count: number; value: number; onChange: (v: number) => void }) {
   const ref = useRef<ScrollView>(null);
   const [active, setActive] = useState(value);
+  const activeRef = useRef(value);
+  const didSyncInitialValue = useRef(false);
+
+  useEffect(() => {
+    if (didSyncInitialValue.current) {
+      activeRef.current = value;
+      setActive(value);
+      return;
+    }
+    didSyncInitialValue.current = true;
+    setActive(value);
+    ref.current?.scrollTo({ y: value * ITEM_H, animated: false });
+  }, [value]);
 
   const settle = (y: number) => {
     const i = Math.min(count - 1, Math.max(0, Math.round(y / ITEM_H)));
+    activeRef.current = i;
     setActive(i);
     onChange(i);
   };
@@ -42,22 +54,23 @@ function WheelCol({ count, value, onChange }: { count: number; value: number; on
       <ScrollView
         ref={ref}
         style={{ height: ITEM_H * 3, alignSelf: 'stretch' }}
+        scrollEnabled
+        nestedScrollEnabled
         showsVerticalScrollIndicator={false}
         snapToInterval={ITEM_H}
-        decelerationRate="fast"
-        bounces={false}
+        decelerationRate="normal"
         contentContainerStyle={{ paddingVertical: ITEM_H }}
-        contentOffset={{ x: 0, y: value * ITEM_H }}
-        onLayout={() => ref.current?.scrollTo({ y: value * ITEM_H, animated: false })}
-        scrollEventThrottle={16}
+        scrollEventThrottle={48}
         onScroll={(e) => {
           const i = Math.round(e.nativeEvent.contentOffset.y / ITEM_H);
-          if (i !== active && i >= 0 && i < count) setActive(i);
+          if (i !== activeRef.current && i >= 0 && i < count) {
+            activeRef.current = i;
+            setActive(i);
+          }
         }}
         onMomentumScrollEnd={(e) => settle(e.nativeEvent.contentOffset.y)}
         onScrollEndDrag={(e) => {
-          // 缓慢拖动松手(无惯性)时也落位
-          if (e.nativeEvent.velocity && Math.abs(e.nativeEvent.velocity.y) < 0.05) settle(e.nativeEvent.contentOffset.y);
+          if (Math.abs(e.nativeEvent.velocity?.y ?? 0) < 0.05) settle(e.nativeEvent.contentOffset.y);
         }}
       >
         {Array.from({ length: count }, (_, v) => (
@@ -71,18 +84,24 @@ function WheelCol({ count, value, onChange }: { count: number; value: number; on
 }
 
 export default function ShutdownEdit({ navigation }: AppScreenProps) {
-  const [edOff, setEdOff] = useState<TM>({ h: 22, m: 0 });
-  const [edOn, setEdOn] = useState<TM>({ h: 7, m: 0 });
+  const existingSchedule = getEditingSchedule();
+  const editingScheduleIndex = getEditingScheduleIndex();
+  const [edOff, setEdOff] = useState<TM>(() => existingSchedule?.off ?? { h: 22, m: 0 });
+  const [edOn, setEdOn] = useState<TM>(() => existingSchedule?.on ?? { h: 7, m: 0 });
   const edDays = useDraftDays(); // Repeat 页的选择实时同步
-  const [edErr] = useState(false);
+  const edErr = hasScheduleConflict({ off: edOff, on: edOn, days: edDays }, editingScheduleIndex);
 
   const save = () => {
+    if (edErr) {
+      showToast('This schedule overlaps with an existing schedule.', 'error');
+      return;
+    }
     // 保存失败演示:提示错误,停留本页
     if (getDemoFlags().failOps) {
       showToast('Failed to save. Please try again.', 'error');
       return;
     }
-    addSchedule({ off: edOff, on: edOn, days: edDays });
+    saveSchedule({ off: edOff, on: edOn, days: edDays });
     navigation.goBack();
   };
 
@@ -114,6 +133,7 @@ export default function ShutdownEdit({ navigation }: AppScreenProps) {
   return (
     <Screen
       scroll={false}
+      dismissKeyboardOnPress={false}
       header={<Header title="Device off Time" onBack={() => navigation.goBack()} />}
     >
       <View style={st.body}>
@@ -122,7 +142,7 @@ export default function ShutdownEdit({ navigation }: AppScreenProps) {
 
         <Tap style={st.repeatRow} onPress={() => navigation.navigate('shutdown-repeat')}>
           <Text style={st.repeatName}>Repeat</Text>
-          <Text style={st.repeatValue}>{repeatLabel(edDays)}</Text>
+          <Text style={st.repeatValue}>{formatRepeatLabel(edDays)}</Text>
           <Icon name="chevR" size={15} color={colors.textTertiary} sw={2} />
         </Tap>
 

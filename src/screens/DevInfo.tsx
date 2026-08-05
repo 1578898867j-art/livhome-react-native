@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Animated, Modal, Pressable } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 import { Screen, Tap, Row, Card, Header } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { Spinner } from '../components/states';
@@ -27,21 +28,43 @@ export default function DevInfo({ navigation }: AppScreenProps) {
   const [devName, setDevName] = useState('Living Room');
   const [editing, setEditing] = useState(false);
 
-  // brief "Copied" toast (RN stand-in for the copy-to-clipboard action)
+  // Keep copy confirmation visible long enough to read before it fades out.
   const [toast, setToast] = useState(false);
   const toastAnim = useRef(new Animated.Value(0)).current;
-  const showToast = () => {
+  const copyToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showCopyToast = () => {
+    if (copyToastTimer.current) clearTimeout(copyToastTimer.current);
+    toastAnim.stopAnimation();
     setToast(true);
     toastAnim.setValue(0);
-    Animated.timing(toastAnim, { toValue: 1, duration: 160, useNativeDriver: true }).start(() => {
+    Animated.timing(toastAnim, { toValue: 1, duration: 160, useNativeDriver: true }).start();
+    copyToastTimer.current = setTimeout(() => {
       Animated.timing(toastAnim, {
         toValue: 0,
-        delay: 1000,
         duration: 240,
         useNativeDriver: true,
-      }).start(() => setToast(false));
-    });
+      }).start(({ finished }) => {
+        if (finished) setToast(false);
+      });
+    }, 2560);
   };
+
+  const copyToClipboard = async (value: string) => {
+    try {
+      await Clipboard.setStringAsync(value);
+      showCopyToast();
+    } catch {
+      showAppToast('Failed to copy. Please try again.', 'error');
+    }
+  };
+
+  useEffect(
+    () => () => {
+      if (copyToastTimer.current) clearTimeout(copyToastTimer.current);
+      toastAnim.stopAnimation();
+    },
+    [toastAnim],
+  );
 
   const toggleTip = (key: TipKey) => setTip((t) => (t === key ? null : key));
 
@@ -120,9 +143,8 @@ export default function DevInfo({ navigation }: AppScreenProps) {
           <TextInput
             value={devName}
             onChangeText={setDevName}
-            onBlur={() => setEditing(false)}
-            onSubmitEditing={() => setEditing(false)}
             autoFocus
+            multiline
             placeholderTextColor="rgba(255,255,255,.6)"
             style={st.heroNameInput}
           />
@@ -131,9 +153,25 @@ export default function DevInfo({ navigation }: AppScreenProps) {
         )}
         <Text style={st.heroSub}>Indoor · IP Camera</Text>
 
-        <Tap style={st.editBtn} onPress={() => setEditing((e) => !e)} hitSlop={8}>
-          <SvgXml xml={EDITAVATAR} width={36} height={36} />
-        </Tap>
+        {editing ? (
+          <Tap
+            style={st.saveBtn}
+            onPress={() => setEditing(false)}
+            hitSlop={8}
+            accessibilityLabel="Save device name"
+          >
+            <Text style={st.saveBtnTxt}>Save</Text>
+          </Tap>
+        ) : (
+          <Tap
+            style={st.editBtn}
+            onPress={() => setEditing(true)}
+            hitSlop={8}
+            accessibilityLabel="Edit device name"
+          >
+            <SvgXml xml={EDITAVATAR} width={36} height={36} />
+          </Tap>
+        )}
       </LinearGradient>
 
       {/* Device version */}
@@ -211,12 +249,12 @@ export default function DevInfo({ navigation }: AppScreenProps) {
         <Text style={st.eyebrowTxt}>Device information</Text>
       </View>
       <Card style={st.card}>
-        <InfoRow label="Model" value="IP Camera" copy onCopy={showToast} />
+        <InfoRow label="Model" value="IP Camera" copy onCopy={copyToClipboard} />
         <InfoRow
           label="Serial Number"
           value="IH34100102000039"
           copy
-          onCopy={showToast}
+          onCopy={copyToClipboard}
           tipKey="serial"
           tipOpen={tip === 'serial'}
           onTip={() => toggleTip('serial')}
@@ -225,7 +263,7 @@ export default function DevInfo({ navigation }: AppScreenProps) {
           label="MAC Address"
           value="2C:D8:DE:4F:AD:75"
           copy
-          onCopy={showToast}
+          onCopy={copyToClipboard}
           tipKey="mac"
           tipOpen={tip === 'mac'}
           onTip={() => toggleTip('mac')}
@@ -255,7 +293,7 @@ function InfoRow({
   label: string;
   value: string;
   copy?: boolean;
-  onCopy?: () => void;
+  onCopy?: (value: string) => void;
   last?: boolean;
   tipKey?: TipKey;
   tipOpen?: boolean;
@@ -276,7 +314,13 @@ function InfoRow({
         </View>
         <Text style={st.infoVal}>{value}</Text>
         {copy && (
-          <Tap style={{ marginLeft: 2 }} onPress={onCopy} hitSlop={8}>
+          <Tap
+            style={{ marginLeft: 2 }}
+            onPress={() => onCopy?.(value)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Copy ${label}`}
+          >
             <Icon name="copy" size={15} color={colors.textTertiary} />
           </Tap>
         )}
@@ -308,10 +352,14 @@ const st = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginTop: 14,
+    minHeight: 58,
     padding: 0,
+    textAlignVertical: 'top',
   },
   heroSub: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,.75)', marginTop: 2 },
   editBtn: { position: 'absolute', top: 20, right: 20, width: 36, height: 36 },
+  saveBtn: { position: 'absolute', top: 20, right: 20, minHeight: 36, justifyContent: 'center' },
+  saveBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
 
   eyebrow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },

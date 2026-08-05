@@ -3,19 +3,9 @@ import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row, Card, NavBar } from '../components/kit';
 import { colors } from '../theme';
-import { setDraftDays, useDraftDays } from '../features/devices/shutdownStore';
+import { formatRepeatLabel, setDraftDays, useDraftDays } from '../features/devices/shutdownStore';
 
 const NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-// Ported 1:1 from the prototype's repeatLabel().
-function repeatLabel(days: boolean[]): string {
-  const n = days.filter(Boolean).length;
-  if (n === 7) return 'Everyday';
-  if (n === 0) return 'Once';
-  if (days[1] && days[2] && days[3] && days[4] && days[5] && !days[0] && !days[6]) return 'Weekdays';
-  if (days[0] && days[6] && n === 2) return 'Weekends';
-  return 'Custom';
-}
 
 export default function ShutdownRepeat({ navigation }: AppScreenProps) {
   const days = useDraftDays();
@@ -36,7 +26,7 @@ export default function ShutdownRepeat({ navigation }: AppScreenProps) {
       <Card style={st.card}>
         {/* prototype: .eyebrow with text-align:center; font-size:11px */}
         <Text style={st.eyebrow}>Repeat</Text>
-        <Text style={st.label}>{repeatLabel(days)}</Text>
+        <Text style={st.label}>{formatRepeatLabel(days)}</Text>
         <Row style={st.daysRow}>
           {NAMES.map((d, i) => {
             const on = days[i];

@@ -1,18 +1,30 @@
-import type { AppScreenProps } from '../navigation/types';
+import type { AppParamList, AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import { Screen, Tap, Row, Card, Header, Eyebrow, SettingRow } from '../components/kit';
 import { Icon } from '../components/Icon';
-import { getDemoFlags } from '../features/app/demoStore';
+import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
+import { getDemoFlags, useDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 import { colors } from '../theme';
 
 type Overlay = null | 'restart' | 'delete';
 
 export default function DevSettings({ navigation }: AppScreenProps) {
+  const route = useRoute<RouteProp<AppParamList, 'dev-settings'>>();
   const [overlay, setOverlay] = useState<Overlay>(null);
+  const [offlineDialogOpen, setOfflineDialogOpen] = useState(false);
+  const { deviceOffline: demoDeviceOffline } = useDemoFlags();
+  const deviceOffline = route.params?.deviceOffline ?? demoDeviceOffline;
 
   const closeOverlay = () => setOverlay(null);
+  const guardOffline = () => {
+    if (!deviceOffline) return false;
+    setOfflineDialogOpen(true);
+    return true;
+  };
   const onRestartConfirm = () => {
     setOverlay(null);
     // 指令发送失败 / 设备无响应演示
@@ -21,6 +33,10 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       return;
     }
     showToast('Restart command sent', 'success');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'dev-home' } }],
+    });
   };
   const onDeleteConfirm = () => {
     setOverlay(null);
@@ -29,7 +45,10 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       showToast('Failed to delete the device. Please try again.', 'error');
       return;
     }
-    navigation.navigate('Main', { screen: 'dev-home' });
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main', params: { screen: 'dev-home' } }],
+    });
   };
 
   return (
@@ -40,14 +59,14 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       <Eyebrow>Basic settings</Eyebrow>
       <Card style={st.card}>
         <SettingRow icon="info" name="Device Details" onPress={() => navigation.navigate('dev-info')} />
-        <SettingRow icon="sliders" name="Device Settings" onPress={() => navigation.navigate('dev-config')} />
-        <SettingRow icon="bell" name="Notifications" onPress={() => navigation.navigate('notif-settings')} />
-        <SettingRow icon="warn" name="Alert Settings" onPress={() => navigation.navigate('alert-settings')} last />
+        <SettingRow icon="sliders" name="Device Settings" onPress={() => !guardOffline() && navigation.navigate('dev-config')} />
+        <SettingRow icon="bell" name="Notifications" onPress={() => !guardOffline() && navigation.navigate('notif-settings')} />
+        <SettingRow icon="warn" name="Alert Settings" onPress={() => !guardOffline() && navigation.navigate('alert-settings')} last />
       </Card>
 
       <Eyebrow>Smart</Eyebrow>
       <Card style={st.smartCard}>
-        <Tap style={st.smartRow} onPress={() => navigation.navigate('geofence')}>
+        <Tap style={st.smartRow} onPress={() => !guardOffline() && navigation.navigate('geofence')}>
           <View style={st.smartIcon}>
             <Icon name="shield" size={17} color={colors.brand} />
           </View>
@@ -65,7 +84,7 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       <View style={st.actions}>
         <Pressable
           style={({ pressed }) => [st.flatBtn, pressed && { opacity: 0.7 }]}
-          onPress={() => setOverlay('restart')}
+          onPress={() => !guardOffline() && setOverlay('restart')}
         >
           <Text style={[st.flatBtnText, { color: colors.brand }]}>Restart Device</Text>
         </Pressable>
@@ -78,8 +97,14 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       </View>
 
       <Modal transparent visible={overlay !== null} animationType="fade" onRequestClose={closeOverlay}>
-        <Pressable style={st.ovl} onPress={closeOverlay}>
-          <Pressable style={st.dialog} onPress={() => {}}>
+        <View style={st.ovl}>
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={closeOverlay}
+            accessibilityRole="button"
+            accessibilityLabel="Close confirmation dialog"
+          />
+          <View style={st.dialog} accessibilityViewIsModal>
             <Text style={st.dialogTitle}>
               {overlay === 'delete' ? 'Delete Device' : 'Restart Device'}
             </Text>
@@ -102,9 +127,10 @@ export default function DevSettings({ navigation }: AppScreenProps) {
                 <Text style={[st.dialogBtnText, { color: '#fff' }]}>Confirm</Text>
               </Pressable>
             </Row>
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
+      <DeviceOfflineDialog visible={offlineDialogOpen} onClose={() => setOfflineDialogOpen(false)} />
     </Screen>
   );
 }

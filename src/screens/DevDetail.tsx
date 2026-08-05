@@ -40,14 +40,17 @@ import { colors } from '../theme';
 import { useDeviceDetailPrototype } from '../features/devices/useDeviceDetailPrototype';
 import { useTalkMeter } from '../features/devices/useTalkMeter';
 import {
+  setMotionDetectionEnabled,
   setNightVisionMode,
+  setSoundDetectionEnabled,
   setSmartTrackingEnabled,
+  useMotionDetectionEnabled,
   useNightVisionMode,
+  useSoundDetectionEnabled,
   useSmartTrackingEnabled,
 } from '../features/devices/deviceSettingsStore';
 import type { NightVisionMode } from '../features/devices/deviceSettingsStore';
 import type {
-  ControlKey as CtlKey,
   DeviceDetailTab as Tab,
   DeviceMessage as Msg,
   TiltKey,
@@ -208,7 +211,9 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     toggleCtl,
     toggleTilt,
   } = useDeviceDetailPrototype();
+  const motionDetectionEnabled = useMotionDetectionEnabled();
   const recordingElapsed = useRecordingElapsed(ctl.ctlRec);
+  const soundDetectionEnabled = useSoundDetectionEnabled();
 
   const sirenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toggleTiltRef = useRef(toggleTilt);
@@ -255,6 +260,22 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   toggleCtlRef.current = toggleCtl;
   const nightVisionMode = useNightVisionMode();
   const smartTrackingEnabled = useSmartTrackingEnabled();
+  const panelTilt = {
+    ...tilt,
+    motionOn: motionDetectionEnabled,
+    soundOn: soundDetectionEnabled,
+  };
+  const togglePanelTilt = (key: TiltKey) => {
+    if (key === 'motionOn') {
+      setMotionDetectionEnabled(!motionDetectionEnabled);
+      return;
+    }
+    if (key === 'soundOn') {
+      setSoundDetectionEnabled(!soundDetectionEnabled);
+      return;
+    }
+    toggleTilt(key);
+  };
   // 拍照/录像保存提示条(截图为瞬时动作,不保持常亮)
   const [saveToast, setSaveToast] = useState<null | 'photo' | 'video'>(null);
   const [snapFlash, setSnapFlash] = useState(false);
@@ -523,13 +544,23 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
           </Tap>
           <Text style={st.navTitle}>Home Monitoring</Text>
-          <Tap style={st.iconGhost} onPress={() => navigation.navigate('dev-settings')} hitSlop={8}>
+          <Tap
+            style={st.iconGhost}
+            onPress={() => navigation.navigate('dev-settings', { deviceOffline: false })}
+            hitSlop={8}
+          >
             <Icon name="gear" size={18} color={colors.textPrimary} />
           </Tap>
         </Row>
       }
     >
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+        bounces={tab !== 'controls'}
+        alwaysBounceVertical={tab !== 'controls'}
+        overScrollMode={tab === 'controls' ? 'never' : 'auto'}
+      >
         {/* player —— 加载/离线/失败 时显示深色状态占位 */}
         <View style={st.player}>
           {pState === 'ready' ? (
@@ -626,12 +657,12 @@ export default function DevDetail({ navigation }: AppScreenProps) {
         )}
         {tab === 'tilt' && (
           <TiltPanel
-            tilt={tilt}
+            tilt={panelTilt}
             nightVisionMode={nightVisionMode}
             smartTrackingEnabled={smartTrackingEnabled}
             onNightVision={() => setNightVisionOpen(true)}
             onSmartTracking={() => setSmartTrackingEnabled(!smartTrackingEnabled)}
-            onToggle={toggleTilt}
+            onToggle={togglePanelTilt}
           />
         )}
         {tab === 'messages' && (

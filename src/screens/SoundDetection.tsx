@@ -3,16 +3,20 @@ import React, { useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { Screen, Header, Eyebrow, Card, ToggleRow, Segmented } from '../components/kit';
 import { colors } from '../theme';
+import {
+  setSoundDetectionEnabled,
+  useSoundDetectionEnabled,
+} from '../features/devices/deviceSettingsStore';
 
 export default function SoundDetection({ navigation }: AppScreenProps) {
-  const [soundOn, setSoundOn] = useState(true);
+  const soundOn = useSoundDetectionEnabled();
   const [soundSens, setSoundSens] = useState(1);
 
   return (
     <Screen header={<Header title="Sound Detection" onBack={() => navigation.goBack()} />}>
       <Eyebrow>Alarm</Eyebrow>
       <Card style={{ marginHorizontal: 18 }}>
-        <ToggleRow name="Sound Detection" on={soundOn} onToggle={() => setSoundOn(v => !v)} last />
+        <ToggleRow name="Sound Detection" on={soundOn} onToggle={() => setSoundDetectionEnabled(!soundOn)} last />
       </Card>
 
       {soundOn && (

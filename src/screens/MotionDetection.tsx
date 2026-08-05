@@ -3,9 +3,13 @@ import React, { useState } from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { Screen, Header, Eyebrow, Card, ToggleRow, Segmented, SettingRow } from '../components/kit';
 import { colors } from '../theme';
+import {
+  setMotionDetectionEnabled,
+  useMotionDetectionEnabled,
+} from '../features/devices/deviceSettingsStore';
 
 export default function MotionDetection({ navigation }: AppScreenProps) {
-  const [motionOn, setMotionOn] = useState(true);
+  const motionOn = useMotionDetectionEnabled();
   const [motionSens, setMotionSens] = useState(1);
 
   return (
@@ -15,7 +19,7 @@ export default function MotionDetection({ navigation }: AppScreenProps) {
         <ToggleRow
           name="Motion Detection"
           on={motionOn}
-          onToggle={() => setMotionOn((v) => !v)}
+          onToggle={() => setMotionDetectionEnabled(!motionOn)}
           last
         />
       </Card>

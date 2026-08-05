@@ -6,20 +6,17 @@ import { Screen, Tap, Row, Card, Header, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { MOONICON, SUNICON, ARROWBOX, TRASHICON } from '../icons/protoIcons';
 import { colors } from '../theme';
-import { removeSchedule, resetDraftDays, useSchedules } from '../features/devices/shutdownStore';
+import {
+  beginNewSchedule,
+  beginScheduleEdit,
+  formatRepeatLabel,
+  removeSchedule,
+  useSchedules,
+} from '../features/devices/shutdownStore';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 
 const p2 = (n: number) => (n < 10 ? '0' : '') + n;
-
-function repeatLabel(days: boolean[]) {
-  const n = days.filter(Boolean).length;
-  if (n === 7) return 'Everyday';
-  if (n === 0) return 'Once';
-  if (days[1] && days[2] && days[3] && days[4] && days[5] && !days[0] && !days[6]) return 'Weekdays';
-  if (days[0] && days[6] && n === 2) return 'Weekends';
-  return 'Custom';
-}
 
 export default function ShutdownList({ navigation }: AppScreenProps) {
   const schedules = useSchedules();
@@ -33,7 +30,11 @@ export default function ShutdownList({ navigation }: AppScreenProps) {
     removeSchedule(i);
   };
   const goAdd = () => {
-    resetDraftDays();
+    beginNewSchedule();
+    navigation.navigate('shutdown-edit');
+  };
+  const goEdit = (index: number) => {
+    beginScheduleEdit(index);
     navigation.navigate('shutdown-edit');
   };
 
@@ -71,7 +72,7 @@ export default function ShutdownList({ navigation }: AppScreenProps) {
             const on = p2(s.on.h) + ':' + p2(s.on.m);
             const nd = s.on.h * 60 + s.on.m <= s.off.h * 60 + s.off.m;
             return (
-              <Tap key={i} onPress={() => navigation.navigate('shutdown-edit')}>
+              <Tap key={i} onPress={() => goEdit(i)}>
                 <Card style={st.schedCard}>
                   <Row style={{ alignItems: 'center' }}>
                     <View style={{ flex: 1 }}>
@@ -94,7 +95,7 @@ export default function ShutdownList({ navigation }: AppScreenProps) {
                   </Row>
                   <Row style={st.metaRow}>
                     <Text style={st.meta}>
-                      Repeat · {repeatLabel(s.days)}
+                      Repeat · {formatRepeatLabel(s.days)}
                       {nd ? ' · Next day' : ''}
                     </Text>
                     <Tap style={st.delBtn} onPress={() => del(i)} hitSlop={8}>

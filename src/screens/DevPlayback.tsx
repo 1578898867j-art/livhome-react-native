@@ -1,11 +1,10 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, PanResponder } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, PanResponder, Modal, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
-import { Modal, Pressable } from 'react-native';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { StateView, Spinner, DarkPlayerState } from '../components/states';
@@ -40,7 +39,6 @@ const PBSEGS: Seg[] = [
 ];
 const PB_REG = 'rgba(35,130,255,0.22)';
 const CLIP_RAIL = '#7C828C';
-const TIME_LABELS = ['06:00', '06:10', '06:20', '06:30', '06:40', '06:50'];
 const EVFILTER_COUNT = EVENT_ICON_FILTERS.length;
 // 原型 EVFILTERS + FEICONS 底部筛选面板
 const EV_FILTERS = EVENT_ICON_FILTERS;
@@ -64,10 +62,6 @@ const CTRL_CAMVIDEO =
 const CTRL_EXTEND =
   '<svg viewBox="0 0 24 24" fill="none"><path d="M18.6667 4H5.33333C4.59695 4 4 4.59695 4 5.33333V18.6667C4 19.403 4.59695 20 5.33333 20H18.6667C19.403 20 20 19.403 20 18.6667V5.33333C20 4.59695 19.403 4 18.6667 4Z" fill="currentColor" stroke="currentColor" stroke-width="2"/><path d="M17.5 6H15.2071C14.7616 6 14.5385 6.53855 14.8535 6.85355L17.1464 9.14645C17.4614 9.46145 18 9.23835 18 8.7929V6.5C18 6.22385 17.7761 6 17.5 6Z" fill="white"/><path d="M6 6.5V8.7929C6 9.23835 6.53855 9.46145 6.85355 9.14645L9.14645 6.85355C9.46145 6.53855 9.23835 6 8.7929 6H6.5C6.22385 6 6 6.22385 6 6.5Z" fill="white"/><path d="M6.5 18H8.7929C9.23835 18 9.46145 17.4614 9.14645 17.1464L6.85355 14.8535C6.53855 14.5385 6 14.7616 6 15.2071V17.5C6 17.7761 6.22385 18 6.5 18Z" fill="white"/><path d="M18 17.5V15.2071C18 14.7616 17.4614 14.5385 17.1464 14.8535L14.8535 17.1464C14.5385 17.4614 14.7616 18 15.2071 18H17.5C17.7761 18 18 17.7761 18 17.5Z" fill="white"/></svg>';
 
-// Full-screen(全局放大)—— 与设备详情页同款用户素材
-const FULLSCREEN_ICON =
-  '<svg viewBox="0 0 24 24" fill="none"><path d="M16.5 3H19.5C20.3284 3 21 3.67157 21 4.5V7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 16.5V19.5C21 20.3284 20.3284 21 19.5 21H16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.5 21H4.5C3.67157 21 3 20.3284 3 19.5V16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7.5V4.5C3 3.67157 3.67157 3 4.5 3H7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-
 // 时间域:单天。今天(2026-04-23)只到 06:50 当前时段;过去日期为完整 24h
 const DAY_MIN = 1440;
 const TODAY_MAX = 6 * 60 + 50;
@@ -89,10 +83,8 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   const toggleAllEvt = () =>
     setPbEvents((ev) => (ev.length === EV_FILTERS.length ? [] : EV_FILTERS.map((e) => e.key)));
   const [ctlSpk, setCtlSpk] = useState(false);
-  const [ctlMic, setCtlMic] = useState(false);
   const [ctlRec, setCtlRec] = useState(false);
   const recordingElapsed = useRecordingElapsed(ctlRec);
-  const [ctlSnap, setCtlSnap] = useState(false);
 
   // clip (trim) mode — mirrors S.pbClip / S.pbClipS / S.pbClipE
   const [clipMode, setClipMode] = useState(false);
@@ -272,15 +264,6 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
     })
   ).current;
 
-  const ctl = (name: string, on: boolean, toggle: () => void) => {
-    const glyph = on ? (name === 'speaker' ? 'speakerSolid' : name === 'mic' ? 'micSolid' : name) : name;
-    return (
-      <Tap style={st.ctlBtn} onPress={toggle}>
-        <SvgXml xml={PHOTOICONS[glyph]} width={18} height={18} color={on ? colors.brand : colors.textPrimary} />
-      </Tap>
-    );
-  };
-
   return (
     <Screen
       scroll={false}
@@ -292,7 +275,11 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
               <Icon name="chevL" size={18} color={colors.textPrimary} sw={2} />
             </Tap>
             <Text style={st.navTitle}>Home Monitoring</Text>
-            <Tap style={st.navIcon} onPress={() => navigation.navigate('dev-settings')} hitSlop={8}>
+            <Tap
+              style={st.navIcon}
+              onPress={() => navigation.navigate('dev-settings', { deviceOffline: false })}
+              hitSlop={8}
+            >
               <Icon name="gear" size={18} color={colors.textPrimary} />
             </Tap>
           </Row>

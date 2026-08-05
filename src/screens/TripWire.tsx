@@ -18,13 +18,16 @@ type Pt = { x: number; y: number };
 type Dir = 'both' | 'ab' | 'ba';
 
 const FRAME_H = 210;
+const DEFAULT_A: Pt = { x: 26, y: 26 };
+const DEFAULT_B: Pt = { x: 72, y: 74 };
+const DEFAULT_DIR: Dir = 'both';
 
 const clamp = (v: number) => Math.max(4, Math.min(96, v));
 
 export default function TripWire({ navigation }: AppScreenProps) {
-  const [twA, setTwA] = useState<Pt>({ x: 26, y: 26 });
-  const [twB, setTwB] = useState<Pt>({ x: 72, y: 74 });
-  const [twDir, setTwDir] = useState<Dir>('both');
+  const [twA, setTwA] = useState<Pt>(DEFAULT_A);
+  const [twB, setTwB] = useState<Pt>(DEFAULT_B);
+  const [twDir, setTwDir] = useState<Dir>(DEFAULT_DIR);
 
   // frame size (width measured on layout, height is fixed)
   const frame = useRef({ w: 1, h: FRAME_H });
@@ -69,6 +72,11 @@ export default function TripWire({ navigation }: AppScreenProps) {
   ];
 
   const goBack = () => navigation.goBack();
+  const refresh = () => {
+    setTwA(DEFAULT_A);
+    setTwB(DEFAULT_B);
+    setTwDir(DEFAULT_DIR);
+  };
 
   return (
     <Screen
@@ -99,8 +107,8 @@ export default function TripWire({ navigation }: AppScreenProps) {
           />
         </Svg>
 
-        <Label pt={twA} ch="A" />
-        <Label pt={twB} ch="B" />
+        <AreaLabel side="left" label="A" />
+        <AreaLabel side="right" label="B" />
 
         <View
           {...panA.panHandlers}
@@ -152,7 +160,7 @@ export default function TripWire({ navigation }: AppScreenProps) {
       </Row>
 
       <View style={st.refreshWrap}>
-        <Tap onPress={() => {}} style={st.refreshBtn}>
+        <Tap onPress={refresh} style={st.refreshBtn}>
           <Icon name="refresh" size={15} color={colors.brand} />
           <Text style={st.refreshTxt}>Refresh</Text>
         </Tap>
@@ -161,9 +169,11 @@ export default function TripWire({ navigation }: AppScreenProps) {
   );
 }
 
-function Label({ pt, ch }: { pt: Pt; ch: string }) {
+function AreaLabel({ side, label }: { side: 'left' | 'right'; label: string }) {
   return (
-    <Text style={[st.label, { left: `${pt.x}%`, top: `${pt.y}%` }]}>{ch}</Text>
+    <View style={[st.areaLabel, side === 'left' ? st.areaLabelLeft : st.areaLabelRight]} pointerEvents="none">
+      <Text style={st.areaLabelText}>{label}</Text>
+    </View>
   );
 }
 
@@ -211,18 +221,22 @@ const st = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
-  label: {
+  areaLabel: {
     position: 'absolute',
-    marginLeft: -6,
-    marginTop: -30,
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#fff',
+    top: FRAME_H / 2 - 17,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(26,26,26,0.58)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.44)',
+    alignItems: 'center',
+    justifyContent: 'center',
     zIndex: 2,
-    textShadowColor: 'rgba(0,0,0,0.6)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
+  areaLabelLeft: { left: 12 },
+  areaLabelRight: { right: 12 },
+  areaLabelText: { fontSize: 14, fontWeight: '800', color: '#fff' },
   help: {
     paddingHorizontal: 22,
     paddingTop: 14,

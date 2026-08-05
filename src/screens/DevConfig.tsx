@@ -17,6 +17,7 @@ import {
   SettingsOptionRow,
   SettingsOptionSheet,
 } from '../components/SettingsOptionSheet';
+import { useSchedules } from '../features/devices/shutdownStore';
 
 // Label maps mirrored from the prototype
 const IDLE_LABELS: Record<string, string> = { '5': '5 min', '10': '10 min', '15': '15 min' };
@@ -59,7 +60,8 @@ function FlipCard({
 export default function DevConfig({ navigation }: AppScreenProps) {
   // Local state seeded from the prototype S defaults
   const [tzGmt] = useState('GMT+8:00'); // tzSel:'Beijing' → GMT+8:00
-  const [offTime] = useState('None');
+  const schedules = useSchedules();
+  const offTime = schedules.length === 0 ? 'None' : '';
   const [idleTime, setIdleTime] = useState('5');
   const [imgFlip, setImgFlip] = useState<'normal' | 'flipped'>('normal');
   const nvMode = useNightVisionMode();

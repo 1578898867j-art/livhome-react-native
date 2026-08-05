@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, radius, shadow } from '../theme';
+import { colors, shadow } from '../theme';
 import { Icon } from './Icon';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
@@ -34,6 +34,7 @@ export function Screen({
   children,
   header,
   scroll = true,
+  dismissKeyboardOnPress = true,
   edges = ['top'],
   contentStyle,
   bg = colors.bgPrimary,
@@ -41,6 +42,7 @@ export function Screen({
   children: React.ReactNode;
   header?: React.ReactNode;
   scroll?: boolean;
+  dismissKeyboardOnPress?: boolean;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
   contentStyle?: StyleProp<ViewStyle>;
   bg?: string; // 页面底色(如消息中心的灰底),默认全局 bgPrimary
@@ -61,7 +63,7 @@ export function Screen({
           >
             {children}
           </ScrollView>
-        ) : (
+        ) : dismissKeyboardOnPress ? (
           <Pressable
             style={[s.screenBody, contentStyle]}
             onPress={Keyboard.dismiss}
@@ -69,6 +71,8 @@ export function Screen({
           >
             {children}
           </Pressable>
+        ) : (
+          <View style={[s.screenBody, contentStyle]}>{children}</View>
         )}
       </SafeAreaView>
     );
@@ -109,6 +113,7 @@ export function Tap({
   hitSlop,
   disabled = false,
   accessibilityLabel,
+  accessibilityHint,
   accessibilityRole,
   accessibilityState,
 }: {
@@ -118,6 +123,7 @@ export function Tap({
   hitSlop?: number;
   disabled?: boolean;
   accessibilityLabel?: string;
+  accessibilityHint?: string;
   accessibilityRole?: AccessibilityRole;
   accessibilityState?: AccessibilityState;
 }) {
@@ -127,6 +133,7 @@ export function Tap({
       hitSlop={hitSlop}
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
       accessibilityRole={accessibilityRole}
       accessibilityState={disabled ? { ...accessibilityState, disabled: true } : accessibilityState}
       style={({ pressed }) => [pressed && !disabled && { opacity: 0.55 }, style]}
@@ -180,7 +187,14 @@ export function NavBar({
 }: {
   title: string;
   onBack?: () => void;
-  action?: { label: string; onPress?: () => void; color?: string };
+  action?: {
+    label: string;
+    onPress?: () => void;
+    color?: string;
+    disabled?: boolean;
+    accessibilityLabel?: string;
+    accessibilityHint?: string;
+  };
 }) {
   return (
     <Row style={{ paddingHorizontal: 18, minHeight: 44, gap: 12, paddingVertical: 8 }}>
@@ -193,8 +207,21 @@ export function NavBar({
       )}
       <Text style={[s.tHead, { flex: 1 }]}>{title}</Text>
       {action ? (
-        <Tap onPress={action.onPress} hitSlop={8}>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: action.color || colors.brand }}>
+        <Tap
+          onPress={action.onPress}
+          hitSlop={8}
+          disabled={action.disabled}
+          accessibilityRole="button"
+          accessibilityLabel={action.accessibilityLabel || action.label}
+          accessibilityHint={action.accessibilityHint}
+        >
+          <Text
+            style={{
+              fontSize: 15,
+              fontWeight: '700',
+              color: action.disabled ? colors.textTertiary : action.color || colors.brand,
+            }}
+          >
             {action.label}
           </Text>
         </Tap>

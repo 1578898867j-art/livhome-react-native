@@ -8,7 +8,6 @@ import { colors } from '../theme';
 
 const COLS = 4;
 const ROWS = 3;
-const N = COLS * ROWS;
 
 // Seeded from the prototype's S.detCells default.
 const DEFAULT_CELLS: boolean[] = [
@@ -30,14 +29,18 @@ export default function DetectionArea({ navigation }: AppScreenProps) {
   const [notify, setNotify] = useState(false);
 
   const allOn = cells.every((v) => v);
+  const canDone = notify;
 
   const toggleCell = (i: number) =>
     setCells((prev) => prev.map((v, j) => (j === i ? !v : v)));
 
   const toggleAll = () => setCells(DEFAULT_CELLS.map(() => !allOn));
 
-  // Prototype det-refresh only shows a toast — it never touches the cells.
-  const refresh = () => showToast('Snapshot refreshed', 'success');
+  // Restore the grid's seeded detection-area configuration without changing notifications.
+  const refresh = () => {
+    setCells([...DEFAULT_CELLS]);
+    showToast('Snapshot refreshed', 'success');
+  };
 
   return (
     <Screen
@@ -46,7 +49,15 @@ export default function DetectionArea({ navigation }: AppScreenProps) {
         <NavBar
           title="Detection Area"
           onBack={() => navigation.goBack()}
-          action={{ label: 'Done', onPress: () => navigation.goBack() }}
+          action={{
+            label: 'Done',
+            onPress: () => navigation.goBack(),
+            disabled: !canDone,
+            accessibilityLabel: 'Done',
+            accessibilityHint: canDone
+              ? 'Returns to the previous screen.'
+              : 'Select areas to receive alerts for those regions before finishing.',
+          }}
         />
       }
     >
@@ -79,7 +90,13 @@ export default function DetectionArea({ navigation }: AppScreenProps) {
       </View>
 
       {/* Notify toggle */}
-      <Pressable style={st.notifyRow} onPress={() => setNotify((v) => !v)}>
+      <Pressable
+        style={st.notifyRow}
+        onPress={() => setNotify((v) => !v)}
+        accessibilityRole="checkbox"
+        accessibilityLabel="Select areas to receive alerts for those regions"
+        accessibilityState={{ checked: notify }}
+      >
         <View style={[st.check, notify ? st.checkOn : st.checkOff]}>
           {notify && <Icon name="check" size={12} color="#fff" sw={3} />}
         </View>

@@ -7,7 +7,7 @@ import {
   TabOverlay,
   useTabShell,
 } from '../navigation/TabOverlay';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -306,11 +306,12 @@ export default function AgentChat({ navigation }: AppScreenProps) {
     (TAB_BAR_COLLAPSED_SIZE - INPUT_HEIGHT) / 2;
   const emptyInputBottom = kb ? 14 : compactInput ? collapsedInputBottom : INPUT_BOTTOM_OFFSET;
   const conversationInputBottom = kb ? 10 : compactInput ? collapsedInputBottom : INPUT_BOTTOM_OFFSET;
-  const inputLeft = compactInput ? COLLAPSED_INPUT_LEFT : INPUT_HORIZONTAL_INSET;
   const scrollRef = useRef<ScrollView>(null);
 
   // Chat drawer + conversation list state (mirrors prototype chat-drawer overlay).
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerOpenRef = useRef(drawerOpen);
+  drawerOpenRef.current = drawerOpen;
   const drawerAnim = useRef(new Animated.Value(0)).current;
   const [convMenu, setConvMenu] = useState<number | null>(null);
   const [convMenuY, setConvMenuY] = useState(200);
@@ -475,13 +476,33 @@ export default function AgentChat({ navigation }: AppScreenProps) {
       duration: 200,
       easing: Easing.out(Easing.quad),
       useNativeDriver: true,
-    }).start(() => setDrawerOpen(false));
+    }).start(({ finished }) => {
+      if (finished) setDrawerOpen(false);
+    });
   }
 
   function openConv() {
     openConversation();
     closeDrawer();
   }
+
+  // 从屏幕左缘向右轻扫可唤出历史记录。仅在横向手势明确且起点位于左缘时接管，
+  // 不干扰会话纵向滚动、输入框及推荐卡片的横向滚动。
+  const openDrawerRef = useRef(openDrawer);
+  openDrawerRef.current = openDrawer;
+  const drawerSwipeResponder = useMemo(
+    () => PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (_event, gesture) =>
+        !drawerOpenRef.current &&
+        gesture.x0 <= 32 &&
+        gesture.dx > 8 &&
+        Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.4,
+      onPanResponderRelease: (_event, gesture) => {
+        if (gesture.dx > 56 && Math.abs(gesture.dy) < 56) openDrawerRef.current();
+      },
+    }),
+    [],
+  );
 
   // --- conversation context menu / rename / delete ---
   function openRename() {
@@ -525,7 +546,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
   const menuTop = Math.max(insets.top + 56, Math.min(convMenuY - 10, H - 200));
 
   return (
-    <SafeAreaView style={styles.screen} edges={[]}>
+    <SafeAreaView style={styles.screen} edges={[]} {...drawerSwipeResponder.panHandlers}>
       {/* 顶部渐变蒙版头(原型 agentTopBar:白 → 白52% → 透明),内容从其后淡出 */}
       <LinearGradient
         colors={[colors.bgPrimary, colors.bgPrimary, 'rgba(251,251,251,0)']}

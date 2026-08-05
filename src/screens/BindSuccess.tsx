@@ -1,7 +1,7 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput } from 'react-native';
-import { Screen, Header, Tap, PrimaryBtn } from '../components/kit';
+import { Screen, Header, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';

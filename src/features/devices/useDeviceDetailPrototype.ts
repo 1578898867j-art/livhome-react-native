@@ -5,6 +5,7 @@ export type DeviceDetailTab = 'messages' | 'controls' | 'tilt' | 'playback';
 export type DeviceMessage = { day: number; icon: EventIconKey; title: string; time: string };
 export type TiltKey = 'motionOn' | 'soundOn' | 'sirenOn' | 'privacyOn';
 export type ControlKey = 'ctlSpk' | 'ctlMic' | 'ctlRec' | 'ctlSnap';
+type LocalTiltKey = Exclude<TiltKey, 'motionOn' | 'soundOn'>;
 
 const INITIAL_MESSAGES: DeviceMessage[] = NOTIFICATION_DAYS.flatMap((group) =>
   group.events.map((event) => ({
@@ -37,9 +38,7 @@ export function useDeviceDetailPrototype() {
     setActivePreset((a) => (a === i ? null : a != null && a > i ? a - 1 : a));
   };
   // 进入页面默认全部关闭
-  const [tilt, setTilt] = useState<Record<TiltKey, boolean>>({
-    motionOn: false,
-    soundOn: false,
+  const [tilt, setTilt] = useState<Record<LocalTiltKey, boolean>>({
     sirenOn: false,
     privacyOn: false,
   });
@@ -47,7 +46,7 @@ export function useDeviceDetailPrototype() {
   const [msgChecked, setMsgChecked] = useState<number[]>([]);
 
   const toggleCtl = (key: ControlKey) => setCtl((state) => ({ ...state, [key]: !state[key] }));
-  const toggleTilt = (key: TiltKey) => setTilt((state) => ({ ...state, [key]: !state[key] }));
+  const toggleTilt = (key: LocalTiltKey) => setTilt((state) => ({ ...state, [key]: !state[key] }));
   const toggleChecked = (index: number) => setMsgChecked((checked) => (
     checked.includes(index) ? checked.filter((value) => value !== index) : [...checked, index]
   ));
