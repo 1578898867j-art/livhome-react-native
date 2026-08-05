@@ -51,7 +51,6 @@ import BindFind from '../screens/BindFind';
 import BindNone from '../screens/BindNone';
 import BindPrep from '../screens/BindPrep';
 import BindWifi from '../screens/BindWifi';
-import BindWifiPick from '../screens/BindWifiPick';
 import BindConnecting from '../screens/BindConnecting';
 import BindSuccess from '../screens/BindSuccess';
 import BindFail from '../screens/BindFail';
@@ -108,7 +107,6 @@ const SCREENS = {
   'bind-none': BindNone,
   'bind-prep': BindPrep,
   'bind-wifi': BindWifi,
-  'bind-wifi-pick': BindWifiPick,
   'bind-connecting': BindConnecting,
   'bind-success': BindSuccess,
   'bind-fail': BindFail,

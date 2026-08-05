@@ -2,17 +2,28 @@ import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, Pressable } from 'react-native';
 import { Screen, Tap, Row, Card, Header, Eyebrow, SettingRow } from '../components/kit';
+import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
 import { Icon } from '../components/Icon';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
+import { useDeviceAvailability } from '../features/devices/useDeviceAvailability';
 import { colors } from '../theme';
 
 type Overlay = null | 'restart' | 'delete';
 
 export default function DevSettings({ navigation }: AppScreenProps) {
   const [overlay, setOverlay] = useState<Overlay>(null);
+  const [offlineDialog, setOfflineDialog] = useState(false);
+  const { device, isOffline } = useDeviceAvailability();
 
   const closeOverlay = () => setOverlay(null);
+  const runWhenOnline = (action: () => void) => {
+    if (isOffline) {
+      setOfflineDialog(true);
+      return;
+    }
+    action();
+  };
   const onRestartConfirm = () => {
     setOverlay(null);
     // 指令发送失败 / 设备无响应演示
@@ -40,14 +51,23 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       <Eyebrow>Basic settings</Eyebrow>
       <Card style={st.card}>
         <SettingRow icon="info" name="Device Details" onPress={() => navigation.navigate('dev-info')} />
-        <SettingRow icon="sliders" name="Device Settings" onPress={() => navigation.navigate('dev-config')} />
+        <SettingRow
+          icon="sliders"
+          name="Device Settings"
+          onPress={() => runWhenOnline(() => navigation.navigate('dev-config'))}
+        />
         <SettingRow icon="bell" name="Notifications" onPress={() => navigation.navigate('notif-settings')} />
-        <SettingRow icon="warn" name="Alert Settings" onPress={() => navigation.navigate('alert-settings')} last />
+        <SettingRow
+          icon="warn"
+          name="Alert Settings"
+          onPress={() => runWhenOnline(() => navigation.navigate('alert-settings'))}
+          last
+        />
       </Card>
 
       <Eyebrow>Smart</Eyebrow>
       <Card style={st.smartCard}>
-        <Tap style={st.smartRow} onPress={() => navigation.navigate('geofence')}>
+        <Tap style={st.smartRow} onPress={() => runWhenOnline(() => navigation.navigate('geofence'))}>
           <View style={st.smartIcon}>
             <Icon name="shield" size={17} color={colors.brand} />
           </View>
@@ -65,7 +85,7 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       <View style={st.actions}>
         <Pressable
           style={({ pressed }) => [st.flatBtn, pressed && { opacity: 0.7 }]}
-          onPress={() => setOverlay('restart')}
+          onPress={() => runWhenOnline(() => setOverlay('restart'))}
         >
           <Text style={[st.flatBtnText, { color: colors.brand }]}>Restart Device</Text>
         </Pressable>
@@ -105,6 +125,12 @@ export default function DevSettings({ navigation }: AppScreenProps) {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <DeviceOfflineDialog
+        visible={offlineDialog}
+        deviceName={device?.name}
+        onClose={() => setOfflineDialog(false)}
+      />
     </Screen>
   );
 }

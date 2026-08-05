@@ -104,6 +104,18 @@ components:
     typography: "{typography.body}"
     rounded: "{rounded.xl}"
     padding: "{spacing.lg}"
+  device-offline-dialog:
+    backgroundColor: "{colors.surface}"
+    textColor: "{colors.text-primary}"
+    typography: "{typography.body}"
+    rounded: "{rounded.xl}"
+    padding: "{spacing.lg}"
+  assistant-playback-control:
+    backgroundColor: "{colors.bg-secondary}"
+    textColor: "{colors.text-secondary}"
+    rounded: "{rounded.sm}"
+    width: 32px
+    height: 32px
   button-primary:
     backgroundColor: "{colors.btn-primary}"
     textColor: "{colors.text-inverse}"
@@ -227,10 +239,13 @@ Reuse `src/components/kit.tsx` before creating local versions of the same behavi
 - `SecondaryBtn` is a 54-unit neutral pill button for alternatives.
 - `SettingRow`, `ToggleRow`, `RadioRow`, `Toggle`, and `Segmented` are the standard settings controls.
 - `SettingsOptionSheet`, `SettingsOptionRow`, and `SettingsOptionDoneButton` provide the standard bottom-sheet pattern for choosing a compact settings mode. Reuse the same component and shared feature state when the same setting appears on multiple screens.
+- `DeviceOfflineDialog` blocks device commands and hardware-backed configuration while the selected device is offline. Keep read-only information and account-side removal available, preserve the current screen behind the dialog, and explain that power and network must be restored before retrying.
 - `Eyebrow` and `Hint` provide compact supporting hierarchy; they must not replace clear labels.
 - `Tap` uses the shared pressed-opacity response. New interactive wrappers need an equivalent visible pressed state.
+- Assistant response playback uses the existing compact action-button footprint. While playing, replace the speaker with four brand-colored waveform bars on `brand-soft`; allow a second tap to stop, restore the idle icon when playback ends, and show a static active waveform when reduced motion is enabled.
 - Full-screen transient surfaces opened from a tab screen use `TabOverlay` so they cover bottom navigation without unmounting or visually shifting it.
 - Activating the currently selected bottom tab collapses the capsule into a 72-unit icon-only circle. Devices and Assistant anchor left, Profile anchors right, and one activation of the circle expands the full navigation again. Sending a non-empty typed Assistant message also collapses an expanded capsule; voice and suggestion actions do not. When Assistant is collapsed, its composer shares the circle's row, leaves the standard gap clear, and returns to its original size and position with the expanded capsule. Preserve immediate navigation for unselected tabs and reduced-motion behavior.
+- While the software keyboard is visible, the Assistant composer detaches from bottom navigation, stays immediately above the keyboard with a small safe gap, and keeps the latest message visible on both iOS and Android.
 
 Use icons for familiar tools and actions. Every icon-only control needs an accessibility label and a stable touch target of at least 44 by 44 units where layout permits. Do not use rounded text rectangles when a standard icon communicates the action more clearly.
 

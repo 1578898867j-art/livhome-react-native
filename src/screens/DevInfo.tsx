@@ -4,10 +4,12 @@ import { View, Text, StyleSheet, TextInput, Animated, Modal, Pressable } from 'r
 import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Screen, Tap, Row, Card, Header } from '../components/kit';
+import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
 import { Icon } from '../components/Icon';
 import { Spinner } from '../components/states';
 import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
 import { showToast as showAppToast } from '../features/app/toastStore';
+import { useDeviceAvailability } from '../features/devices/useDeviceAvailability';
 import { colors, shadow } from '../theme';
 
 /* device / edit avatars — ported verbatim from the prototype (DEVAVATAR / EDITAVATAR) */
@@ -26,6 +28,16 @@ export default function DevInfo({ navigation }: AppScreenProps) {
   const [tip, setTip] = useState<TipKey | null>(null);
   const [devName, setDevName] = useState('Living Room');
   const [editing, setEditing] = useState(false);
+  const [offlineDialog, setOfflineDialog] = useState(false);
+  const { device, isOffline } = useDeviceAvailability();
+
+  const runWhenOnline = (action: () => void) => {
+    if (isOffline) {
+      setOfflineDialog(true);
+      return;
+    }
+    action();
+  };
 
   // brief "Copied" toast (RN stand-in for the copy-to-clipboard action)
   const [toast, setToast] = useState(false);
@@ -131,7 +143,7 @@ export default function DevInfo({ navigation }: AppScreenProps) {
         )}
         <Text style={st.heroSub}>Indoor · IP Camera</Text>
 
-        <Tap style={st.editBtn} onPress={() => setEditing((e) => !e)} hitSlop={8}>
+        <Tap style={st.editBtn} onPress={() => runWhenOnline(() => setEditing((e) => !e))} hitSlop={8}>
           <SvgXml xml={EDITAVATAR} width={36} height={36} />
         </Tap>
       </LinearGradient>
@@ -144,7 +156,10 @@ export default function DevInfo({ navigation }: AppScreenProps) {
       <Card style={st.card}>
         {/* Firmware:点击检查更新;有新版本时显示 New 角标 */}
         <View>
-          <Tap style={[st.infoRow, { flexDirection: 'row', alignItems: 'center' }]} onPress={checkUpdate}>
+          <Tap
+            style={[st.infoRow, { flexDirection: 'row', alignItems: 'center' }]}
+            onPress={() => runWhenOnline(checkUpdate)}
+          >
             <View style={st.infoLabelWrap}>
               <Text style={st.infoLabel}>Firmware</Text>
             </View>
@@ -238,6 +253,12 @@ export default function DevInfo({ navigation }: AppScreenProps) {
           <Text style={st.toastTxt}>Copied</Text>
         </Animated.View>
       )}
+
+      <DeviceOfflineDialog
+        visible={offlineDialog}
+        deviceName={device?.name}
+        onClose={() => setOfflineDialog(false)}
+      />
     </Screen>
   );
 }

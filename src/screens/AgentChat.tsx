@@ -9,6 +9,7 @@ import {
 } from '../navigation/TabOverlay';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  AccessibilityInfo,
   View,
   Text,
   StyleSheet,
@@ -46,6 +47,15 @@ const INPUT_HEIGHT = 65;
 const INPUT_HORIZONTAL_INSET = 18;
 const COLLAPSED_INPUT_LEFT =
   TAB_BAR_HORIZONTAL_INSET + TAB_BAR_COLLAPSED_SIZE + TAB_BAR_CONTROL_GAP;
+const KEYBOARD_AVOIDING_BEHAVIOR =
+  Platform.OS === 'ios' ? 'padding' : Platform.OS === 'android' ? 'height' : undefined;
+const ASSISTANT_PLAYBACK_DURATION = 6500;
+const PLAYBACK_BAR_SCALES = [
+  [0.4, 1, 0.55],
+  [0.9, 0.42, 1],
+  [0.55, 1, 0.38],
+  [1, 0.5, 0.78],
+];
 
 const PANEL_ICON =
   '<svg width="26" height="26" viewBox="0 0 24 24" fill="none">' +
@@ -253,6 +263,100 @@ function VoiceOverlay({ state, anim }: { state: 'active' | 'cancel'; anim: Anima
   );
 }
 
+function AssistantPlaybackButton() {
+  const [playing, setPlaying] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(true);
+  const phase = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) setReduceMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!playing) {
+      phase.stopAnimation();
+      phase.setValue(0);
+      return;
+    }
+
+    const playbackTimer = setTimeout(() => setPlaying(false), ASSISTANT_PLAYBACK_DURATION);
+    if (reduceMotion) return () => clearTimeout(playbackTimer);
+
+    const waveLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(phase, {
+          toValue: 1,
+          duration: 380,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(phase, {
+          toValue: 0,
+          duration: 380,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    waveLoop.start();
+
+    return () => {
+      clearTimeout(playbackTimer);
+      waveLoop.stop();
+    };
+  }, [phase, playing, reduceMotion]);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={playing ? 'Stop assistant response' : 'Play assistant response'}
+      accessibilityState={{ busy: playing }}
+      hitSlop={6}
+      onPress={() => setPlaying((current) => !current)}
+      style={({ pressed }) => [
+        styles.ansBtn,
+        playing && styles.ansBtnPlaying,
+        pressed && { opacity: 0.7 },
+      ]}
+    >
+      {playing ? (
+        <View style={styles.playbackWave}>
+          {PLAYBACK_BAR_SCALES.map((scales, index) => (
+            <Animated.View
+              key={index}
+              style={[
+                styles.playbackBar,
+                {
+                  transform: [
+                    {
+                      scaleY: reduceMotion
+                        ? scales[1]
+                        : phase.interpolate({
+                            inputRange: [0, 0.5, 1],
+                            outputRange: scales,
+                          }),
+                    },
+                  ],
+                },
+              ]}
+            />
+          ))}
+        </View>
+      ) : (
+        <SvgXml xml={SPEAK_ICON} width={16} height={16} color={colors.textSecondary} />
+      )}
+    </Pressable>
+  );
+}
+
 export default function AgentChat({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   const { collapsedTab, setCollapsedTab } = useTabShell();
@@ -385,7 +489,10 @@ export default function AgentChat({ navigation }: AppScreenProps) {
   useEffect(() => {
     const show = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hide = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const s1 = Keyboard.addListener(show, () => setKb(true));
+    const s1 = Keyboard.addListener(show, () => {
+      setKb(true);
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+    });
     const s2 = Keyboard.addListener(hide, () => setKb(false));
     return () => { s1.remove(); s2.remove(); };
   }, []);
@@ -540,7 +647,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
       >
         <Toolbar onNew={onNewChat} onMenu={openDrawer} />
       </LinearGradient>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={KEYBOARD_AVOIDING_BEHAVIOR}>
         {mode === 'empty' ? (
           <>
             <Pressable style={[styles.center, { paddingTop: insets.top + 44 }]} onPress={() => Keyboard.dismiss()}>
@@ -710,9 +817,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                       >
                         <SvgXml xml={COPY_ICON} width={16} height={16} color={colors.textSecondary} />
                       </Pressable>
-                      <View style={styles.ansBtn}>
-                        <SvgXml xml={SPEAK_ICON} width={16} height={16} color={colors.textSecondary} />
-                      </View>
+                      <AssistantPlaybackButton />
                     </View>
                   </>
                 )}
@@ -814,7 +919,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
       {editMsg != null && (
         <KeyboardAvoidingView
           style={[StyleSheet.absoluteFill, { zIndex: 55, justifyContent: 'flex-end' }]}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={KEYBOARD_AVOIDING_BEHAVIOR}
         >
           <Pressable
             style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(20,20,22,0.25)' }]}
@@ -964,7 +1069,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
           {renameId != null && (
             <KeyboardAvoidingView
               style={styles.dialogWrap}
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+              behavior={KEYBOARD_AVOIDING_BEHAVIOR}
             >
               <Pressable style={StyleSheet.absoluteFill} onPress={() => setRenameId(null)} />
               <View style={styles.renameCard}>
@@ -1115,6 +1220,9 @@ const styles = StyleSheet.create({
   li: { flex: 1, fontSize: 16, fontWeight: '500', lineHeight: 24, color: colors.textPrimary },
   ansActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
   ansBtn: { width: 32, height: 32, borderRadius: 10, backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
+  ansBtnPlaying: { backgroundColor: colors.brandSoft },
+  playbackWave: { height: 16, flexDirection: 'row', alignItems: 'center', gap: 2.5 },
+  playbackBar: { width: 2.25, height: 14, borderRadius: 2, backgroundColor: colors.brand },
   convBarWrap: { position: 'absolute', left: 0, right: 0, bottom: 0 },
   convBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: INPUT_HORIZONTAL_INSET },
   convBarCollapsed: { paddingLeft: COLLAPSED_INPUT_LEFT },
