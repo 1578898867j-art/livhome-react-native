@@ -22,7 +22,11 @@ type Group = { title: string; times: string[] };
 
 const GROUPS: Group[] = [
   { title: 'Today', times: ['14:22', '12:08', '09:41', '08:15'] },
-  { title: '2026-03-22', times: ['21:03', '18:44'] },
+  { title: '2026-03-22', times: ['21:03', '18:44', '16:27', '11:36', '08:52', '07:18'] },
+  { title: '2026-03-21', times: ['22:10', '19:35', '15:46', '13:24', '10:08', '08:31'] },
+  { title: '2026-03-20', times: ['20:42', '17:19', '14:05', '09:56', '07:43', '06:28'] },
+  { title: '2026-03-19', times: ['23:16', '18:57', '16:11', '12:39', '09:14', '07:02'] },
+  { title: '2026-03-18', times: ['21:48', '19:06', '14:33', '11:27', '08:45', '06:51'] },
 ];
 
 export default function Album({ navigation }: AppScreenProps) {
@@ -231,10 +235,10 @@ const st = StyleSheet.create({
   titleCenter: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' },
   action: { fontSize: 14, fontWeight: '700', color: colors.brand },
   groupTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginTop: 16,
+    marginTop: 24,
     marginBottom: 12,
     marginHorizontal: 2,
   },

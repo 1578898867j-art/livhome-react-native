@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 import { Screen, Tap, Row, Card, NavBar } from '../components/kit';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
@@ -20,6 +21,7 @@ import { colors } from '../theme';
 const FB_TYPES = ['App Issue', 'AI Assistant Issue', 'Device Issue', 'Other Issue'];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SUPPORT_EMAIL = 'LivhomeTeam@explorex-ai.com';
 
 type Overlay = null | 'type' | 'contact' | 'photo';
 
@@ -44,6 +46,14 @@ export default function Feedback({ navigation }: AppScreenProps) {
     if (!draftValid) return;
     setFbEmail(emailDraft.trim());
     close();
+  };
+  const copySupportEmail = async () => {
+    try {
+      await Clipboard.setStringAsync(SUPPORT_EMAIL);
+      showToast('Email copied', 'success');
+    } catch {
+      showToast('Unable to copy email. Please try again.', 'error');
+    }
   };
 
   return (
@@ -128,16 +138,20 @@ export default function Feedback({ navigation }: AppScreenProps) {
           <Card style={st.supportCard}>
             <Text style={st.supportTitle}>Contact Support</Text>
             <Text style={[st.supportSub, st.supportDivider]}>Questions? Contact us below:</Text>
-            <Tap style={[st.supportLink, st.supportDivider]}>
-              <Text style={st.supportLinkTxt}>LivhomeTeam@explorex-ai.com</Text>
+            <Tap
+              style={[st.supportLink, st.supportDivider]}
+              onPress={() => { void copySupportEmail(); }}
+              accessibilityRole="button"
+              accessibilityLabel={`Copy support email, ${SUPPORT_EMAIL}`}
+              accessibilityHint="Copies the support email address to the clipboard"
+            >
+              <Text style={st.supportLinkTxt}>{SUPPORT_EMAIL}</Text>
             </Tap>
             <Tap style={st.supportLink}>
               <Text style={st.supportLinkTxt}>WhatsApp Live Chat</Text>
             </Tap>
           </Card>
         </View>
-
-        <View style={{ flex: 1 }} />
 
         {/* Submit */}
         <View style={st.submitWrap}>
@@ -291,14 +305,14 @@ export default function Feedback({ navigation }: AppScreenProps) {
 
 const st = StyleSheet.create({
   container: { flex: 1, paddingBottom: 40 },
-  body: { paddingHorizontal: 18, paddingTop: 4 },
+  body: { flex: 1, paddingHorizontal: 18, paddingTop: 4 },
   h1: {
     fontSize: 24,
     fontWeight: '800',
     letterSpacing: -0.4,
     color: colors.textPrimary,
     marginTop: 6,
-    marginBottom: 16,
+    marginBottom: 20,
     marginHorizontal: 2,
   },
   selectRow: {
@@ -313,7 +327,7 @@ const st = StyleSheet.create({
   rowTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.textPrimary },
   reqFilled: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   reqEmpty: { fontSize: 15, fontWeight: '500', color: colors.textTertiary },
-  descCard: { marginTop: 14, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 },
+  descCard: { marginTop: 20, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 },
   textarea: {
     minHeight: 72,
     fontSize: 15,
@@ -361,7 +375,7 @@ const st = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginTop: 14,
+    marginTop: 20,
     paddingHorizontal: 16,
     minHeight: 56,
     backgroundColor: colors.surface,
@@ -373,19 +387,19 @@ const st = StyleSheet.create({
     fontWeight: '600',
     color: colors.textPrimary,
   },
-  supportCard: { marginTop: 14, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 2 },
-  supportTitle: { textAlign: 'center', fontSize: 17, fontWeight: '800', color: colors.textPrimary },
+  supportCard: { flex: 1, marginTop: 20, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 2 },
+  supportTitle: { textAlign: 'center', fontSize: 19, fontWeight: '800', color: colors.textPrimary },
   supportSub: {
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '500',
     color: colors.textSecondary,
-    marginTop: 5,
-    paddingBottom: 10,
+    marginTop: 8,
+    paddingBottom: 14,
   },
-  supportLink: { paddingVertical: 10 },
+  supportLink: { paddingVertical: 12 },
   supportDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  supportLinkTxt: { textAlign: 'center', fontSize: 14, fontWeight: '700', color: colors.brand },
+  supportLinkTxt: { textAlign: 'center', fontSize: 16, fontWeight: '700', color: colors.brand },
   submitWrap: { paddingHorizontal: 18 },
   submitBtn: {
     width: '100%',

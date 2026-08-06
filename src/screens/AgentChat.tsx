@@ -460,6 +460,43 @@ export default function AgentChat({ navigation }: AppScreenProps) {
     showToast('Copied', 'success');
   };
 
+  // 一次智能体回复可由标题、段落和列表等多个 Block 组成；操作栏应跟在每一次回复后，
+  // 而不是只固定在整段会话的末尾。
+  const replyEndsAt = (index: number) => {
+    const block = conv[index];
+    if (!block || block.t === 'me' || block.t === 'gap' || block.t === 'err') return false;
+    const next = conv[index + 1];
+    return next == null || next.t === 'me' || next.t === 'gap' || next.t === 'err';
+  };
+
+  const replyTextAt = (endIndex: number) => {
+    const reply: string[] = [];
+    for (let index = endIndex; index >= 0; index -= 1) {
+      const block = conv[index];
+      if (block.t === 'me' || block.t === 'gap' || block.t === 'err') break;
+      if (block.text) reply.unshift(block.text);
+    }
+    return reply.join('\n');
+  };
+
+  const renderReplyActions = (index: number) => {
+    if (!replyEndsAt(index)) return null;
+    return (
+      <View style={styles.ansActions}>
+        <Pressable
+          accessibilityLabel="Copy assistant response"
+          accessibilityRole="button"
+          style={styles.ansBtn}
+          hitSlop={6}
+          onPress={() => showCopied(replyTextAt(index))}
+        >
+          <SvgXml xml={COPY_ICON} width={16} height={16} color={colors.textSecondary} />
+        </Pressable>
+        <AssistantPlaybackButton />
+      </View>
+    );
+  };
+
   const openEditMsg = () => {
     if (msgMenu == null) return;
     setEditVal((conv[msgMenu.idx].text ?? '').replace(/<\/?b>/g, ''));
@@ -804,37 +841,37 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                             </Pressable>
                           </View>
                         );
-                      if (b.t === 'h') return <Text key={i} style={styles.h}>{b.text}</Text>;
-                      if (b.t === 'sh') return <Text key={i} style={styles.sh}>{b.text}</Text>;
+                      if (b.t === 'h')
+                        return (
+                          <React.Fragment key={i}>
+                            <Text style={styles.h}>{b.text}</Text>
+                            {renderReplyActions(i)}
+                          </React.Fragment>
+                        );
+                      if (b.t === 'sh')
+                        return (
+                          <React.Fragment key={i}>
+                            <Text style={styles.sh}>{b.text}</Text>
+                            {renderReplyActions(i)}
+                          </React.Fragment>
+                        );
                       if (b.t === 'li')
                         return (
-                          <View key={i} style={styles.liRow}>
-                            <Text style={styles.bullet}>•</Text>
-                            <Rich text={b.text!} style={styles.li} />
-                          </View>
+                          <React.Fragment key={i}>
+                            <View style={styles.liRow}>
+                              <Text style={styles.bullet}>•</Text>
+                              <Rich text={b.text!} style={styles.li} />
+                            </View>
+                            {renderReplyActions(i)}
+                          </React.Fragment>
                         );
                       return (
-                        <Rich key={i} text={b.text!} style={[styles.p, b.secondary && { color: colors.textSecondary }]} />
+                        <React.Fragment key={i}>
+                          <Rich text={b.text!} style={[styles.p, b.secondary && { color: colors.textSecondary }]} />
+                          {renderReplyActions(i)}
+                        </React.Fragment>
                       );
                     })}
-                    {/* copy / speak */}
-                    <View style={styles.ansActions}>
-                      <Pressable
-                        style={styles.ansBtn}
-                        hitSlop={6}
-                        onPress={() =>
-                          showCopied(
-                            conv
-                              .filter((b) => b.t !== 'me' && b.t !== 'gap' && b.text)
-                              .map((b) => b.text!)
-                              .join('\n'),
-                          )
-                        }
-                      >
-                        <SvgXml xml={COPY_ICON} width={16} height={16} color={colors.textSecondary} />
-                      </Pressable>
-                      <AssistantPlaybackButton />
-                    </View>
                   </>
                 )}
               </ScrollView>

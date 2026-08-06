@@ -7,7 +7,7 @@ export const TAB_ROUTES = ['dev-home', 'agent-chat', 'me-home'] as const;
 export const STACK_ROUTES = [
   'splash',
   'dev-detail', 'dev-playback', 'dev-download', 'dev-messages', 'dev-config', 'dev-settings', 'dev-info',
-  'notif-center', 'notif-detail', 'notif-system', 'notif-image', 'notif-settings', 'notif-frequency', 'alert-settings',
+  'notif-center', 'notif-detail', 'notif-system', 'notif-photo-preview', 'notif-image', 'notif-settings', 'notif-frequency', 'alert-settings',
   'motion-detection', 'detection-area', 'sound-detection', 'line-crossing', 'trip-wire', 'geofence',
   'agent-history',
   'album', 'album-detail',
@@ -23,7 +23,11 @@ export type StackRouteName = (typeof STACK_ROUTES)[number];
 export type ScreenName = 'login' | MainTabName | StackRouteName;
 
 type ScreenParamList = {
-  [Route in ScreenName]: Route extends 'dev-settings' ? { deviceOffline?: boolean } : undefined;
+  [Route in ScreenName]: Route extends 'dev-settings'
+    ? { deviceOffline?: boolean }
+    : Route extends 'notif-photo-preview'
+      ? { title: string; occurredAt: string }
+      : undefined;
 };
 
 export type MainTabParamList = Pick<ScreenParamList, MainTabName>;

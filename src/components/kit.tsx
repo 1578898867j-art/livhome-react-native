@@ -368,10 +368,26 @@ export function RadioRow({
 }
 
 /* ---- primary / secondary buttons ---- */
-export function PrimaryBtn({ label, onPress, style }: { label: string; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
+export function PrimaryBtn({
+  label,
+  onPress,
+  style,
+  disabled = false,
+}: {
+  label: string;
+  onPress?: () => void;
+  style?: StyleProp<ViewStyle>;
+  disabled?: boolean;
+}) {
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => [s.btnPri, pressed && { opacity: 0.85 }, style]}>
-      <Text style={{ color: '#fff', fontSize: 16, fontWeight: '700' }}>{label}</Text>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      style={({ pressed }) => [s.btnPri, disabled && s.btnPriDisabled, pressed && !disabled && { opacity: 0.85 }, style]}
+    >
+      <Text style={[s.btnPriText, disabled && s.btnPriTextDisabled]}>{label}</Text>
     </Pressable>
   );
 }
@@ -432,5 +448,8 @@ const s = StyleSheet.create({
   segItem: { flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 11 },
   segItemActive: { backgroundColor: colors.surface, ...shadow.sm },
   btnPri: { height: 54, borderRadius: 99, backgroundColor: colors.btnPrimary, alignItems: 'center', justifyContent: 'center' },
+  btnPriDisabled: { backgroundColor: colors.bgSecondary },
+  btnPriText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  btnPriTextDisabled: { color: colors.textTertiary },
   btnSec: { height: 54, borderRadius: 99, backgroundColor: colors.bgSecondary, alignItems: 'center', justifyContent: 'center' },
 });
