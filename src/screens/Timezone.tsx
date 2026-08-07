@@ -4,6 +4,8 @@ import { View, Text, StyleSheet, TextInput } from 'react-native';
 import { Screen, Header, Hint, Eyebrow, Card, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
+import { setTimezone, useDeviceSettings } from '../features/devices/deviceSettingsStore';
 
 const TZ_ALL: [string, string][] = [
   ['Beijing', 'GMT+8:00'],
@@ -28,14 +30,16 @@ const norm = (s: string) => s.toLowerCase().replace(/\s+/g, '');
 
 export default function Timezone({ navigation }: AppScreenProps) {
   const [query, setQuery] = useState('');
-  const [sel, setSel] = useState('Beijing');
+  const { timezone } = useDeviceSettings();
+  const sel = timezone.city;
+  const selectTimezone = (city: string, gmt: string) => setTimezone({ city, gmt });
 
   const q = norm(query.trim());
 
   const ZRow = ({ city, gmt, last }: { city: string; gmt: string; last?: boolean }) => {
     const on = sel === city;
     return (
-      <Tap onPress={() => setSel(city)} style={st.zRow}>
+      <Tap onPress={() => selectTimezone(city, gmt)} style={st.zRow}>
         {!last && <View style={st.divider} />}
         <Text style={st.zCity}>{city}</Text>
         <Text style={[st.zGmt, { color: on ? colors.brand : colors.textTertiary }]}>{gmt}</Text>
@@ -68,7 +72,7 @@ export default function Timezone({ navigation }: AppScreenProps) {
       <>
         <Eyebrow>Current recommended time zone</Eyebrow>
         <Tap
-          onPress={() => setSel('Beijing')}
+          onPress={() => selectTimezone('Beijing', 'GMT+8:00')}
           style={[st.recCard, recSel && { backgroundColor: colors.brandSoft }]}
         >
           <Row style={{ gap: 10 }}>
@@ -101,6 +105,7 @@ export default function Timezone({ navigation }: AppScreenProps) {
             <TextInput
               value={query}
               onChangeText={setQuery}
+              maxLength={INPUT_LIMITS.timezoneQuery}
               placeholder="Search city or time zone"
               placeholderTextColor={colors.textTertiary}
               style={st.searchInput}

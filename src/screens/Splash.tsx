@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SunLogo } from '../components/SunLogo';
 import { hasLoginState } from '../features/auth/session';
+import { hydratePersistence } from '../features/app/persistence';
 
 // 启动页(Figma 4514:254):白底居中 App logo,短暂停留后进入欢迎/隐私同意页
 export default function Splash({ navigation }: AppScreenProps) {
@@ -11,7 +12,7 @@ export default function Splash({ navigation }: AppScreenProps) {
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     const routeFromSession = async () => {
-      const loggedIn = await hasLoginState();
+      const [loggedIn] = await Promise.all([hasLoginState(), hydratePersistence()]);
       if (cancelled) return;
 
       if (loggedIn) {

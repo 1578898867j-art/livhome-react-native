@@ -14,6 +14,7 @@ import DevInfo from '../screens/DevInfo';
 import NotifCenter from '../screens/NotifCenter';
 import NotifDetail from '../screens/NotifDetail';
 import NotifSystem from '../screens/NotifSystem';
+import NotifPhotoPreview from '../screens/NotifPhotoPreview';
 import NotifImage from '../screens/NotifImage';
 import NotifSettings from '../screens/NotifSettings';
 import NotifFrequency from '../screens/NotifFrequency';
@@ -69,6 +70,7 @@ const SCREENS = {
   'notif-center': NotifCenter,
   'notif-detail': NotifDetail,
   'notif-system': NotifSystem,
+  'notif-photo-preview': NotifPhotoPreview,
   'notif-image': NotifImage,
   'notif-settings': NotifSettings,
   'notif-frequency': NotifFrequency,

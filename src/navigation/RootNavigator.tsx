@@ -29,7 +29,11 @@ function MainTabs() {
 
 export default function RootNavigator() {
   return (
-    <Stack.Navigator initialRouteName="splash" screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      initialRouteName="splash"
+      // 页面切换只由明确的导航操作触发；智能体的历史记录右滑由 AgentChat 自己处理。
+      screenOptions={{ headerShown: false, gestureEnabled: false }}
+    >
       <Stack.Screen name="login" component={screenFor('login')} />
       <Stack.Screen name="Main" component={MainTabs} />
       {STACK_ROUTES.map((id) => (

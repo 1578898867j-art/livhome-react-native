@@ -17,6 +17,7 @@ import { saveLoginState } from '../features/auth/session';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 import { colors, spacing } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -138,6 +139,7 @@ export default function EmailLogin({ navigation }: AppScreenProps) {
                 style={st.input}
                 value={email}
                 onChangeText={setEmail}
+                maxLength={INPUT_LIMITS.emailAddress}
                 placeholder="Enter your email"
                 placeholderTextColor={colors.textTertiary}
                 keyboardType="email-address"

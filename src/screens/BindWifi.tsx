@@ -7,6 +7,7 @@ import { Icon } from '../components/Icon';
 import { StateView, Spinner } from '../components/states';
 import { useDemoFlags } from '../features/app/demoStore';
 import { colors } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
 
 type Network = { name: string; unsupported?: boolean };
 
@@ -80,6 +81,7 @@ export default function BindWifi({ navigation }: AppScreenProps) {
               style={st.input}
               value={password}
               onChangeText={setPassword}
+              maxLength={INPUT_LIMITS.wifiPassword}
               placeholder="Enter Wi-Fi password"
               placeholderTextColor={colors.textTertiary}
               secureTextEntry
@@ -131,6 +133,9 @@ export default function BindWifi({ navigation }: AppScreenProps) {
               actionLabel="Retry"
               onAction={retry}
               style={st.errorBox}
+              titleStyle={{ fontSize: 19 }}
+              subStyle={{ fontSize: 16, lineHeight: 22 }}
+              actionTextStyle={{ fontSize: 17 }}
             />
           )
         ) : (
@@ -223,6 +228,6 @@ const st = StyleSheet.create({
     height: 1,
     backgroundColor: colors.border,
   },
-  errorBox: { paddingVertical: 34 },
+  errorBox: { paddingTop: 124, paddingBottom: 34 },
   loadingBox: { height: 270, alignItems: 'center', justifyContent: 'center' },
 });

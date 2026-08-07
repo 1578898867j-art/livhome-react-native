@@ -8,8 +8,13 @@ import { Icon } from '../components/Icon';
 import { colors } from '../theme';
 import { CAMGLYPH } from '../icons/protoIcons';
 import {
+  setAntiFlicker,
+  setIdleTime,
+  setImageFlip,
   setNightVisionMode,
   setSmartTrackingEnabled,
+  setVolume,
+  useDeviceSettings,
   useNightVisionMode,
   useSmartTrackingEnabled,
 } from '../features/devices/deviceSettingsStore';
@@ -61,15 +66,11 @@ function FlipCard({
 
 export default function DevConfig({ navigation }: AppScreenProps) {
   // Local state seeded from the prototype S defaults
-  const [tzGmt] = useState('GMT+8:00'); // tzSel:'Beijing' → GMT+8:00
   const schedules = useSchedules();
   const offTime = schedules.length === 0 ? 'None' : '';
-  const [idleTime, setIdleTime] = useState('5');
-  const [imgFlip, setImgFlip] = useState<'normal' | 'flipped'>('normal');
+  const { antiFlicker, idleTime, imageFlip, timezone, volume } = useDeviceSettings();
   const nvMode = useNightVisionMode();
   const smartTrack = useSmartTrackingEnabled();
-  const [antiFlicker, setAntiFlicker] = useState('50');
-  const [volume, setVolume] = useState(10);
   const [sheet, setSheet] = useState<SheetKey>(null);
   const [offlineDialog, setOfflineDialog] = useState(false);
   const { device, isOffline } = useDeviceAvailability();
@@ -94,7 +95,7 @@ export default function DevConfig({ navigation }: AppScreenProps) {
         <SettingRow
           icon="globe"
           name="Device Time Zone"
-          value={tzGmt}
+          value={timezone.gmt}
           onPress={() => runWhenOnline(() => navigation.navigate('timezone'))}
           last
         />
@@ -122,7 +123,7 @@ export default function DevConfig({ navigation }: AppScreenProps) {
         <SettingRow
           icon="flip"
           name="Image Flip 180°"
-          value={imgFlip === 'flipped' ? 'Flipped' : 'Normal'}
+          value={imageFlip === 'flipped' ? 'Flipped' : 'Normal'}
           onPress={() => runWhenOnline(() => setSheet('flip'))}
         />
         <SettingRow
@@ -188,14 +189,14 @@ export default function DevConfig({ navigation }: AppScreenProps) {
           <FlipCard
             label="Normal"
             rot={0}
-            on={imgFlip === 'normal'}
-            onPress={() => runWhenOnline(() => setImgFlip('normal'))}
+            on={imageFlip === 'normal'}
+            onPress={() => runWhenOnline(() => setImageFlip('normal'))}
           />
           <FlipCard
             label="Flipped 180°"
             rot={180}
-            on={imgFlip === 'flipped'}
-            onPress={() => runWhenOnline(() => setImgFlip('flipped'))}
+            on={imageFlip === 'flipped'}
+            onPress={() => runWhenOnline(() => setImageFlip('flipped'))}
           />
         </Row>
         <SettingsOptionDoneButton onPress={closeSheet} />
@@ -269,9 +270,9 @@ export default function DevConfig({ navigation }: AppScreenProps) {
                 <Tap
                   key={n}
                   onPress={() => runWhenOnline(() => setVolume(n))}
-                  style={[st.volCell, on && { backgroundColor: colors.brand }]}
+                  style={[st.volCell, on && st.volCellSelected]}
                 >
-                  <Text style={[st.volCellTxt, on && { color: '#fff' }]}>{n}</Text>
+                  <Text style={[st.volCellTxt, on && st.volCellTxtSelected]}>{n}</Text>
                 </Tap>
               );
             })}
@@ -333,5 +334,7 @@ const st = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  volCellSelected: { backgroundColor: colors.brandSoft, borderWidth: 1, borderColor: colors.brand },
   volCellTxt: { fontSize: 16, fontWeight: '700', color: colors.textPrimary },
+  volCellTxtSelected: { color: colors.brand },
 });

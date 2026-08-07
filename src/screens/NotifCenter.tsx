@@ -242,7 +242,10 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
             sub="Please check your network and try again."
             actionLabel="Retry"
             onAction={retryLoad}
-            style={{ paddingTop: 72 }}
+            style={{ paddingTop: 162 }}
+            titleStyle={{ fontSize: 19 }}
+            subStyle={{ fontSize: 16, lineHeight: 22 }}
+            actionTextStyle={{ fontSize: 17 }}
           />
         )
       ) : /* 空态(设计稿:邮筒插画 + No camera messages yet.) */
@@ -342,6 +345,9 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
         visible={calendarOpen}
         initM={calendarDate.m}
         initD={calendarDate.d}
+        availableDates={groups
+          .filter((group) => group.msgs.length > 0)
+          .map((group) => ({ m: MONTHS.indexOf(group.mon), d: Number(group.day) }))}
         onClose={() => setCalendarOpen(false)}
         onConfirm={jumpToDate}
       />

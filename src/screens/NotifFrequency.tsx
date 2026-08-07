@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Screen, Header, Eyebrow, Hint, Card, RadioRow, Row } from '../components/kit';
 import { colors } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
+import { setNotificationSettings, useDeviceAlertSettings } from '../features/devices/deviceAlertStore';
 
 // Ported 1:1 from the prototype's NF_OPTS.
 const NF_OPTS: [string, string][] = [
@@ -25,14 +27,13 @@ const NF_OPTS: [string, string][] = [
 ];
 
 export default function NotifFrequency({ navigation }: AppScreenProps) {
-  const [notifFreq, setNotifFreq] = useState<string>('10');
-  const [notifCustom, setNotifCustom] = useState<number | null>(null);
+  const { notificationCustom: notifCustom, notificationFrequency: notifFreq } = useDeviceAlertSettings();
   const [dlgOpen, setDlgOpen] = useState(false);
   const [customVal, setCustomVal] = useState('');
 
   // prototype: valid = /^\d+$/ and > 0; error shown once something invalid is typed
   const trimmed = customVal.trim();
-  const valid = /^\d+$/.test(trimmed) && parseInt(trimmed, 10) > 0;
+  const valid = /^\d+$/.test(trimmed) && parseInt(trimmed, 10) > 0 && parseInt(trimmed, 10) <= 1440;
   const showErr = trimmed !== '' && !valid;
 
   const openDlg = () => {
@@ -42,8 +43,7 @@ export default function NotifFrequency({ navigation }: AppScreenProps) {
   const closeDlg = () => setDlgOpen(false);
   const confirmDlg = () => {
     if (!valid) return;
-    setNotifCustom(parseInt(trimmed, 10));
-    setNotifFreq('custom');
+    setNotificationSettings({ notificationCustom: parseInt(trimmed, 10), notificationFrequency: 'custom' });
     setDlgOpen(false);
   };
 
@@ -58,7 +58,7 @@ export default function NotifFrequency({ navigation }: AppScreenProps) {
               key={o[0]}
               name={o[1]}
               selected={notifFreq === o[0]}
-              onPress={() => setNotifFreq(o[0])}
+              onPress={() => setNotificationSettings({ notificationFrequency: o[0] })}
               last={false}
             />
           ))}
@@ -95,6 +95,7 @@ export default function NotifFrequency({ navigation }: AppScreenProps) {
                 <TextInput
                   value={customVal}
                   onChangeText={setCustomVal}
+                  maxLength={INPUT_LIMITS.notificationInterval}
                   placeholder="Enter minutes"
                   placeholderTextColor={colors.textTertiary}
                   keyboardType="number-pad"
@@ -104,7 +105,7 @@ export default function NotifFrequency({ navigation }: AppScreenProps) {
                 <Text style={st.inputUnit}>min</Text>
               </Row>
               {showErr && (
-                <Text style={st.inputErr}>Only numbers greater than zero are allowed</Text>
+                <Text style={st.inputErr}>Enter a whole number from 1 to 1440</Text>
               )}
               <Row style={{ gap: 12, marginTop: 20 }}>
                 <Pressable style={[st.dlgBtn, st.dlgCancel]} onPress={closeDlg}>
@@ -112,7 +113,7 @@ export default function NotifFrequency({ navigation }: AppScreenProps) {
                 </Pressable>
                 <Pressable
                   disabled={!valid}
-                  style={[st.dlgBtn, { backgroundColor: colors.brand, opacity: valid ? 1 : 0.45 }]}
+                  style={[st.dlgBtn, { backgroundColor: colors.btnPrimary, opacity: valid ? 1 : 0.45 }]}
                   onPress={confirmDlg}
                 >
                   <Text style={[st.dlgBtnText, { color: '#fff' }]}>Confirm</Text>

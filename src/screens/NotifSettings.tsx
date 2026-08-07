@@ -10,6 +10,7 @@ import {
   SettingRow,
 } from '../components/kit';
 import { colors } from '../theme';
+import { setNotificationSettings, useDeviceAlertSettings } from '../features/devices/deviceAlertStore';
 
 type TimeTarget = 'start' | 'end';
 
@@ -17,12 +18,16 @@ const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
 const formatTime = (hour: number) => `${String(hour).padStart(2, '0')}:00`;
 
 export default function NotifSettings({ navigation }: AppScreenProps) {
-  const [notifOn, setNotifOn] = useState(true);
-  const [motionOn, setMotionOn] = useState(true);
+  const {
+    dndEnabled,
+    dndEnd,
+    dndStart,
+    notificationAlarmEnabled,
+    notificationCustom,
+    notificationFrequency,
+    notificationsEnabled,
+  } = useDeviceAlertSettings();
   const [dndOpen, setDndOpen] = useState(false);
-  const [dndStart, setDndStart] = useState(22);
-  const [dndEnd, setDndEnd] = useState(7);
-  const [dndEnabled, setDndEnabled] = useState(false);
   const [draftDndStart, setDraftDndStart] = useState(22);
   const [draftDndEnd, setDraftDndEnd] = useState(7);
   const [draftDndEnabled, setDraftDndEnabled] = useState(false);
@@ -42,32 +47,51 @@ export default function NotifSettings({ navigation }: AppScreenProps) {
   };
 
   const saveDnd = () => {
-    setDndStart(draftDndStart);
-    setDndEnd(draftDndEnd);
-    setDndEnabled(draftDndEnabled);
+    setNotificationSettings({
+      notificationsEnabled,
+      notificationAlarmEnabled,
+      dndEnabled: draftDndEnabled,
+      dndStart: draftDndStart,
+      dndEnd: draftDndEnd,
+      notificationFrequency,
+      notificationCustom,
+    });
     setDndOpen(false);
   };
 
   const dndValue = dndEnabled ? `${formatTime(dndStart)}–${formatTime(dndEnd)}` : 'None';
+  const frequencyValue = notificationFrequency === 'custom'
+    ? `${notificationCustom ?? 0} minutes`
+    : notificationFrequency === 'realtime'
+      ? 'Real-time'
+      : `${notificationFrequency} minute${notificationFrequency === '1' ? '' : 's'}`;
 
   return (
     <Screen header={<Header title="Notifications" onBack={() => navigation.goBack()} />}>
       <Card style={{ marginHorizontal: 18, marginTop: 8 }}>
         <ToggleRow
           name="Notifications"
-          on={notifOn}
-          onToggle={() => setNotifOn((v) => !v)}
+          on={notificationsEnabled}
+          onToggle={() => setNotificationSettings({
+            notificationsEnabled: !notificationsEnabled,
+            notificationAlarmEnabled,
+            dndEnabled,
+            dndStart,
+            dndEnd,
+            notificationFrequency,
+            notificationCustom,
+          })}
           last
         />
       </Card>
 
-      {notifOn && (
+      {notificationsEnabled && (
         <View>
           <Eyebrow>Notification settings</Eyebrow>
           <Card style={{ marginHorizontal: 18 }}>
             <SettingRow
               name="Notification Frequency"
-              value="10 minutes"
+              value={frequencyValue}
               onPress={() => navigation.navigate('notif-frequency')}
             />
             <SettingRow
@@ -82,8 +106,16 @@ export default function NotifSettings({ navigation }: AppScreenProps) {
           <Card style={{ marginHorizontal: 18 }}>
             <ToggleRow
               name="Alarm Notification"
-              on={motionOn}
-              onToggle={() => setMotionOn((v) => !v)}
+              on={notificationAlarmEnabled}
+              onToggle={() => setNotificationSettings({
+                notificationsEnabled,
+                notificationAlarmEnabled: !notificationAlarmEnabled,
+                dndEnabled,
+                dndStart,
+                dndEnd,
+                notificationFrequency,
+                notificationCustom,
+              })}
               last
             />
           </Card>

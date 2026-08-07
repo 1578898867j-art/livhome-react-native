@@ -7,6 +7,7 @@ import { Spinner } from '../components/states';
 import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 import { colors } from '../theme';
+import { setStorageSettings, useDeviceAlertSettings } from '../features/devices/deviceAlertStore';
 
 const RECMODES: Record<string, string> = {
   off: 'No Recording',
@@ -18,9 +19,8 @@ const REC_OPTS: string[] = ['off', 'alert', 'allday'];
 type Overlay = null | 'rec' | 'format' | 'formatting';
 
 export default function StorageSettings({ navigation }: AppScreenProps) {
-  const [recMode, setRecMode] = useState<string>('allday');
+  const { recordingMode: recMode, storageUsed: used } = useDeviceAlertSettings();
   const [overlay, setOverlay] = useState<Overlay>(null);
-  const [used, setUsed] = useState(2.19);
 
   // 概率性状态:卡状态读取失败(--)/ 未插卡 / 格式化进行中与失败
   const flags = useDemoFlags();
@@ -46,7 +46,7 @@ export default function StorageSettings({ navigation }: AppScreenProps) {
         showToast('Failed to format the card. Please try again.', 'error');
         return;
       }
-      setUsed(0);
+      setStorageSettings({ recordingMode: recMode, storageUsed: 0 });
       showToast('Card formatted', 'success');
     }, 1600);
   };
@@ -104,7 +104,7 @@ export default function StorageSettings({ navigation }: AppScreenProps) {
                     <Tap
                       style={st.sheetRow}
                       onPress={() => {
-                        setRecMode(key);
+                        setStorageSettings({ recordingMode: key as 'off' | 'alert' | 'allday', storageUsed: used });
                         close();
                       }}
                     >

@@ -108,9 +108,21 @@ export default function NotifDetail({ navigation }: AppScreenProps) {
         {selectedGroup.events.map((event, index) => {
           const unread = event.unread && readIds.indexOf(event.id) < 0;
           return (
-            <Row
+            <Tap
               key={event.id}
               style={[st.event, index === selectedGroup.events.length - 1 && { marginBottom: 0 }]}
+              onPress={
+                failLoad
+                  ? undefined
+                  : () =>
+                      navigation.navigate('notif-photo-preview', {
+                        title: event.title,
+                        occurredAt: `2026-04-${selectedGroup.day} ${event.time}`,
+                      })
+              }
+              disabled={failLoad}
+              accessibilityRole="button"
+              accessibilityLabel={`Open ${event.title} details`}
             >
               {index < selectedGroup.events.length - 1 && <View style={st.connector} />}
               <SvgXml xml={event.icon} width={48} height={48} />
@@ -144,12 +156,12 @@ export default function NotifDetail({ navigation }: AppScreenProps) {
                     <Text style={st.previewFailTxt}>Failed to load</Text>
                   </View>
                 ) : (
-                  <Tap style={st.preview} onPress={() => navigation.navigate('notif-image')}>
+                  <View style={st.preview}>
                     <CamPreview box={false} style={{ width: '100%', height: '100%' }} />
-                  </Tap>
+                  </View>
                 )}
               </View>
-            </Row>
+            </Tap>
           );
         })}
       </View>
@@ -214,7 +226,7 @@ const st = StyleSheet.create({
     padding: 12,
     paddingBottom: 16,
   },
-  event: { alignItems: 'flex-start', marginBottom: 38 },
+  event: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 38 },
   connector: {
     position: 'absolute',
     left: 23,
@@ -248,7 +260,7 @@ const st = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.critical,
   },
-  evTitle: { marginTop: 8, fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  evTitle: { marginTop: 8, fontSize: 16, fontWeight: '600', color: colors.textPrimary },
   preview: {
     marginTop: 6,
     height: 168,

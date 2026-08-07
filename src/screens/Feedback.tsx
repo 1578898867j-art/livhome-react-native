@@ -11,22 +11,25 @@ import {
   Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Clipboard from 'expo-clipboard';
 import { Screen, Tap, Row, Card, NavBar } from '../components/kit';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
 
 const FB_TYPES = ['App Issue', 'AI Assistant Issue', 'Device Issue', 'Other Issue'];
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SUPPORT_EMAIL = 'LivhomeTeam@explorex-ai.com';
 
 type Overlay = null | 'type' | 'contact' | 'photo';
 
 export default function Feedback({ navigation }: AppScreenProps) {
   const [fbType, setFbType] = useState<string | null>(null);
   const [fbText, setFbText] = useState('');
-  const [fbEmail, setFbEmail] = useState('jon.a@livhome.app');
+  const [fbEmail, setFbEmail] = useState('');
   const [fbImg, setFbImg] = useState(false);
   const [overlay, setOverlay] = useState<Overlay>(null);
   const [emailDraft, setEmailDraft] = useState('');
@@ -45,10 +48,17 @@ export default function Feedback({ navigation }: AppScreenProps) {
     setFbEmail(emailDraft.trim());
     close();
   };
+  const copySupportEmail = async () => {
+    try {
+      await Clipboard.setStringAsync(SUPPORT_EMAIL);
+      showToast('Email copied', 'success');
+    } catch {
+      showToast('Unable to copy email. Please try again.', 'error');
+    }
+  };
 
   return (
     <Screen
-      scroll={false}
       header={<NavBar title="My Feedback" onBack={() => navigation.goBack()} />}
     >
       <View style={st.container}>
@@ -73,53 +83,54 @@ export default function Feedback({ navigation }: AppScreenProps) {
             <TextInput
               value={fbText}
               onChangeText={setFbText}
-              maxLength={2000}
+              maxLength={INPUT_LIMITS.feedbackDescription}
               multiline
               placeholder="Please describe your issue in detail and provide necessary information such as the device name."
               placeholderTextColor={colors.textTertiary}
               style={st.textarea}
             />
-            <Row style={{ alignItems: 'flex-end', marginTop: 10 }}>
-              {fbImg ? (
-                <Tap onPress={() => setFbImg(false)} style={st.thumb}>
-                  <LinearGradient
-                    colors={['#2A2E39', '#0E1116'] as const}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={st.thumbBg}
-                  />
-                  <Icon name="camera" size={22} color="#9BB4E8" />
-                  <View style={st.thumbBadge}>
-                    <Icon name="x" size={11} color="#fff" sw={2.8} />
-                  </View>
-                </Tap>
-              ) : (
-                <Tap onPress={() => setOverlay('photo')} style={st.addRow}>
-                  <View style={st.addTile}>
-                    <Icon name="plus" size={22} color={colors.textTertiary} sw={2} />
-                  </View>
-                  <View>
-                    <Text style={st.addTitle}>Add Images or Videos</Text>
-                    <Text style={st.addSub}>videos should be no longer than 1 minute</Text>
-                  </View>
-                </Tap>
-              )}
-              <View style={{ flex: 1 }} />
+            <View style={st.uploadArea}>
+              <Row style={st.uploadRow}>
+                {fbImg ? (
+                  <Tap onPress={() => setFbImg(false)} style={st.thumb}>
+                    <LinearGradient
+                      colors={['#2A2E39', '#0E1116'] as const}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={st.thumbBg}
+                    />
+                    <Icon name="camera" size={22} color="#9BB4E8" />
+                    <View style={st.thumbBadge}>
+                      <Icon name="x" size={11} color="#fff" sw={2.8} />
+                    </View>
+                  </Tap>
+                ) : (
+                  <Tap onPress={() => setOverlay('photo')} style={st.addRow}>
+                    <View style={st.addTile}>
+                      <Icon name="plus" size={22} color={colors.textTertiary} sw={2} />
+                    </View>
+                    <View>
+                      <Text style={st.addTitle}>Add Images or Videos</Text>
+                      <Text style={st.addSub}>videos should be no longer than 1 minute</Text>
+                    </View>
+                  </Tap>
+                )}
+              </Row>
               <Text style={st.counter}>{len}/2000</Text>
-            </Row>
+            </View>
           </Card>
 
           {/* Contact Information */}
           <Tap onPress={openContact} style={st.contactRow}>
-            <Text style={st.rowTitle}>
+            <Text style={st.contactTitle}>
               Contact Information <Text style={{ color: colors.critical }}>*</Text>
             </Text>
             {fbEmail ? (
-              <Text style={st.contactValue} numberOfLines={1}>
+              <Text style={st.contactValue} numberOfLines={1} ellipsizeMode="tail">
                 {fbEmail}
               </Text>
             ) : (
-              <Text style={st.reqEmpty}>Required</Text>
+              <Text style={st.contactEmpty}>Required</Text>
             )}
             <Icon name="chevR" size={15} color={colors.textTertiary} sw={2} />
           </Tap>
@@ -128,16 +139,20 @@ export default function Feedback({ navigation }: AppScreenProps) {
           <Card style={st.supportCard}>
             <Text style={st.supportTitle}>Contact Support</Text>
             <Text style={[st.supportSub, st.supportDivider]}>Questions? Contact us below:</Text>
-            <Tap style={[st.supportLink, st.supportDivider]}>
-              <Text style={st.supportLinkTxt}>LivhomeTeam@explorex-ai.com</Text>
+            <Tap
+              style={[st.supportLink, st.supportDivider]}
+              onPress={() => { void copySupportEmail(); }}
+              accessibilityRole="button"
+              accessibilityLabel={`Copy support email, ${SUPPORT_EMAIL}`}
+              accessibilityHint="Copies the support email address to the clipboard"
+            >
+              <Text style={st.supportLinkTxt}>{SUPPORT_EMAIL}</Text>
             </Tap>
             <Tap style={st.supportLink}>
               <Text style={st.supportLinkTxt}>WhatsApp Live Chat</Text>
             </Tap>
           </Card>
         </View>
-
-        <View style={{ flex: 1 }} />
 
         {/* Submit */}
         <View style={st.submitWrap}>
@@ -251,6 +266,7 @@ export default function Feedback({ navigation }: AppScreenProps) {
                   <TextInput
                     value={emailDraft}
                     onChangeText={setEmailDraft}
+                    maxLength={INPUT_LIMITS.emailAddress}
                     placeholder="Please enter your email address"
                     placeholderTextColor={colors.textTertiary}
                     keyboardType="email-address"
@@ -290,7 +306,7 @@ export default function Feedback({ navigation }: AppScreenProps) {
 }
 
 const st = StyleSheet.create({
-  container: { flex: 1, paddingBottom: 40 },
+  container: { paddingBottom: 40 },
   body: { paddingHorizontal: 18, paddingTop: 4 },
   h1: {
     fontSize: 24,
@@ -298,7 +314,7 @@ const st = StyleSheet.create({
     letterSpacing: -0.4,
     color: colors.textPrimary,
     marginTop: 6,
-    marginBottom: 16,
+    marginBottom: 20,
     marginHorizontal: 2,
   },
   selectRow: {
@@ -310,11 +326,12 @@ const st = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: 20,
   },
-  rowTitle: { flex: 1, fontSize: 16, fontWeight: '700', color: colors.textPrimary },
-  reqFilled: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
-  reqEmpty: { fontSize: 15, fontWeight: '500', color: colors.textTertiary },
-  descCard: { marginTop: 14, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 },
+  rowTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  reqFilled: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  reqEmpty: { fontSize: 16, fontWeight: '500', color: colors.textTertiary },
+  descCard: { minHeight: 300, marginTop: 20, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 },
   textarea: {
+    flex: 1,
     minHeight: 72,
     fontSize: 15,
     fontWeight: '500',
@@ -323,6 +340,8 @@ const st = StyleSheet.create({
     textAlignVertical: 'top',
     padding: 0,
   },
+  uploadArea: { position: 'relative', paddingTop: 12, paddingBottom: 6 },
+  uploadRow: { alignItems: 'center' },
   thumb: {
     width: 52,
     height: 52,
@@ -356,36 +375,39 @@ const st = StyleSheet.create({
   },
   addTitle: { fontSize: 14, fontWeight: '700', color: colors.textPrimary },
   addSub: { fontSize: 12, fontWeight: '500', color: colors.textTertiary, marginTop: 3 },
-  counter: { fontSize: 12, fontWeight: '500', color: colors.textTertiary },
+  counter: { position: 'absolute', top: -22, right: 0, fontSize: 12, fontWeight: '500', color: colors.textTertiary },
   contactRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginTop: 14,
+    marginTop: 20,
     paddingHorizontal: 16,
     minHeight: 56,
     backgroundColor: colors.surface,
     borderRadius: 20,
   },
   contactValue: {
-    maxWidth: 150,
-    fontSize: 15,
+    maxWidth: 120,
+    flexShrink: 1,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
   },
-  supportCard: { marginTop: 14, paddingHorizontal: 18, paddingTop: 16, paddingBottom: 2 },
-  supportTitle: { textAlign: 'center', fontSize: 17, fontWeight: '800', color: colors.textPrimary },
+  contactTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.textPrimary },
+  contactEmpty: { fontSize: 16, fontWeight: '500', color: colors.textTertiary },
+  supportCard: { minHeight: 260, marginTop: 20, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 2 },
+  supportTitle: { textAlign: 'center', fontSize: 20, fontWeight: '800', color: colors.textPrimary },
   supportSub: {
     textAlign: 'center',
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: '500',
     color: colors.textSecondary,
-    marginTop: 5,
-    paddingBottom: 10,
+    marginTop: 12,
+    paddingBottom: 18,
   },
-  supportLink: { paddingVertical: 10 },
+  supportLink: { paddingVertical: 16 },
   supportDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  supportLinkTxt: { textAlign: 'center', fontSize: 14, fontWeight: '700', color: colors.brand },
+  supportLinkTxt: { textAlign: 'center', fontSize: 17, fontWeight: '700', color: colors.brand },
   submitWrap: { paddingHorizontal: 18 },
   submitBtn: {
     width: '100%',

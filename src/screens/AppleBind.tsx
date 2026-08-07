@@ -5,6 +5,7 @@ import { Screen, Tap, Row, Eyebrow, PrimaryBtn } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { saveLoginState } from '../features/auth/session';
 import { colors } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
 
 export default function AppleBind({ navigation }: AppScreenProps) {
   const [email, setEmail] = useState('');
@@ -45,6 +46,7 @@ export default function AppleBind({ navigation }: AppScreenProps) {
             style={st.input}
             value={email}
             onChangeText={setEmail}
+            maxLength={INPUT_LIMITS.emailAddress}
             placeholder="Enter your email"
             placeholderTextColor={colors.textTertiary}
             keyboardType="email-address"

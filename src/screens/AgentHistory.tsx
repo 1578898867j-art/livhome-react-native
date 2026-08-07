@@ -73,7 +73,10 @@ export default function AgentHistory({ navigation }: AppScreenProps) {
               sub="Please check your network and try again."
               actionLabel="Retry"
               onAction={retryLoad}
-              style={{ paddingTop: 50 }}
+            style={{ paddingTop: 140 }}
+            titleStyle={{ fontSize: 19 }}
+            subStyle={{ fontSize: 16, lineHeight: 22 }}
+            actionTextStyle={{ fontSize: 17 }}
             />
           )
         ) : (

@@ -33,6 +33,7 @@ import { SvgXml } from 'react-native-svg';
 import { Icon } from '../components/Icon';
 import { SunBurst } from '../components/SunLogo';
 import { colors } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
 import { CAREPICS } from '../assets/images';
 import { SENDICON, SCROLLDOWN, CONV_EDIT, CONV_TRASH } from '../icons/protoIcons';
 import { CONVERSATION_GROUPS, useAssistantPrototype } from '../features/assistant/useAssistantPrototype';
@@ -460,6 +461,43 @@ export default function AgentChat({ navigation }: AppScreenProps) {
     showToast('Copied', 'success');
   };
 
+  // 一次智能体回复可由标题、段落和列表等多个 Block 组成；操作栏应跟在每一次回复后，
+  // 而不是只固定在整段会话的末尾。
+  const replyEndsAt = (index: number) => {
+    const block = conv[index];
+    if (!block || block.t === 'me' || block.t === 'gap' || block.t === 'err') return false;
+    const next = conv[index + 1];
+    return next == null || next.t === 'me' || next.t === 'gap' || next.t === 'err';
+  };
+
+  const replyTextAt = (endIndex: number) => {
+    const reply: string[] = [];
+    for (let index = endIndex; index >= 0; index -= 1) {
+      const block = conv[index];
+      if (block.t === 'me' || block.t === 'gap' || block.t === 'err') break;
+      if (block.text) reply.unshift(block.text);
+    }
+    return reply.join('\n');
+  };
+
+  const renderReplyActions = (index: number) => {
+    if (!replyEndsAt(index)) return null;
+    return (
+      <View style={styles.ansActions}>
+        <Pressable
+          accessibilityLabel="Copy assistant response"
+          accessibilityRole="button"
+          style={styles.ansBtn}
+          hitSlop={6}
+          onPress={() => showCopied(replyTextAt(index))}
+        >
+          <SvgXml xml={COPY_ICON} width={16} height={16} color={colors.textSecondary} />
+        </Pressable>
+        <AssistantPlaybackButton />
+      </View>
+    );
+  };
+
   const openEditMsg = () => {
     if (msgMenu == null) return;
     setEditVal((conv[msgMenu.idx].text ?? '').replace(/<\/?b>/g, ''));
@@ -725,6 +763,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                   <TextInput
                     value={draft}
                     onChangeText={setDraft}
+                    maxLength={INPUT_LIMITS.assistantMessage}
                     placeholder="Ask anything..."
                     placeholderTextColor={colors.textTertiary}
                     style={styles.input}
@@ -804,37 +843,37 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                             </Pressable>
                           </View>
                         );
-                      if (b.t === 'h') return <Text key={i} style={styles.h}>{b.text}</Text>;
-                      if (b.t === 'sh') return <Text key={i} style={styles.sh}>{b.text}</Text>;
+                      if (b.t === 'h')
+                        return (
+                          <React.Fragment key={i}>
+                            <Text style={styles.h}>{b.text}</Text>
+                            {renderReplyActions(i)}
+                          </React.Fragment>
+                        );
+                      if (b.t === 'sh')
+                        return (
+                          <React.Fragment key={i}>
+                            <Text style={styles.sh}>{b.text}</Text>
+                            {renderReplyActions(i)}
+                          </React.Fragment>
+                        );
                       if (b.t === 'li')
                         return (
-                          <View key={i} style={styles.liRow}>
-                            <Text style={styles.bullet}>•</Text>
-                            <Rich text={b.text!} style={styles.li} />
-                          </View>
+                          <React.Fragment key={i}>
+                            <View style={styles.liRow}>
+                              <Text style={styles.bullet}>•</Text>
+                              <Rich text={b.text!} style={styles.li} />
+                            </View>
+                            {renderReplyActions(i)}
+                          </React.Fragment>
                         );
                       return (
-                        <Rich key={i} text={b.text!} style={[styles.p, b.secondary && { color: colors.textSecondary }]} />
+                        <React.Fragment key={i}>
+                          <Rich text={b.text!} style={[styles.p, b.secondary && { color: colors.textSecondary }]} />
+                          {renderReplyActions(i)}
+                        </React.Fragment>
                       );
                     })}
-                    {/* copy / speak */}
-                    <View style={styles.ansActions}>
-                      <Pressable
-                        style={styles.ansBtn}
-                        hitSlop={6}
-                        onPress={() =>
-                          showCopied(
-                            conv
-                              .filter((b) => b.t !== 'me' && b.t !== 'gap' && b.text)
-                              .map((b) => b.text!)
-                              .join('\n'),
-                          )
-                        }
-                      >
-                        <SvgXml xml={COPY_ICON} width={16} height={16} color={colors.textSecondary} />
-                      </Pressable>
-                      <AssistantPlaybackButton />
-                    </View>
                   </>
                 )}
               </ScrollView>
@@ -880,8 +919,9 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                   ) : (
                     <View style={[styles.inputRow, { flex: 1, backgroundColor: colors.bgPrimary }]}>
                       <TextInput
-                        value={draft}
-                        onChangeText={setDraft}
+                      value={draft}
+                      onChangeText={setDraft}
+                      maxLength={INPUT_LIMITS.assistantMessage}
                         placeholder="Ask anything..."
                         placeholderTextColor={colors.textTertiary}
                         style={styles.input}
@@ -953,6 +993,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
             <TextInput
               value={editVal}
               onChangeText={setEditVal}
+              maxLength={INPUT_LIMITS.assistantMessage}
               multiline
               autoFocus
               style={styles.editMsgInput}
@@ -1082,8 +1123,11 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 <Text style={styles.dialogTitle}>Rename conversation</Text>
                 <View style={styles.renameInputRow}>
                   <TextInput
-                    value={renameVal}
-                    onChangeText={setRenameVal}
+                  value={renameVal}
+                  onChangeText={setRenameVal}
+                  maxLength={INPUT_LIMITS.conversationName}
+                    multiline
+                    textAlignVertical="top"
                     placeholder="Enter a name"
                     placeholderTextColor={colors.textTertiary}
                     style={styles.renameInput}
@@ -1328,17 +1372,18 @@ const styles = StyleSheet.create({
   renameCard: { width: '100%', maxWidth: 330, backgroundColor: colors.surface, borderRadius: 22, padding: 22 },
   renameInputRow: {
     marginTop: 16,
-    height: 48,
+    minHeight: 72,
     paddingLeft: 14,
+    paddingVertical: 10,
     paddingRight: 8,
     backgroundColor: colors.bgSecondary,
     borderRadius: 12,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
   },
-  renameInput: { flex: 1, fontSize: 15, fontWeight: '500', color: colors.textPrimary },
-  renameClear: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
+  renameInput: { flex: 1, fontSize: 15, fontWeight: '500', color: colors.textPrimary, minHeight: 48 },
+  renameClear: { width: 22, height: 22, borderRadius: 11, marginTop: 3, backgroundColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
   dialogBtnRow: { flexDirection: 'row', gap: 12, marginTop: 18 },
   dialogBtn: { flex: 1, height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dialogBtnText: { fontSize: 15, fontWeight: '700' },
