@@ -2,7 +2,7 @@
 // 视觉与 BindFail / 消息中心空态同一语言:软色圆底图标 + 标题 + 说明 + 胶囊按钮。
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { StyleProp, TextStyle, ViewStyle } from 'react-native';
 import { Tap } from './kit';
 import { Icon } from './Icon';
 import { colors, shadow } from '../theme';
@@ -52,6 +52,9 @@ export function StateView({
   actionLabel,
   onAction,
   style,
+  titleStyle,
+  subStyle,
+  actionTextStyle,
 }: {
   variant?: 'error' | 'empty' | 'brand';
   icon: string;
@@ -60,6 +63,9 @@ export function StateView({
   actionLabel?: string;
   onAction?: () => void;
   style?: StyleProp<ViewStyle>;
+  titleStyle?: StyleProp<TextStyle>;
+  subStyle?: StyleProp<TextStyle>;
+  actionTextStyle?: StyleProp<TextStyle>;
 }) {
   const tone =
     variant === 'error'
@@ -73,11 +79,11 @@ export function StateView({
       <View style={[st.circle, { backgroundColor: tone.bg }]}>
         <Icon name={icon} size={28} color={tone.fg} sw={1.7} />
       </View>
-      <Text style={st.title}>{title}</Text>
-      {!!sub && <Text style={st.sub}>{sub}</Text>}
+      <Text style={[st.title, titleStyle]}>{title}</Text>
+      {!!sub && <Text style={[st.sub, subStyle]}>{sub}</Text>}
       {!!actionLabel && (
         <Tap style={st.actionBtn} onPress={onAction}>
-          <Text style={st.actionTxt}>{actionLabel}</Text>
+          <Text style={[st.actionTxt, actionTextStyle]}>{actionLabel}</Text>
         </Tap>
       )}
     </View>

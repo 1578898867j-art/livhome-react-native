@@ -131,7 +131,10 @@ export default function Album({ navigation }: AppScreenProps) {
             sub="Please check your network and try again."
             actionLabel="Retry"
             onAction={retryLoad}
-            style={{ paddingTop: 90 }}
+            style={{ paddingTop: 180 }}
+            titleStyle={{ fontSize: 19 }}
+            subStyle={{ fontSize: 16, lineHeight: 22 }}
+            actionTextStyle={{ fontSize: 17 }}
           />
         )
       ) : albumEmpty ? (
@@ -246,7 +249,7 @@ const st = StyleSheet.create({
   cell: {
     width: '48.5%',
     aspectRatio: 186 / 104,
-    borderRadius: 14,
+    borderRadius: 10,
     overflow: 'hidden',
     marginBottom: 8,
     position: 'relative',

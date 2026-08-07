@@ -8,6 +8,7 @@ import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 import { Icon } from '../components/Icon';
 import { colors, shadow } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
 
 const PHONE_KEYBOARD_GAP = 10;
 
@@ -174,7 +175,7 @@ export default function EditProfile({ navigation }: AppScreenProps) {
               <TextInput
                 value={nickname}
                 onChangeText={setNickname}
-                maxLength={15}
+                maxLength={INPUT_LIMITS.nickname}
                 placeholder="Nick name"
                 placeholderTextColor={colors.textTertiary}
                 style={st.nicknameInput}

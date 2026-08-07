@@ -1,5 +1,5 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import Svg, { Line } from 'react-native-svg';
 import { Screen, NavBar, Row, Tap } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
+import { setTripWire, useDeviceAlertSettings } from '../features/devices/deviceAlertStore';
 
 type Pt = { x: number; y: number };
 type Dir = 'both' | 'ab' | 'ba';
@@ -25,9 +26,14 @@ const DEFAULT_DIR: Dir = 'both';
 const clamp = (v: number) => Math.max(4, Math.min(96, v));
 
 export default function TripWire({ navigation }: AppScreenProps) {
-  const [twA, setTwA] = useState<Pt>(DEFAULT_A);
-  const [twB, setTwB] = useState<Pt>(DEFAULT_B);
-  const [twDir, setTwDir] = useState<Dir>(DEFAULT_DIR);
+  const {
+    tripWireA: twA,
+    tripWireB: twB,
+    tripWireDirection: twDir,
+  } = useDeviceAlertSettings();
+  const setTwA = (tripWireA: Pt) => setTripWire({ tripWireA });
+  const setTwB = (tripWireB: Pt) => setTripWire({ tripWireB });
+  const setTwDir = (tripWireDirection: Dir) => setTripWire({ tripWireDirection });
 
   // frame size (width measured on layout, height is fixed)
   const frame = useRef({ w: 1, h: FRAME_H });

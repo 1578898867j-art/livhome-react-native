@@ -7,13 +7,16 @@ import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 import { addBoundDevice } from '../features/devices/deviceListStore';
 import { colors } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
 
 
 export default function BindSuccess({ navigation }: AppScreenProps) {
   const [name, setName] = useState('Living Room Camera');
   const saved = useRef(false);
+  const canSave = name.trim().length > 0;
 
   const saveDevice = () => {
+    if (!canSave) return;
     if (getDemoFlags().failOps) {
       showToast('Failed to save the name. Please try again.', 'error');
       return;
@@ -64,11 +67,13 @@ export default function BindSuccess({ navigation }: AppScreenProps) {
             <TextInput
               value={name}
               onChangeText={setName}
+              maxLength={INPUT_LIMITS.deviceName}
               placeholder="Living Room Camera"
               placeholderTextColor={colors.textTertiary}
               style={st.fieldInput}
             />
           </View>
+          <Text style={st.fieldHint}>{name.length}/{INPUT_LIMITS.deviceName}</Text>
         </View>
       </View>
 
@@ -77,6 +82,7 @@ export default function BindSuccess({ navigation }: AppScreenProps) {
         <PrimaryBtn
           label="Save"
           onPress={saveDevice}
+          disabled={!canSave}
         />
       </View>
     </Screen>
@@ -117,6 +123,7 @@ const st = StyleSheet.create({
     justifyContent: 'center',
   },
   fieldInput: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.textPrimary, padding: 0 },
+  fieldHint: { alignSelf: 'flex-end', marginTop: 6, fontSize: 12, fontWeight: '500', color: colors.textTertiary },
   roomWrap: { paddingHorizontal: 22, paddingTop: 6 },
   roomLabel: { fontSize: 12, fontWeight: '600', color: colors.textTertiary, marginBottom: 12, marginLeft: 4 },
   roomRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },

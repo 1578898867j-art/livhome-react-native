@@ -11,7 +11,9 @@ import { Spinner } from '../components/states';
 import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
 import { showToast as showAppToast } from '../features/app/toastStore';
 import { useDeviceAvailability } from '../features/devices/useDeviceAvailability';
+import { renameDevice } from '../features/devices/deviceListStore';
 import { colors, shadow } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
 
 /* device / edit avatars — ported verbatim from the prototype (DEVAVATAR / EDITAVATAR) */
 const DEVAVATAR =
@@ -27,8 +29,9 @@ const DEVTIPS: Record<TipKey, string> = {
 
 export default function DevInfo({ navigation }: AppScreenProps) {
   const [tip, setTip] = useState<TipKey | null>(null);
-  const [devName, setDevName] = useState('Living Room');
+  const [devNameDraft, setDevNameDraft] = useState('');
   const [editing, setEditing] = useState(false);
+  const canSaveDeviceName = devNameDraft.trim().length > 0;
   const [offlineDialog, setOfflineDialog] = useState(false);
   const { device, isOffline } = useDeviceAvailability();
 
@@ -152,24 +155,32 @@ export default function DevInfo({ navigation }: AppScreenProps) {
           <SvgXml xml={DEVAVATAR} width={56} height={56} />
         </View>
         {editing ? (
-          <TextInput
-            value={devName}
-            onChangeText={setDevName}
-            autoFocus
-            multiline
-            placeholderTextColor="rgba(255,255,255,.6)"
-            style={st.heroNameInput}
-          />
+          <View>
+            <TextInput
+              value={devNameDraft}
+              onChangeText={setDevNameDraft}
+              maxLength={INPUT_LIMITS.deviceName}
+              autoFocus
+              multiline
+              placeholderTextColor="rgba(255,255,255,.6)"
+              style={st.heroNameInput}
+            />
+            <Text style={st.heroNameHint}>{devNameDraft.length}/{INPUT_LIMITS.deviceName}</Text>
+          </View>
         ) : (
-          <Text style={st.heroName}>{devName}</Text>
+          <Text style={st.heroName}>{device?.name ?? 'Living Room'}</Text>
         )}
         <Text style={st.heroSub}>Indoor · IP Camera</Text>
 
         {editing ? (
           <Tap
-            style={st.saveBtn}
-            onPress={() => runWhenOnline(() => setEditing(false))}
+            style={[st.saveBtn, !canSaveDeviceName && st.saveBtnDisabled]}
+            onPress={() => runWhenOnline(() => {
+              if (device && devNameDraft.trim()) renameDevice(device.id, devNameDraft);
+              setEditing(false);
+            })}
             hitSlop={8}
+            disabled={!canSaveDeviceName}
             accessibilityLabel="Save device name"
           >
             <Text style={st.saveBtnTxt}>Save</Text>
@@ -177,7 +188,10 @@ export default function DevInfo({ navigation }: AppScreenProps) {
         ) : (
           <Tap
             style={st.editBtn}
-            onPress={() => runWhenOnline(() => setEditing(true))}
+            onPress={() => runWhenOnline(() => {
+              setDevNameDraft(device?.name ?? '');
+              setEditing(true);
+            })}
             hitSlop={8}
             accessibilityLabel="Edit device name"
           >
@@ -378,9 +392,11 @@ const st = StyleSheet.create({
     textAlignVertical: 'top',
   },
   heroSub: { fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,.75)', marginTop: 2 },
+  heroNameHint: { alignSelf: 'flex-end', marginTop: 2, fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,.75)' },
   editBtn: { position: 'absolute', top: 20, right: 20, width: 36, height: 36 },
   saveBtn: { position: 'absolute', top: 20, right: 20, minHeight: 36, justifyContent: 'center' },
-  saveBtnTxt: { color: '#fff', fontSize: 14, fontWeight: '700' },
+  saveBtnDisabled: { opacity: 0.45 },
+  saveBtnTxt: { color: '#fff', fontSize: 15, fontWeight: '700' },
 
   eyebrow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
   dot: { width: 8, height: 8, borderRadius: 4, marginRight: 8 },

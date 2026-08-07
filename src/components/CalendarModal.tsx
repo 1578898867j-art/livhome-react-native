@@ -15,12 +15,14 @@ export default function CalendarModal({
   visible,
   initM,
   initD,
+  availableDates,
   onClose,
   onConfirm,
 }: {
   visible: boolean;
   initM: number;
   initD: number;
+  availableDates?: { m: number; d: number }[];
   onClose: () => void;
   onConfirm: (m: number, d: number) => void;
 }) {
@@ -47,6 +49,8 @@ export default function CalendarModal({
     setCalM(dn.getMonth());
   };
   const nextDisabled = calY > CAL_TODAY.y || (calY === CAL_TODAY.y && calM >= CAL_TODAY.m);
+  const isDateAvailable = (month: number, day: number) =>
+    !availableDates || availableDates.some((date) => date.m === month && date.d === day);
 
   const firstDow = new Date(calY, calM, 1).getDay();
   const dim = new Date(calY, calM + 1, 0).getDate();
@@ -57,29 +61,31 @@ export default function CalendarModal({
       calY > CAL_TODAY.y ||
       (calY === CAL_TODAY.y && calM > CAL_TODAY.m) ||
       (calY === CAL_TODAY.y && calM === CAL_TODAY.m && d > CAL_TODAY.d);
-    const onSel = !isFut && sel.y === calY && sel.m === calM && sel.d === d;
+    const unavailable = !isFut && !isDateAvailable(calM, d);
+    const disabled = isFut || unavailable;
+    const onSel = !disabled && sel.y === calY && sel.m === calM && sel.d === d;
     const isToday = calY === CAL_TODAY.y && calM === CAL_TODAY.m && d === CAL_TODAY.d;
     cells.push(
       <Tap
         key={d}
-        style={[st.cell, isFut && { opacity: 0.4 }]}
-        onPress={isFut ? undefined : () => setSel({ y: calY, m: calM, d })}
-        disabled={isFut}
+        style={[st.cell, disabled && { opacity: isFut ? 0.4 : 0.45 }]}
+        onPress={disabled ? undefined : () => setSel({ y: calY, m: calM, d })}
+        disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={`${MONTH_NAMES[calM]} ${d}, ${calY}`}
-        accessibilityState={{ selected: onSel, disabled: isFut }}
+        accessibilityState={{ selected: onSel, disabled }}
       >
         <View
           style={[
             st.day,
-            onSel ? { backgroundColor: colors.brand } : isToday ? { backgroundColor: colors.bgSecondary } : null,
+            onSel ? { backgroundColor: colors.brand } : isToday && !unavailable ? { backgroundColor: colors.bgSecondary } : null,
           ]}
         >
           <Text
             style={{
               fontSize: 16,
               fontWeight: onSel ? '700' : '500',
-              color: isFut ? colors.textTertiary : onSel ? '#fff' : colors.textPrimary,
+              color: disabled ? colors.textTertiary : onSel ? '#fff' : colors.textPrimary,
             }}
           >
             {d}

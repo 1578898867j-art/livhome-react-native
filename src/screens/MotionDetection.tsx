@@ -1,16 +1,18 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
+import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { Screen, Header, Eyebrow, Card, ToggleRow, Segmented, SettingRow } from '../components/kit';
 import { colors } from '../theme';
 import {
   setMotionDetectionEnabled,
+  setMotionSensitivity,
+  useDeviceSettings,
   useMotionDetectionEnabled,
 } from '../features/devices/deviceSettingsStore';
 
 export default function MotionDetection({ navigation }: AppScreenProps) {
   const motionOn = useMotionDetectionEnabled();
-  const [motionSens, setMotionSens] = useState(1);
+  const { motionSensitivity } = useDeviceSettings();
 
   return (
     <Screen header={<Header title="Motion Detection" onBack={() => navigation.goBack()} />}>
@@ -29,8 +31,8 @@ export default function MotionDetection({ navigation }: AppScreenProps) {
           <Card style={st.sensCard}>
             <Segmented
               opts={['Low', 'Medium', 'High']}
-              active={motionSens}
-              onSelect={setMotionSens}
+              active={motionSensitivity}
+              onSelect={setMotionSensitivity}
             />
             <Text style={st.hint}>
               You will receive an alarm when large object movement is detected (family members

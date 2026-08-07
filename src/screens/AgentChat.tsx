@@ -33,6 +33,7 @@ import { SvgXml } from 'react-native-svg';
 import { Icon } from '../components/Icon';
 import { SunBurst } from '../components/SunLogo';
 import { colors } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
 import { CAREPICS } from '../assets/images';
 import { SENDICON, SCROLLDOWN, CONV_EDIT, CONV_TRASH } from '../icons/protoIcons';
 import { CONVERSATION_GROUPS, useAssistantPrototype } from '../features/assistant/useAssistantPrototype';
@@ -762,6 +763,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                   <TextInput
                     value={draft}
                     onChangeText={setDraft}
+                    maxLength={INPUT_LIMITS.assistantMessage}
                     placeholder="Ask anything..."
                     placeholderTextColor={colors.textTertiary}
                     style={styles.input}
@@ -917,8 +919,9 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                   ) : (
                     <View style={[styles.inputRow, { flex: 1, backgroundColor: colors.bgPrimary }]}>
                       <TextInput
-                        value={draft}
-                        onChangeText={setDraft}
+                      value={draft}
+                      onChangeText={setDraft}
+                      maxLength={INPUT_LIMITS.assistantMessage}
                         placeholder="Ask anything..."
                         placeholderTextColor={colors.textTertiary}
                         style={styles.input}
@@ -990,6 +993,7 @@ export default function AgentChat({ navigation }: AppScreenProps) {
             <TextInput
               value={editVal}
               onChangeText={setEditVal}
+              maxLength={INPUT_LIMITS.assistantMessage}
               multiline
               autoFocus
               style={styles.editMsgInput}
@@ -1119,8 +1123,11 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                 <Text style={styles.dialogTitle}>Rename conversation</Text>
                 <View style={styles.renameInputRow}>
                   <TextInput
-                    value={renameVal}
-                    onChangeText={setRenameVal}
+                  value={renameVal}
+                  onChangeText={setRenameVal}
+                  maxLength={INPUT_LIMITS.conversationName}
+                    multiline
+                    textAlignVertical="top"
                     placeholder="Enter a name"
                     placeholderTextColor={colors.textTertiary}
                     style={styles.renameInput}
@@ -1365,17 +1372,18 @@ const styles = StyleSheet.create({
   renameCard: { width: '100%', maxWidth: 330, backgroundColor: colors.surface, borderRadius: 22, padding: 22 },
   renameInputRow: {
     marginTop: 16,
-    height: 48,
+    minHeight: 72,
     paddingLeft: 14,
+    paddingVertical: 10,
     paddingRight: 8,
     backgroundColor: colors.bgSecondary,
     borderRadius: 12,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 8,
   },
-  renameInput: { flex: 1, fontSize: 15, fontWeight: '500', color: colors.textPrimary },
-  renameClear: { width: 22, height: 22, borderRadius: 11, backgroundColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
+  renameInput: { flex: 1, fontSize: 15, fontWeight: '500', color: colors.textPrimary, minHeight: 48 },
+  renameClear: { width: 22, height: 22, borderRadius: 11, marginTop: 3, backgroundColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center' },
   dialogBtnRow: { flexDirection: 'row', gap: 12, marginTop: 18 },
   dialogBtn: { flex: 1, height: 46, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dialogBtnText: { fontSize: 15, fontWeight: '700' },

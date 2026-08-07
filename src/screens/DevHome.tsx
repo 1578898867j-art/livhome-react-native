@@ -193,7 +193,10 @@ export default function DevHome({ navigation }: AppScreenProps) {
             sub="Please check your network and try again."
             actionLabel="Retry"
             onAction={retryLoad}
-            style={{ paddingTop: 90 }}
+            style={{ paddingTop: 180 }}
+            titleStyle={{ fontSize: 19 }}
+            subStyle={{ fontSize: 16, lineHeight: 22 }}
+            actionTextStyle={{ fontSize: 17 }}
           />
         )
       ) : noDevices || devices.length === 0 ? (

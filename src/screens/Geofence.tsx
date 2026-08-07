@@ -1,12 +1,13 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Screen, Tap, Row, Card, Header, Toggle } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { colors } from '../theme';
+import { setGeofenceEnabled, useDeviceAlertSettings } from '../features/devices/deviceAlertStore';
 
 export default function Geofence({ navigation }: AppScreenProps) {
-  const [geofenceOn, setGeofenceOn] = useState(true);
+  const { geofenceEnabled: geofenceOn } = useDeviceAlertSettings();
 
   return (
     <Screen header={<Header title="Geofence" onBack={() => navigation.goBack()} />}>
@@ -19,7 +20,7 @@ export default function Geofence({ navigation }: AppScreenProps) {
               After setting a monitoring area, alerts are triggered when a target enters or leaves it.
             </Text>
           </View>
-          <Toggle on={geofenceOn} onToggle={() => setGeofenceOn((v) => !v)} />
+          <Toggle on={geofenceOn} onToggle={() => setGeofenceEnabled(!geofenceOn)} />
         </Row>
       </Card>
 

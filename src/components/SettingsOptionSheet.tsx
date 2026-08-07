@@ -178,7 +178,7 @@ const st = StyleSheet.create({
     width: '100%',
     height: 50,
     borderRadius: radius.pill,
-    backgroundColor: colors.brand,
+    backgroundColor: colors.btnPrimary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 18,

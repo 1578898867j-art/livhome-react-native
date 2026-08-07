@@ -238,7 +238,7 @@ Reuse `src/components/kit.tsx` before creating local versions of the same behavi
 - `PrimaryBtn` is a 54-unit dark pill button for the main decision in an area; when prerequisites are invalid or incomplete, it is disabled with the standard secondary background and tertiary text.
 - `SecondaryBtn` is a 54-unit neutral pill button for alternatives.
 - `SettingRow`, `ToggleRow`, `RadioRow`, `Toggle`, and `Segmented` are the standard settings controls.
-- `SettingsOptionSheet`, `SettingsOptionRow`, and `SettingsOptionDoneButton` provide the standard bottom-sheet pattern for choosing a compact settings mode. Reuse the same component and shared feature state when the same setting appears on multiple screens.
+- `SettingsOptionSheet`, `SettingsOptionRow`, and `SettingsOptionDoneButton` provide the standard bottom-sheet pattern for choosing a compact settings mode; its final confirmation uses the dark `button-primary` fill. Reuse the same component and shared feature state when the same setting appears on multiple screens.
 - `DeviceOfflineDialog` blocks device commands and hardware-backed configuration while the selected device is offline. Keep read-only information and account-side removal available, preserve the current screen behind the dialog, and explain that power and network must be restored before retrying.
 - `Eyebrow` and `Hint` provide compact supporting hierarchy; they must not replace clear labels.
 - `Tap` uses the shared pressed-opacity response. New interactive wrappers need an equivalent visible pressed state.

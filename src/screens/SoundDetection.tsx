@@ -1,16 +1,18 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
+import React from 'react';
 import { Text, StyleSheet } from 'react-native';
 import { Screen, Header, Eyebrow, Card, ToggleRow, Segmented } from '../components/kit';
 import { colors } from '../theme';
 import {
   setSoundDetectionEnabled,
+  setSoundSensitivity,
+  useDeviceSettings,
   useSoundDetectionEnabled,
 } from '../features/devices/deviceSettingsStore';
 
 export default function SoundDetection({ navigation }: AppScreenProps) {
   const soundOn = useSoundDetectionEnabled();
-  const [soundSens, setSoundSens] = useState(1);
+  const { soundSensitivity } = useDeviceSettings();
 
   return (
     <Screen header={<Header title="Sound Detection" onBack={() => navigation.goBack()} />}>
@@ -21,7 +23,7 @@ export default function SoundDetection({ navigation }: AppScreenProps) {
 
       {soundOn && (
         <Card style={st.sensCard}>
-          <Segmented opts={['Low', 'Medium', 'High']} active={soundSens} onSelect={setSoundSens} />
+          <Segmented opts={['Low', 'Medium', 'High']} active={soundSensitivity} onSelect={setSoundSensitivity} />
           <Text style={st.hint}>
             You will receive an alarm when loud sounds are detected (phone ringing, etc.).
           </Text>

@@ -1,10 +1,11 @@
 import type { AppScreenProps } from '../navigation/types';
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Pressable, DimensionValue } from 'react-native';
 import { Screen, NavBar } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { showToast } from '../features/app/toastStore';
 import { colors } from '../theme';
+import { setDetectionArea, useDeviceAlertSettings } from '../features/devices/deviceAlertStore';
 
 const COLS = 4;
 const ROWS = 3;
@@ -25,20 +26,19 @@ const DOTS: { left: DimensionValue; top: DimensionValue }[] = [];
 });
 
 export default function DetectionArea({ navigation }: AppScreenProps) {
-  const [cells, setCells] = useState<boolean[]>(DEFAULT_CELLS);
-  const [notify, setNotify] = useState(false);
+  const { detectionAreaCells: cells, detectionAreaNotify: notify } = useDeviceAlertSettings();
 
   const allOn = cells.every((v) => v);
   const canDone = notify;
 
   const toggleCell = (i: number) =>
-    setCells((prev) => prev.map((v, j) => (j === i ? !v : v)));
+    setDetectionArea({ detectionAreaCells: cells.map((v, j) => (j === i ? !v : v)), detectionAreaNotify: notify });
 
-  const toggleAll = () => setCells(DEFAULT_CELLS.map(() => !allOn));
+  const toggleAll = () => setDetectionArea({ detectionAreaCells: DEFAULT_CELLS.map(() => !allOn), detectionAreaNotify: notify });
 
   // Restore the grid's seeded detection-area configuration without changing notifications.
   const refresh = () => {
-    setCells([...DEFAULT_CELLS]);
+    setDetectionArea({ detectionAreaCells: [...DEFAULT_CELLS], detectionAreaNotify: notify });
     showToast('Snapshot refreshed', 'success');
   };
 
@@ -92,7 +92,7 @@ export default function DetectionArea({ navigation }: AppScreenProps) {
       {/* Notify toggle */}
       <Pressable
         style={st.notifyRow}
-        onPress={() => setNotify((v) => !v)}
+        onPress={() => setDetectionArea({ detectionAreaCells: cells, detectionAreaNotify: !notify })}
         accessibilityRole="checkbox"
         accessibilityLabel="Select areas to receive alerts for those regions"
         accessibilityState={{ checked: notify }}

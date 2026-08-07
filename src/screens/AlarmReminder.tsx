@@ -13,18 +13,29 @@ import {
 } from 'react-native';
 import { Screen, Tap, Card, Header, Eyebrow, Row, ToggleRow, SettingRow } from '../components/kit';
 import { BottomSheet } from '../components/BottomSheet';
+import { SettingsOptionDoneButton } from '../components/SettingsOptionSheet';
 import { Icon } from '../components/Icon';
 import { SvgXml } from 'react-native-svg';
 import { getDemoFlags } from '../features/app/demoStore';
 import { CONV_EDIT, CONV_TRASH } from '../icons/protoIcons';
 import { PHOTOICONS } from '../icons/protoSets';
 import { colors } from '../theme';
+import { INPUT_LIMITS } from '../features/app/inputLimits';
+import {
+  addAlarmRecording,
+  removeAlarmRecording,
+  renameAlarmRecording,
+  selectAlarmRecording,
+  setAlarmNotificationEnabled,
+  setAlarmPeriod,
+  setAlarmVoice,
+  setAlarmVoiceEnabled,
+  useDeviceAlertSettings,
+} from '../features/devices/deviceAlertStore';
 
 // 原型 ALARM_PERIODS
 const PERIODS = ['All Day', 'Daytime · 06:00–18:00', 'Night · 22:00–07:00'];
 const p2 = (n: number) => (n < 10 ? '0' : '') + n;
-
-type Rec = { id: string; name: string };
 
 /* ---- av radio row (avRow) — hollow/filled circle + optional right value ---- */
 function AvRow({
@@ -52,7 +63,7 @@ function AvRow({
       {!!value && (
         // 值区域单独可点(打开管理弹层),不与"选中"动作混在一起
         <Tap onPress={onValuePress ?? onPress} hitSlop={8} style={st.avValueTap}>
-          <Text style={st.avValue}>{value}</Text>
+          <Text style={st.avValue} numberOfLines={1} ellipsizeMode="tail">{value}</Text>
           <Icon name="chevR" size={15} color={colors.textTertiary} sw={2} />
         </Tap>
       )}
@@ -159,22 +170,16 @@ function RecordingMicButton({ onPress }: { onPress: () => void }) {
 }
 
 export default function AlarmReminder({ navigation }: AppScreenProps) {
-  const [notifOn, setNotifOn] = useState(true);
-  const [voiceAlarm, setVoiceAlarm] = useState(true);
-  const [alarmVoice, setAlarmVoice] = useState<'system' | 'custom'>('system');
-  const [alarmPeriod, setAlarmPeriod] = useState('All Day');
+  const { alarmNotificationEnabled: notifOn, alarmPeriod, alarmVoice, alarmVoiceEnabled: voiceAlarm, recordings: recs, selectedRecordingId: sel } = useDeviceAlertSettings();
   const [sheet, setSheet] = useState<null | 'period' | 'cv'>(null);
 
   const toggleAlarmNotification = () => {
     const nextNotifOn = !notifOn;
-    setNotifOn(nextNotifOn);
-    if (!nextNotifOn) setVoiceAlarm(false);
+    setAlarmNotificationEnabled(nextNotifOn);
+    if (!nextNotifOn) setAlarmVoiceEnabled(false);
   };
 
   // 自定义语音(原型 cv*):最多 3 条录音
-  const [recs, setRecs] = useState<Rec[]>([]);
-  const nextRecordingNumber = useRef(1);
-  const [sel, setSel] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [sec, setSec] = useState(0);
   const [playing, setPlaying] = useState<string | null>(null);
@@ -233,6 +238,12 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
     setRecording(true);
   };
 
+  const nextRecordingName = () => {
+    let suffix = 1;
+    while (recs.some((recording) => recording.name === `Recording ${suffix}`)) suffix += 1;
+    return `Recording ${suffix}`;
+  };
+
   const stopRec = () => {
     setRecording(false);
     // 上传失败演示:不入列表
@@ -240,21 +251,12 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
       showCvErr('Failed to upload the recording.');
       return;
     }
-    const id = `r${Date.now()}`;
-    const recordingNumber = nextRecordingNumber.current;
-    nextRecordingNumber.current += 1;
-    setRecs((prev) => prev.concat({ id, name: `Recording ${recordingNumber}` }));
-    // 首条录音自动选用并切到自定义语音(对齐原型)
-    if (!sel) {
-      setSel(id);
-      setAlarmVoice('custom');
-    }
+    addAlarmRecording(nextRecordingName());
     showCvSuccess('Recording saved');
   };
 
   const selectRec = (id: string) => {
-    setSel(id);
-    setAlarmVoice('custom');
+    selectAlarmRecording(id);
   };
 
   const confirmDelete = () => {
@@ -264,11 +266,7 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
       showCvErr('Failed to delete. Please try again.');
       return;
     }
-    setRecs((prev) => prev.filter((r) => r.id !== delId));
-    if (sel === delId) {
-      setSel(null);
-      setAlarmVoice('system');
-    }
+    if (delId) removeAlarmRecording(delId);
     setDelId(null);
   };
 
@@ -306,7 +304,7 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
         <ToggleRow
           name="Voice Alarm"
           on={voiceAlarm}
-          onToggle={notifOn ? () => setVoiceAlarm((v) => !v) : undefined}
+          onToggle={notifOn ? () => setAlarmVoiceEnabled(!voiceAlarm) : undefined}
           last
         />
       </Card>
@@ -350,9 +348,7 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
         {PERIODS.map((p) => (
           <SheetRadio key={p} label={p} on={alarmPeriod === p} onPress={() => setAlarmPeriod(p)} />
         ))}
-        <Pressable onPress={closeSheet} style={({ pressed }) => [st.doneBtn, pressed && { opacity: 0.85 }]}>
-          <Text style={st.doneBtnTxt}>Done</Text>
-        </Pressable>
+        <SettingsOptionDoneButton onPress={closeSheet} />
       </BottomSheet>
 
       {/* 自定义语音(原型 cvSheet:录音/列表/选用/重命名/删除) */}
@@ -491,15 +487,14 @@ export default function AlarmReminder({ navigation }: AppScreenProps) {
                     <TextInput
                       value={renameVal}
                       onChangeText={setRenameVal}
+                      maxLength={INPUT_LIMITS.alarmRecordingName}
                       autoFocus
                       style={st.renameInput}
                     />
                     <Tap
                       style={st.renameSave}
                       onPress={() => {
-                        setRecs((prev) =>
-                          prev.map((x) => (x.id === r.id ? { ...x, name: renameVal.trim() || x.name } : x)),
-                        );
+                        renameAlarmRecording(r.id, renameVal.trim() || r.name);
                         setRenameId(null);
                       }}
                     >
@@ -589,8 +584,8 @@ const st = StyleSheet.create({
   },
   radioDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.brand },
   avLabel: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.textPrimary },
-  avValue: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
-  avValueTap: { flexDirection: 'row', alignItems: 'center', gap: 4, height: 54, marginRight: -4, paddingRight: 4 },
+  avValue: { flex: 1, fontSize: 14, fontWeight: '500', color: colors.textTertiary, textAlign: 'right' },
+  avValueTap: { width: 140, flexShrink: 0, flexDirection: 'row', alignItems: 'center', gap: 4, height: 54, marginRight: -4, paddingRight: 4 },
 
   sheetRadioRow: {
     flexDirection: 'row', alignItems: 'center', gap: 12,

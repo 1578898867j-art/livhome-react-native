@@ -133,7 +133,7 @@ const st = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 40, // 全局规范:底部按钮距底 40
   },
-  addBtn: { width: '100%', height: 54, borderRadius: 99, backgroundColor: colors.brand },
+  addBtn: { width: '100%', height: 54, borderRadius: 99 },
   schedCard: { paddingTop: 18, paddingHorizontal: 16, paddingBottom: 14 },
   eyebrow: {
     fontSize: 10,

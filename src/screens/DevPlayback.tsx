@@ -1,6 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, PanResponder, Modal, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, PanResponder, Modal, Pressable, type GestureResponderEvent } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -48,7 +48,17 @@ const SCREEN_W = Dimensions.get('window').width;
 const TL_MARGIN = 18; // 与视频卡 marginHorizontal 一致
 const TL_W = SCREEN_W - TL_MARGIN * 2;
 // 浏览态 1.3px/min(1 小时一格 ≈ 78px,滑动一屏约 5.5 小时);剪辑态放大到 7.8 保证把手可操作
-const PPM_BROWSE = 1.3;
+const BROWSE_ZOOM_LEVELS = [
+  { ppm: 1.3, tickStep: 60 },
+  { ppm: 1.6, tickStep: 60 },
+  { ppm: 2, tickStep: 30 },
+  { ppm: 2.5, tickStep: 30 },
+  { ppm: 3.1, tickStep: 20 },
+  { ppm: 3.9, tickStep: 15 },
+  { ppm: 4.9, tickStep: 15 },
+  { ppm: 6.2, tickStep: 10 },
+  { ppm: 7.8, tickStep: 5 },
+] as const;
 const PPM_CLIP = 7.8;
 const pad = (n: number) => (n < 10 ? '0' : '') + n;
 
@@ -72,6 +82,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   // playhead position + active recording-event filters (mirrors S.pbHead / S.pbEvents)
   const [pbHead, setPbHead] = useState(6 * 60 + 23); // 06:23
+  const [timelineZoom, setTimelineZoom] = useState(0);
   const [pbEvents, setPbEvents] = useState<EventIconKey[]>(EV_FILTERS.map((event) => event.key));
   // date (mirrors S.pbM/pbD; TODAY = 2026-04-24) + overlays
   const [pbM, setPbM] = useState(3);
@@ -167,55 +178,116 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
   };
 
   // ── NVR 式拖动:固定中线,滑动时间轴条带本体(左拖 = 时间前进);松手带惯性
-  const ppm = clipMode ? PPM_CLIP : PPM_BROWSE;
+  const browseZoom = BROWSE_ZOOM_LEVELS[timelineZoom];
+  const ppm = clipMode ? PPM_CLIP : browseZoom.ppm;
   const px = (v: number) => v * ppm;
   const ppmRef = useRef(ppm);
   ppmRef.current = ppm;
   const pbHeadRef = useRef(pbHead);
   pbHeadRef.current = pbHead;
+  const timelineZoomRef = useRef(timelineZoom);
+  timelineZoomRef.current = timelineZoom;
   const dragStart = useRef(0);
+  const dragTouchStartX = useRef(0);
+  const lastDragTouch = useRef({ x: 0, at: 0, velocityX: 0 });
+  const pinchStartDistance = useRef<number | null>(null);
+  const pinchStartZoom = useRef(0);
+  const pinchingTimeline = useRef(false);
   const flingRaf = useRef<number | null>(null);
   const stopFling = () => {
     if (flingRaf.current != null) cancelAnimationFrame(flingRaf.current);
     flingRaf.current = null;
   };
   useEffect(() => stopFling, []);
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        stopFling();
-        dragStart.current = pbHeadRef.current;
-      },
-      onPanResponderMove: (_e, g) => {
-        const v = Math.max(0, Math.min(dayMaxRef.current, dragStart.current - g.dx / ppmRef.current));
-        setPbHead(Math.round(v * 10) / 10);
-      },
-      onPanResponderRelease: (_e, g) => {
-        // 惯性:vx(px/ms)→ 分钟/秒,指数衰减
-        let vel = (-g.vx * 1000) / ppmRef.current;
-        if (Math.abs(vel) < 30) return;
-        let last = Date.now();
-        const step = () => {
-          const now = Date.now();
-          const dt = (now - last) / 1000;
-          last = now;
-          vel *= Math.pow(0.15, dt);
-          const next = Math.max(0, Math.min(dayMaxRef.current, pbHeadRef.current + vel * dt));
-          setPbHead(Math.round(next * 10) / 10);
-          if (Math.abs(vel) > 4 && next > 0 && next < dayMaxRef.current) {
-            flingRaf.current = requestAnimationFrame(step);
-          } else {
-            flingRaf.current = null;
-          }
-        };
-        flingRaf.current = requestAnimationFrame(step);
-      },
-    })
-  ).current;
 
-  // ── 剪辑把手拖拽:绿(起点)/红(终点),互相夹逼、限制在当天时间域内
+  // ── 浏览态时间轴：直接监听触摸点，避免第二根手指被单指拖动手势抢占。
+  const startPinch = (event: GestureResponderEvent) => {
+    const [first, second] = event.nativeEvent.touches;
+    if (!first || !second) return;
+    pinchStartDistance.current = Math.hypot(first.pageX - second.pageX, first.pageY - second.pageY);
+    pinchStartZoom.current = timelineZoomRef.current;
+    pinchingTimeline.current = true;
+  };
+  const updatePinch = (event: GestureResponderEvent) => {
+    const [first, second] = event.nativeEvent.touches;
+    if (!first || !second || !pinchStartDistance.current) return;
+    const distance = Math.hypot(first.pageX - second.pageX, first.pageY - second.pageY);
+    // 细分为九档，约 20% 的两指距离变化切换一档，缩放过程更连贯。
+    const change = Math.round(Math.log(distance / pinchStartDistance.current) / Math.log(1.2));
+    const nextZoom = Math.max(0, Math.min(BROWSE_ZOOM_LEVELS.length - 1, pinchStartZoom.current + change));
+    if (nextZoom !== timelineZoomRef.current) {
+      timelineZoomRef.current = nextZoom;
+      setTimelineZoom(nextZoom);
+    }
+  };
+  const startTimelineDrag = (event: GestureResponderEvent) => {
+    const touch = event.nativeEvent.touches[0];
+    if (!touch) return;
+    stopFling();
+    dragStart.current = pbHeadRef.current;
+    dragTouchStartX.current = touch.pageX;
+    lastDragTouch.current = { x: touch.pageX, at: Date.now(), velocityX: 0 };
+    pinchStartDistance.current = null;
+    pinchingTimeline.current = false;
+  };
+  const finishTimelineFling = () => {
+    let vel = (-lastDragTouch.current.velocityX * 1000) / ppmRef.current;
+    if (Math.abs(vel) < 30) return;
+    let last = Date.now();
+    const step = () => {
+      const now = Date.now();
+      const dt = (now - last) / 1000;
+      last = now;
+      vel *= Math.pow(0.15, dt);
+      const next = Math.max(0, Math.min(dayMaxRef.current, pbHeadRef.current + vel * dt));
+      setPbHead(Math.round(next * 10) / 10);
+      if (Math.abs(vel) > 4 && next > 0 && next < dayMaxRef.current) {
+        flingRaf.current = requestAnimationFrame(step);
+      } else {
+        flingRaf.current = null;
+      }
+    };
+    flingRaf.current = requestAnimationFrame(step);
+  };
+  const timelineTouchHandlers = {
+    onTouchStart: (event: GestureResponderEvent) => {
+      if (event.nativeEvent.touches.length >= 2) startPinch(event);
+      else startTimelineDrag(event);
+    },
+    onTouchMove: (event: GestureResponderEvent) => {
+      if (event.nativeEvent.touches.length >= 2) {
+        if (!pinchingTimeline.current) startPinch(event);
+        updatePinch(event);
+        return;
+      }
+      if (pinchingTimeline.current) return;
+      const touch = event.nativeEvent.touches[0];
+      if (!touch) return;
+      const v = Math.max(0, Math.min(dayMaxRef.current, dragStart.current - (touch.pageX - dragTouchStartX.current) / ppmRef.current));
+      const now = Date.now();
+      const previous = lastDragTouch.current;
+      const dt = now - previous.at;
+      if (dt > 0) lastDragTouch.current = { x: touch.pageX, at: now, velocityX: (touch.pageX - previous.x) / dt };
+      setPbHead(Math.round(v * 10) / 10);
+    },
+    onTouchEnd: (event: GestureResponderEvent) => {
+      if (event.nativeEvent.touches.length >= 2) return;
+      if (pinchingTimeline.current) {
+        if (event.nativeEvent.touches.length === 0) {
+          pinchingTimeline.current = false;
+          pinchStartDistance.current = null;
+        }
+        return;
+      }
+      if (event.nativeEvent.touches.length === 0) finishTimelineFling();
+    },
+    onTouchCancel: () => {
+      pinchStartDistance.current = null;
+      pinchingTimeline.current = false;
+    },
+  };
+
+  // ── 剪辑把手拖拽：绿(起点)/红(终点)，互相夹逼并限制在当天时间域内。
   const clipSRef = useRef(clipS);
   clipSRef.current = clipS;
   const clipERef = useRef(clipE);
@@ -321,6 +393,10 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
               sub="Please check your network and try again."
               actionLabel="Retry"
               onAction={retryLoad}
+              style={{ transform: [{ translateY: 90 }] }}
+              titleStyle={{ fontSize: 19 }}
+              subStyle={{ fontSize: 16, lineHeight: 22 }}
+              actionTextStyle={{ fontSize: 17 }}
             />
           )}
         </View>
@@ -428,7 +504,7 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
       ) : (
       /* 连续时间轴 — 拖动条带本体、固定中线读值;窗口化渲染支持跨天滑动,两侧渐隐蒙版 */
       (() => {
-        const tickStep = clipMode ? 10 : 60;
+        const tickStep = clipMode ? 10 : browseZoom.tickStep;
         const winStart = Math.floor((pbHead - WIN) / tickStep) * tickStep;
         const winEnd = winStart + WIN * 2 + tickStep * 2;
         const ticks: number[] = [];
@@ -451,7 +527,10 @@ export default function DevPlayback({ navigation }: AppScreenProps) {
           }
         }
         return (
-          <View style={st.timelineWrap} {...(clipMode ? {} : pan.panHandlers)}>
+          <View
+            style={st.timelineWrap}
+            {...(clipMode ? {} : timelineTouchHandlers)}
+          >
             <View
               // 浏览态穿透给外层平移手势;剪辑态放行,让红绿把手/选区接收拖动
               pointerEvents={clipMode ? 'auto' : 'none'}
