@@ -1,5 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   Screen,
@@ -136,7 +137,10 @@ export default function NotifSettings({ navigation }: AppScreenProps) {
 
             <Pressable
               style={st.enableRow}
-              onPress={() => setDraftDndEnabled((enabled) => !enabled)}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                setDraftDndEnabled((enabled) => !enabled);
+              }}
               accessibilityRole="switch"
               accessibilityLabel="Enable Do Not Disturb"
               accessibilityState={{ checked: draftDndEnabled }}
@@ -187,7 +191,10 @@ export default function NotifSettings({ navigation }: AppScreenProps) {
 
             <Pressable
               style={st.doneButton}
-              onPress={saveDnd}
+              onPress={() => {
+                void Haptics.selectionAsync();
+                saveDnd();
+              }}
               accessibilityRole="button"
               accessibilityLabel="Save Do Not Disturb time"
             >

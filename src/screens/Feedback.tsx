@@ -329,7 +329,7 @@ const st = StyleSheet.create({
   rowTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.textPrimary },
   reqFilled: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
   reqEmpty: { fontSize: 16, fontWeight: '500', color: colors.textTertiary },
-  descCard: { minHeight: 300, marginTop: 20, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 },
+  descCard: { minHeight: 276, marginTop: 20, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 12 },
   textarea: {
     flex: 1,
     minHeight: 72,
@@ -395,7 +395,7 @@ const st = StyleSheet.create({
   },
   contactTitle: { flex: 1, fontSize: 17, fontWeight: '700', color: colors.textPrimary },
   contactEmpty: { fontSize: 16, fontWeight: '500', color: colors.textTertiary },
-  supportCard: { minHeight: 260, marginTop: 20, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 2 },
+  supportCard: { minHeight: 216, marginTop: 20, paddingHorizontal: 18, paddingTop: 22, paddingBottom: 2 },
   supportTitle: { textAlign: 'center', fontSize: 20, fontWeight: '800', color: colors.textPrimary },
   supportSub: {
     textAlign: 'center',
@@ -408,7 +408,7 @@ const st = StyleSheet.create({
   supportLink: { paddingVertical: 16 },
   supportDivider: { borderBottomWidth: 1, borderBottomColor: colors.border },
   supportLinkTxt: { textAlign: 'center', fontSize: 17, fontWeight: '700', color: colors.brand },
-  submitWrap: { paddingHorizontal: 18 },
+  submitWrap: { marginTop: 24, paddingHorizontal: 18 },
   submitBtn: {
     width: '100%',
     height: 54,

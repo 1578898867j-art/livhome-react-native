@@ -5,6 +5,7 @@ import { SvgXml } from 'react-native-svg';
 import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { CamPreview } from '../components/CamPreview';
+import { PrivacyNoticeBanner } from '../components/PrivacyNoticeBanner';
 import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
 import {
   ALL_NOTIFICATION_EVENTS,
@@ -12,11 +13,19 @@ import {
   type NotificationDayKey,
 } from '../features/notifications/demoEvents';
 import { showToast } from '../features/app/toastStore';
+import {
+  getDevicePrivacyStatus,
+  isDevicePrivacyProtected,
+  useSelectedDevice,
+} from '../features/devices/deviceListStore';
 import { colors, shadow } from '../theme';
 
 const FILTERS = ['All', 'Cloud', 'SD Card'] as const;
 
 export default function NotifDetail({ navigation }: AppScreenProps) {
+  const selectedDevice = useSelectedDevice();
+  const privacyStatus = getDevicePrivacyStatus(selectedDevice);
+  const privacyProtected = isDevicePrivacyProtected(selectedDevice);
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>('All');
   const [selectedDay, setSelectedDay] = useState<NotificationDayKey>('24');
   const [readIds, setReadIds] = useState<number[]>([]);
@@ -64,6 +73,8 @@ export default function NotifDetail({ navigation }: AppScreenProps) {
         </Row>
       }
     >
+      {privacyProtected && <PrivacyNoticeBanner status={privacyStatus} deviceName={selectedDevice?.name} />}
+
       <View style={st.segWrap}>
         {FILTERS.map((item) => (
           <Tap

@@ -9,6 +9,7 @@ import { Icon } from '../components/Icon';
 import { getDemoFlags } from '../features/app/demoStore';
 import { showToast } from '../features/app/toastStore';
 import { useDeviceAvailability } from '../features/devices/useDeviceAvailability';
+import { isDevicePrivacyProtected } from '../features/devices/deviceListStore';
 import { colors } from '../theme';
 
 type Overlay = null | 'restart' | 'delete';
@@ -19,6 +20,7 @@ export default function DevSettings({ navigation }: AppScreenProps) {
   const [offlineDialog, setOfflineDialog] = useState(false);
   const { device, isOffline: selectedDeviceOffline } = useDeviceAvailability();
   const isOffline = route.params?.deviceOffline === true || selectedDeviceOffline;
+  const privacyProtected = isDevicePrivacyProtected(device);
 
   const closeOverlay = () => setOverlay(null);
   const runWhenOnline = (action: () => void) => {
@@ -27,6 +29,9 @@ export default function DevSettings({ navigation }: AppScreenProps) {
       return;
     }
     action();
+  };
+  const showPrivacyBlocked = () => {
+    showToast('Turn off Privacy Mode to use this feature.', 'info');
   };
   const onRestartConfirm = () => {
     setOverlay(null);
@@ -66,23 +71,33 @@ export default function DevSettings({ navigation }: AppScreenProps) {
           icon="sliders"
           name="Device Settings"
           onPress={() => runWhenOnline(() => navigation.navigate('dev-config'))}
+          disabled={privacyProtected}
+          onDisabledPress={showPrivacyBlocked}
         />
         <SettingRow
           icon="bell"
           name="Notifications"
           onPress={() => runWhenOnline(() => navigation.navigate('notif-settings'))}
+          disabled={privacyProtected}
+          onDisabledPress={showPrivacyBlocked}
         />
         <SettingRow
           icon="warn"
           name="Alert Settings"
           onPress={() => runWhenOnline(() => navigation.navigate('alert-settings'))}
+          disabled={privacyProtected}
+          onDisabledPress={showPrivacyBlocked}
           last
         />
       </Card>
 
       <Eyebrow>Smart</Eyebrow>
       <Card style={st.smartCard}>
-        <Tap style={st.smartRow} onPress={() => runWhenOnline(() => navigation.navigate('geofence'))}>
+        <Tap
+          style={[st.smartRow, privacyProtected && st.entryDisabled]}
+          onPress={privacyProtected ? showPrivacyBlocked : () => runWhenOnline(() => navigation.navigate('geofence'))}
+          accessibilityState={{ disabled: privacyProtected }}
+        >
           <View style={st.smartIcon}>
             <Icon name="shield" size={17} color={colors.brand} />
           </View>
@@ -159,6 +174,7 @@ const st = StyleSheet.create({
   card: { marginHorizontal: 18 },
   smartCard: { marginHorizontal: 18, paddingVertical: 14, paddingHorizontal: 16 },
   smartRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  entryDisabled: { opacity: 0.42 },
   smartIcon: {
     width: 34,
     height: 34,

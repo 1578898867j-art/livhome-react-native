@@ -1,4 +1,5 @@
 import React from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   View,
   Text,
@@ -208,7 +209,11 @@ export function NavBar({
       <Text style={[s.tHead, { flex: 1 }]}>{title}</Text>
       {action ? (
         <Tap
-          onPress={action.onPress}
+          onPress={() => {
+            if (action.disabled) return;
+            void Haptics.selectionAsync();
+            action.onPress?.();
+          }}
           hitSlop={8}
           disabled={action.disabled}
           accessibilityRole="button"
@@ -244,7 +249,11 @@ export const Hint = ({ children }: { children: React.ReactNode }) => (
 export function Toggle({ on, onToggle }: { on: boolean; onToggle?: () => void }) {
   return (
     <Pressable
-      onPress={() => guardSave(onToggle)}
+      onPress={() => {
+        if (!onToggle) return;
+        void Haptics.selectionAsync();
+        guardSave(onToggle);
+      }}
       style={[s.tg, on && { backgroundColor: colors.brand, alignItems: 'flex-end' }]}
     >
       <View style={s.tgKnob} />
@@ -258,16 +267,24 @@ export function SettingRow({
   name,
   value,
   onPress,
+  disabled = false,
+  onDisabledPress,
   last,
 }: {
   icon?: string;
   name: string;
   value?: string;
   onPress?: () => void;
+  disabled?: boolean;
+  onDisabledPress?: () => void;
   last?: boolean;
 }) {
   return (
-    <Tap onPress={onPress} style={s.setRow}>
+    <Tap
+      onPress={disabled ? onDisabledPress : onPress}
+      style={[s.setRow, disabled && s.setRowDisabled]}
+      accessibilityState={{ disabled }}
+    >
       {!!icon && (
         <View style={s.setIcon}>
           <Icon name={icon} size={15} color={colors.textSecondary} />
@@ -381,7 +398,11 @@ export function PrimaryBtn({
 }) {
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        if (disabled) return;
+        void Haptics.selectionAsync();
+        onPress?.();
+      }}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
@@ -435,6 +456,7 @@ const s = StyleSheet.create({
   tg: { width: 42, height: 25, borderRadius: 13, backgroundColor: colors.borderStrong, padding: 2.5, justifyContent: 'center' },
   tgKnob: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' },
   setRow: { flexDirection: 'row', alignItems: 'center', minHeight: 54, paddingHorizontal: 16, gap: 12, position: 'relative' },
+  setRowDisabled: { opacity: 0.42 },
   setIcon: {
     width: 30,
     height: 30,

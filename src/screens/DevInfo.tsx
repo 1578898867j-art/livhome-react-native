@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, TextInput, Animated, Modal, Pressable } from 'r
 import { SvgXml } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { Screen, Tap, Row, Card, Header } from '../components/kit';
 import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
 import { Icon } from '../components/Icon';
@@ -67,6 +68,7 @@ export default function DevInfo({ navigation }: AppScreenProps) {
   const copyToClipboard = async (value: string) => {
     try {
       await Clipboard.setStringAsync(value);
+      void Haptics.selectionAsync();
       showCopyToast();
     } catch {
       showAppToast('Failed to copy. Please try again.', 'error');
@@ -177,6 +179,7 @@ export default function DevInfo({ navigation }: AppScreenProps) {
             style={[st.saveBtn, !canSaveDeviceName && st.saveBtnDisabled]}
             onPress={() => runWhenOnline(() => {
               if (device && devNameDraft.trim()) renameDevice(device.id, devNameDraft);
+              void Haptics.selectionAsync();
               setEditing(false);
             })}
             hitSlop={8}

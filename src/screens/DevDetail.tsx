@@ -1,10 +1,12 @@
 import type { AppScreenProps } from '../navigation/types';
+import type { DevicePrivacyStatus } from '../contracts';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
   Easing,
   Modal,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -12,11 +14,14 @@ import {
   View,
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, Tap, Row, Card } from '../components/kit';
 import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
 import { Icon } from '../components/Icon';
+import { PrivacyMask } from '../components/PrivacyMask';
+import { PrivacyNoticeBanner } from '../components/PrivacyNoticeBanner';
 import { DarkPlayerState } from '../components/states';
 import { PermissionDialog } from '../components/PermissionDialog';
 import type { PermType } from '../components/PermissionDialog';
@@ -35,6 +40,11 @@ import {
 } from '../features/notifications/demoEvents';
 import { showToast } from '../features/app/toastStore';
 import { consumeTalkIntent } from '../features/devices/talkIntent';
+import {
+  getDevicePrivacyStatus,
+  isDevicePrivacyProtected,
+  requestDevicePrivacyMode,
+} from '../features/devices/deviceListStore';
 import { getDeviceIsOffline, useDeviceAvailability } from '../features/devices/useDeviceAvailability';
 import { TABICONS, PHOTOICONS, CTRLICONS, TILTICONS } from '../icons/protoSets';
 import { ZOOMICON, SELICON, SELICON2 } from '../icons/protoIcons';
@@ -91,8 +101,8 @@ const fsActive = (xml: string) =>
 
 const FS_MUTE =
   '<svg viewBox="0 0 54 54" fill="none"><rect y="54" width="54" height="54" rx="27" transform="rotate(-90 0 54)" fill="#777777" fill-opacity="0.4"/><path d="M17.048 17.0479C17.3897 16.7063 17.9436 16.7063 18.2853 17.0479L36.9523 35.7149C37.2937 36.0567 37.2939 36.6106 36.9523 36.9522C36.6107 37.2939 36.0567 37.2937 35.715 36.9522L32.8302 34.0675C32.777 35.9452 30.6189 37.0013 29.0998 35.8624L24.0334 32.0636C23.6874 31.8043 23.2664 31.6643 22.8341 31.6642H20.0002C18.7116 31.6642 17.6673 30.6201 17.6671 29.3321V24.6671C17.6674 23.3792 18.7117 22.3351 20.0002 22.3351H21.0978L17.048 18.2852C16.7063 17.9435 16.7063 17.3896 17.048 17.0479ZM29.0998 18.1368C30.6379 16.984 32.8329 18.0814 32.8332 20.003V29.2618L24.8751 21.3038L29.0998 18.1368Z" fill="#D9D8D8"/></svg>';
-const FS_DPAD =
-  '<svg viewBox="0 0 174 174" fill="none"><rect y="174" width="174" height="174" rx="87" transform="rotate(-90 0 174)" fill="#908E8E" fill-opacity="0.4"/><path d="M15.3674 84.568L25.2435 77.4352C27.2275 76.0024 30 77.42 30 79.8673V87V94.1327C30 96.58 27.2275 97.9976 25.2435 96.5648L15.3674 89.432C13.7094 88.2346 13.7094 85.7654 15.3674 84.568Z" fill="#D0C5BA" fill-opacity="0.8"/><path d="M89.432 158.633L96.5648 148.756C97.9976 146.772 96.58 144 94.1327 144H87H79.8673C77.42 144 76.0024 146.772 77.4352 148.756L84.568 158.633C85.7654 160.291 88.2346 160.291 89.432 158.633Z" fill="#D0C5BA" fill-opacity="0.8"/><circle cx="87" cy="87" r="15" fill="#D0C5BA" fill-opacity="0.8"/><path d="M89.432 15.3674L96.5648 25.2435C97.9976 27.2275 96.58 30 94.1327 30H87H79.8673C77.42 30 76.0024 27.2275 77.4352 25.2435L84.568 15.3674C85.7654 13.7094 88.2346 13.7094 89.432 15.3674Z" fill="#D0C5BA" fill-opacity="0.8"/><path d="M158.633 84.568L148.756 77.4352C146.772 76.0024 144 77.42 144 79.8673V87V94.1327C144 96.58 146.772 97.9976 148.756 96.5648L158.633 89.432C160.291 88.2346 160.291 85.7654 158.633 84.568Z" fill="#D0C5BA" fill-opacity="0.8"/></svg>';
+const DPAD_DIRECTION_GLOW =
+  '<svg viewBox="0 0 188 188" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M67 119C57 132 48 148 41 165A82 82 0 0 0 147 165C140 148 131 132 121 119A35 35 0 0 1 67 119Z" fill="currentColor" fill-opacity="0.19" stroke="currentColor" stroke-opacity="0.4" stroke-width="1.25"/></svg>';
 
 // 预设位网格:一排 3 个(面板左右 padding 18,列间距 10)
 const WIN = Dimensions.get('window');
@@ -190,6 +200,9 @@ function TalkWaveform({ level, fullscreen = false }: { level: number; fullscreen
 export default function DevDetail({ navigation }: AppScreenProps) {
   const insets = useSafeAreaInsets();
   const { device } = useDeviceAvailability();
+  const privacyStatus = getDevicePrivacyStatus(device);
+  const privacyProtected = isDevicePrivacyProtected(device);
+  const privacyPending = privacyStatus === 'enabling' || privacyStatus === 'disabling';
   const {
     activePreset,
     addPreset,
@@ -261,14 +274,17 @@ export default function DevDetail({ navigation }: AppScreenProps) {
   talkEnabledRef.current = ctl.ctlMic;
   talkStartingRef.current = talkStarting;
   toggleCtlRef.current = toggleCtl;
+
   const nightVisionMode = useNightVisionMode();
   const smartTrackingEnabled = useSmartTrackingEnabled();
   const panelTilt = {
     ...tilt,
     motionOn: motionDetectionEnabled,
     soundOn: soundDetectionEnabled,
+    privacyOn: privacyProtected,
   };
   const togglePanelTilt = (key: TiltKey) => {
+    if (key === 'privacyOn') return;
     if (key === 'motionOn') {
       setMotionDetectionEnabled(!motionDetectionEnabled);
       return;
@@ -294,6 +310,17 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     },
     [],
   );
+
+  useEffect(() => {
+    if (!privacyProtected) return;
+    setFullscreen(false);
+    setSaveToast(null);
+    setSnapFlash(false);
+    if (ctl.ctlSpk) toggleCtlRef.current('ctlSpk');
+    if (ctl.ctlMic) toggleCtlRef.current('ctlMic');
+    if (ctl.ctlRec) toggleCtlRef.current('ctlRec');
+    stopTalkMeter();
+  }, [ctl.ctlMic, ctl.ctlRec, ctl.ctlSpk, privacyProtected, stopTalkMeter]);
 
   useEffect(() => {
     if (talkPhaseTimer.current) clearTimeout(talkPhaseTimer.current);
@@ -369,6 +396,33 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     }
     action();
   }, []);
+  const showPrivacyBlocked = useCallback(() => {
+    showToast('Turn off Privacy Mode to use this feature.', 'info');
+  }, []);
+  const runWhenLiveAvailable = useCallback((action: () => void) => {
+    if (privacyProtected) {
+      showPrivacyBlocked();
+      return;
+    }
+    runWhenOnline(action);
+  }, [privacyProtected, runWhenOnline, showPrivacyBlocked]);
+
+  const togglePrivacyMode = () => {
+    if (!device || privacyPending) return;
+    runWhenOnline(() => {
+      void Haptics.selectionAsync();
+      const nextEnabled = privacyStatus === 'off';
+      void requestDevicePrivacyMode(device.id, nextEnabled, getDemoFlags().failOps)
+        .then(() => showToast(nextEnabled ? 'Privacy mode enabled.' : 'Privacy mode disabled.', 'success'))
+        .catch((error: unknown) => {
+          const fallback = nextEnabled
+            ? 'Failed to enable privacy mode. Please try again.'
+            : 'Failed to disable privacy mode. Please try again.';
+          showToast(error instanceof Error && error.message ? error.message : fallback, 'error');
+        });
+    });
+  };
+  const triggerSelectionHaptic = () => void Haptics.selectionAsync();
 
   // 保存截图/录像:相册权限被拒 → 引导弹窗;failOps → 失败提示;否则成功提示条
   const trySave = (kind: 'photo' | 'video', inFullscreen = false): boolean => {
@@ -484,6 +538,7 @@ export default function DevDetail({ navigation }: AppScreenProps) {
     [],
   );
   const toggleRes = () => {
+    void Haptics.selectionAsync();
     setFsHd((v) => !v);
     setFhdFlash(true);
     if (fhdTimer.current) clearTimeout(fhdTimer.current);
@@ -577,13 +632,15 @@ export default function DevDetail({ navigation }: AppScreenProps) {
       >
         {/* player —— 加载/离线/失败 时显示深色状态占位 */}
         <View style={st.player}>
-          {pState === 'ready' ? (
+          {privacyProtected ? (
+            <PrivacyMask status={privacyStatus} />
+          ) : pState === 'ready' ? (
             <CamPreview live tag="Person · sofa" label="14:22:08">
               <View style={st.resBadge}>
                 <Text style={st.resTxt}>{fsHd ? '720P' : '1080P'}</Text>
               </View>
               {ctl.ctlMic && <TalkWaveform level={talkLevel} />}
-              <Tap style={st.scanBtn} onPress={() => setFullscreen(true)} hitSlop={8}>
+              <Tap style={st.scanBtn} onPress={() => runWhenLiveAvailable(() => setFullscreen(true))} hitSlop={8}>
                 <SvgXml xml={FULLSCREEN_ICON} width={16} height={16} color="#fff" />
               </Tap>
               {ctl.ctlRec && <RecordingIndicator elapsedSeconds={recordingElapsed} compact />}
@@ -606,21 +663,35 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             </View>
           )}
           <View
-            pointerEvents={pState === 'ready' || pState === 'offline' ? 'auto' : 'none'}
-            style={pState !== 'ready' ? { opacity: 0.4 } : undefined}
+            pointerEvents={pState === 'ready' || pState === 'offline' || privacyProtected ? 'auto' : 'none'}
+            style={pState !== 'ready' && !privacyProtected ? { opacity: 0.4 } : undefined}
           >
             <Row style={{ gap: 8, padding: 12, backgroundColor: colors.surface }}>
               <PhotoBtn
                 icon="speaker"
                 on={ctl.ctlSpk}
-                onPress={() => runWhenOnline(() => toggleCtl('ctlSpk'))}
+                unavailable={privacyProtected}
+                onPress={() => runWhenLiveAvailable(() => {
+                  triggerSelectionHaptic();
+                  toggleCtl('ctlSpk');
+                })}
               />
-              <PhotoBtn icon="mic" on={ctl.ctlMic} onPress={() => runWhenOnline(() => tryTalk())} />
+              <PhotoBtn
+                icon="mic"
+                on={ctl.ctlMic}
+                unavailable={privacyProtected}
+                onPress={() => runWhenLiveAvailable(() => {
+                  triggerSelectionHaptic();
+                  tryTalk();
+                })}
+              />
               <PhotoBtn
                 icon="record"
                 on={ctl.ctlRec}
+                unavailable={privacyProtected}
                 onPress={() =>
-                  runWhenOnline(() => {
+                  runWhenLiveAvailable(() => {
+                    triggerSelectionHaptic();
                     if (ctl.ctlRec) {
                       trySave('video');
                       toggleCtl('ctlRec');
@@ -637,8 +708,11 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               <PhotoBtn
                 icon="camera"
                 on={snapFlash}
-                unavailable={ctl.ctlRec}
-                onPress={() => runWhenOnline(() => snap())}
+                unavailable={privacyProtected || ctl.ctlRec}
+                onPress={() => runWhenLiveAvailable(() => {
+                  triggerSelectionHaptic();
+                  snap();
+                })}
                 accessibilityLabel="Take snapshot"
               />
             </Row>
@@ -653,7 +727,10 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             resetting={resetting}
             presets={presets}
             activePreset={activePreset}
-            onPresets={() => setCtrlView('presets')}
+            onPresets={() => {
+              void Haptics.selectionAsync();
+              setCtrlView('presets');
+            }}
             onBack={() => setCtrlView('pad')}
             onAdd={() => {
               runWhenOnline(() => {
@@ -667,10 +744,16 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             }}
             onDelete={(index) => runWhenOnline(() => removePreset(index))}
             onView={(index) => runWhenOnline(() => setActivePreset(index))}
-            onMove={() => runWhenOnline(() => {})}
-            onReset={() => runWhenOnline(() => setResetting((active) => !active))}
+            onMove={() => runWhenOnline(() => {
+              void Haptics.selectionAsync();
+            })}
+            onReset={() => runWhenOnline(() => {
+              void Haptics.selectionAsync();
+              setResetting((active) => !active);
+            })}
             onCruise={() => {
               runWhenOnline(() => {
+                void Haptics.selectionAsync();
                 if (presets.length < 2) {
                   setPresetPopup(true);
                   return;
@@ -678,6 +761,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
                 setCruising((active) => !active);
               });
             }}
+            disabled={privacyProtected}
+            onDisabledPress={showPrivacyBlocked}
           />
         )}
         {tab === 'tilt' && (
@@ -685,9 +770,28 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             tilt={panelTilt}
             nightVisionMode={nightVisionMode}
             smartTrackingEnabled={smartTrackingEnabled}
-            onNightVision={() => runWhenOnline(() => setNightVisionOpen(true))}
-            onSmartTracking={() => runWhenOnline(() => setSmartTrackingEnabled(!smartTrackingEnabled))}
-            onToggle={(key) => runWhenOnline(() => togglePanelTilt(key))}
+            privacyStatus={privacyStatus}
+            privacyProtected={privacyProtected}
+            privacyPending={privacyPending}
+            onNightVision={() => runWhenLiveAvailable(() => {
+              void Haptics.selectionAsync();
+              setNightVisionOpen(true);
+            })}
+            onSmartTracking={() => runWhenLiveAvailable(() => {
+              void Haptics.selectionAsync();
+              setSmartTrackingEnabled(!smartTrackingEnabled);
+            })}
+            onToggle={(key) => {
+              if (key === 'privacyOn') {
+                togglePrivacyMode();
+                return;
+              }
+              runWhenLiveAvailable(() => {
+              void Haptics.selectionAsync();
+              togglePanelTilt(key);
+              });
+            }}
+            onBlockedPress={showPrivacyBlocked}
           />
         )}
         {tab === 'messages' && (
@@ -711,6 +815,8 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             onCheck={toggleChecked}
             onOpenMsg={() => navigation.navigate('notif-detail')}
             onCalOpen={openCal}
+            privacyStatus={privacyStatus}
+            privacyProtected={privacyProtected}
           />
         )}
         {tab === 'playback' && (
@@ -868,23 +974,18 @@ export default function DevDetail({ navigation }: AppScreenProps) {
           注意:iOS 上旋转 90° 的祖先会让内部按钮收不到触摸,因此拆成两层——
           旋转层只放视觉(画面/方向盘/toast,pointerEvents none),
           按钮放在不旋转的竖屏坐标层,图标各自旋转,视觉与原来完全一致。 */}
-      <Modal visible={fullscreen} animationType="fade" onRequestClose={() => setFullscreen(false)}>
+      <Modal visible={fullscreen && !privacyProtected} animationType="fade" onRequestClose={() => setFullscreen(false)}>
         <View style={st.fsRoot}>
           {/* 视觉层(旋转,不接收触摸) */}
           <View pointerEvents="none" style={[st.fsStage, { width: WIN.height, height: WIN.width }]}>
             {/* 画面全出血 */}
             <View style={StyleSheet.absoluteFill}>
               <CamPreview height={WIN.width} showBox={false} tag="">
-                {ctl.ctlMic && <TalkIndicator compact={talkCompact} />}
+                {ctl.ctlMic && <TalkIndicator compact={talkCompact} inverted />}
               </CamPreview>
             </View>
 
             {ctl.ctlMic && <TalkWaveform level={talkLevel} fullscreen />}
-
-            {/* 左下方向盘 */}
-            <View style={st.fsDpad}>
-              <SvgXml xml={FS_DPAD} width={174} height={174} />
-            </View>
 
             {ctl.ctlRec && <RecordingIndicator elapsedSeconds={recordingElapsed} style={{ bottom: 16 }} />}
 
@@ -908,6 +1009,10 @@ export default function DevDetail({ navigation }: AppScreenProps) {
             </View>
           </Tap>
 
+          <View style={st.fsDpadP}>
+            <DirectionPad overlay onMove={() => runWhenLiveAvailable(() => void Haptics.selectionAsync())} />
+          </View>
+
           <View style={st.fsRailP}>
             <Tap onPress={toggleRes}>
               <View style={st.fsRot}>
@@ -919,13 +1024,19 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               </View>
             </Tap>
             {/* 开启态 → 图标纯白;声音钮在 斜线静音/实心喇叭 间切换 */}
-            <Tap onPress={() => tryTalk(true)}>
+            <Tap onPress={() => runWhenLiveAvailable(() => {
+              void Haptics.selectionAsync();
+              tryTalk(true);
+            })}>
               <View style={st.fsRot}>
                 <SvgXml xml={ctl.ctlMic ? fsActive(FS_MIC) : FS_MIC} width={54} height={54} />
               </View>
             </Tap>
             <Tap
-              onPress={() => snap(true)}
+              onPress={() => runWhenLiveAvailable(() => {
+                void Haptics.selectionAsync();
+                snap(true);
+              })}
               accessibilityRole="button"
               accessibilityLabel="Take snapshot"
               accessibilityState={{ disabled: ctl.ctlRec }}
@@ -936,16 +1047,20 @@ export default function DevDetail({ navigation }: AppScreenProps) {
               </View>
             </Tap>
             <Tap
-              onPress={() => {
+              onPress={() => runWhenLiveAvailable(() => {
+                void Haptics.selectionAsync();
                 if (ctl.ctlRec) trySave('video', true);
                 toggleCtl('ctlRec');
-              }}
+              })}
             >
               <View style={st.fsRot}>
                 <SvgXml xml={ctl.ctlRec ? fsActive(FS_REC) : FS_REC} width={54} height={54} />
               </View>
             </Tap>
-            <Tap onPress={() => toggleCtl('ctlSpk')}>
+            <Tap onPress={() => runWhenLiveAvailable(() => {
+              void Haptics.selectionAsync();
+              toggleCtl('ctlSpk');
+            })}>
               <View style={st.fsRot}>
                 <SvgXml xml={ctl.ctlSpk ? FS_SPK_ON : FS_MUTE} width={54} height={54} />
               </View>
@@ -1164,6 +1279,8 @@ function ControlsPanel({
   onMove,
   onReset,
   onCruise,
+  disabled,
+  onDisabledPress,
 }: {
   view: 'pad' | 'presets';
   cruising: boolean;
@@ -1175,13 +1292,15 @@ function ControlsPanel({
   onAdd: () => void;
   onDelete: (i: number) => void;
   onView: (i: number) => void;
-  onMove: () => void;
+  onMove: (direction: 'up' | 'down' | 'left' | 'right') => void;
   onReset: () => void;
   onCruise: () => void;
+  disabled: boolean;
+  onDisabledPress: () => void;
 }) {
   if (view === 'presets') {
     return (
-      <View style={{ padding: 18, paddingTop: 16 }}>
+      <View style={[{ padding: 18, paddingTop: 16 }, st.privacyPanelHost]}>
         <Row style={{ marginBottom: 14 }}>
           <Text style={st.presetTitle}>Preset Positions</Text>
           <View style={{ flex: 1 }} />
@@ -1212,40 +1331,114 @@ function ControlsPanel({
             </Tap>
           ))}
         </View>
+        {disabled && <PrivacyPanelOverlay onPress={onDisabledPress} />}
       </View>
     );
   }
   return (
-    <View style={{ padding: 18, paddingTop: 20, alignItems: 'center' }}>
-      <View style={st.dpad}>
-        <Tap style={[st.triWrap, { top: 18, left: '50%', marginLeft: -9 }]} onPress={onMove} hitSlop={8}>
-          <Tri dir="up" />
-        </Tap>
-        <Tap style={[st.triWrap, { bottom: 18, left: '50%', marginLeft: -9 }]} onPress={onMove} hitSlop={8}>
-          <Tri dir="down" />
-        </Tap>
-        <Tap style={[st.triWrap, { left: 18, top: '50%', marginTop: -8 }]} onPress={onMove} hitSlop={8}>
-          <Tri dir="left" />
-        </Tap>
-        <Tap style={[st.triWrap, { right: 18, top: '50%', marginTop: -8 }]} onPress={onMove} hitSlop={8}>
-          <Tri dir="right" />
-        </Tap>
-        <Tap style={st.dpadHome} onPress={onMove} hitSlop={8}>
-          <View />
-        </Tap>
-      </View>
+    <View style={[{ padding: 18, paddingTop: 20, alignItems: 'center' }, st.privacyPanelHost]}>
+      <DirectionPad onMove={onMove} />
       <Row style={{ gap: 12, marginTop: 24, width: '100%' }}>
         <CtrlAction icon="cruise" label="Presets" hl={false} onPress={onPresets} />
         <CtrlAction icon="reset" label="Reset" hl={resetting} onPress={onReset} isSwitch />
         <CtrlAction icon="presets" label="Cruise" hl={cruising} onPress={onCruise} isSwitch />
       </Row>
+      {disabled && <PrivacyPanelOverlay onPress={onDisabledPress} />}
     </View>
   );
 }
 
-function Tri({ dir }: { dir: 'up' | 'down' | 'left' | 'right' }) {
-  const rot = { up: '0deg', right: '90deg', down: '180deg', left: '-90deg' }[dir];
-  return <View style={[st.tri, { transform: [{ rotate: rot }] }]} />;
+function PrivacyPanelOverlay({ onPress }: { onPress: () => void }) {
+  return (
+    <Tap style={st.privacyPanelOverlay} onPress={onPress} accessibilityRole="button" accessibilityLabel="Privacy mode is on. Turn it off to use live controls.">
+      <View style={st.privacyPanelNotice}>
+        <SvgXml xml={TILTICONS.privacy} width={18} height={18} color={colors.textSecondary} />
+        <Text style={st.privacyPanelText}>Turn off Privacy Mode to use live controls</Text>
+      </View>
+    </Tap>
+  );
+}
+
+type Direction = 'up' | 'down' | 'left' | 'right';
+
+function DirectionPad({ onMove, overlay = false }: { onMove: (direction: Direction) => void; overlay?: boolean }) {
+  const knobOffset = useRef(new Animated.ValueXY()).current;
+  const onMoveRef = useRef(onMove);
+  const lastDirectionRef = useRef<Direction | null>(null);
+  const [activeDirection, setActiveDirection] = useState<Direction | null>(null);
+  const directionHintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  onMoveRef.current = onMove;
+
+  useEffect(() => () => {
+    if (directionHintTimer.current) clearTimeout(directionHintTimer.current);
+  }, []);
+
+  const resetKnob = () => {
+    lastDirectionRef.current = null;
+    setActiveDirection(null);
+    Animated.spring(knobOffset, { toValue: { x: 0, y: 0 }, damping: 16, stiffness: 220, mass: 0.7, useNativeDriver: true }).start();
+  };
+
+  const panResponder = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: (_event, gesture) => Math.abs(gesture.dx) > 2 || Math.abs(gesture.dy) > 2,
+    onPanResponderMove: (_event, gesture) => {
+      const distance = Math.hypot(gesture.dx, gesture.dy);
+      const scale = distance > 34 ? 34 / distance : 1;
+      const x = gesture.dx * scale;
+      const y = gesture.dy * scale;
+      knobOffset.setValue({ x, y });
+      if (distance < 12) return;
+      const direction: Direction = Math.abs(x) > Math.abs(y) ? (x > 0 ? 'right' : 'left') : y > 0 ? 'down' : 'up';
+      setActiveDirection(direction);
+      if (direction !== lastDirectionRef.current) {
+        lastDirectionRef.current = direction;
+        onMoveRef.current(direction);
+      }
+    },
+    onPanResponderRelease: resetKnob,
+    onPanResponderTerminate: resetKnob,
+  })).current;
+
+  const triggerDirection = (direction: Direction) => {
+    setActiveDirection(direction);
+    if (directionHintTimer.current) clearTimeout(directionHintTimer.current);
+    directionHintTimer.current = setTimeout(() => {
+      setActiveDirection(null);
+      directionHintTimer.current = null;
+    }, 180);
+    onMove(direction);
+  };
+
+  return (
+    <View style={[st.dpad, overlay && st.dpadOverlay]}>
+      {activeDirection && <DpadDirectionGlow direction={activeDirection} overlay={overlay} />}
+      <Tap style={[st.triWrap, { top: 18, left: '50%', marginLeft: -10 }]} onPress={() => triggerDirection('up')} hitSlop={8}>
+        <Icon name="chevU" size={20} color={activeDirection === 'up' ? (overlay ? '#A9D2FF' : colors.brand) : (overlay ? 'rgba(255,255,255,0.74)' : colors.textTertiary)} sw={1.8} />
+      </Tap>
+      <Tap style={[st.triWrap, { bottom: 18, left: '50%', marginLeft: -10 }]} onPress={() => triggerDirection('down')} hitSlop={8}>
+        <Icon name="chevD" size={20} color={activeDirection === 'down' ? (overlay ? '#A9D2FF' : colors.brand) : (overlay ? 'rgba(255,255,255,0.74)' : colors.textTertiary)} sw={1.8} />
+      </Tap>
+      <Tap style={[st.triWrap, { left: 18, top: '50%', marginTop: -10 }]} onPress={() => triggerDirection('left')} hitSlop={8}>
+        <Icon name="chevL" size={20} color={activeDirection === 'left' ? (overlay ? '#A9D2FF' : colors.brand) : (overlay ? 'rgba(255,255,255,0.74)' : colors.textTertiary)} sw={1.8} />
+      </Tap>
+      <Tap style={[st.triWrap, { right: 18, top: '50%', marginTop: -10 }]} onPress={() => triggerDirection('right')} hitSlop={8}>
+        <Icon name="chevR" size={20} color={activeDirection === 'right' ? (overlay ? '#A9D2FF' : colors.brand) : (overlay ? 'rgba(255,255,255,0.74)' : colors.textTertiary)} sw={1.8} />
+      </Tap>
+      <Animated.View style={[st.dpadKnob, overlay && st.dpadKnobOverlay, { transform: knobOffset.getTranslateTransform() }]} {...panResponder.panHandlers} accessibilityRole="adjustable" accessibilityLabel="Camera direction joystick" accessibilityHint="Drag in a direction to move the camera">
+        <View style={st.dpadKnobDots}>{Array.from({ length: 9 }).map((_, index) => <View key={index} style={[st.dpadKnobDot, overlay && st.dpadKnobDotOverlay]} />)}</View>
+      </Animated.View>
+    </View>
+  );
+}
+
+function DpadDirectionGlow({ direction, overlay = false }: { direction: Direction; overlay?: boolean }) {
+  const rotation = { up: '180deg', right: '-90deg', down: '0deg', left: '90deg' }[direction];
+  return (
+    <View pointerEvents="none" style={[st.dpadDirectionGlow, { transform: [{ rotate: rotation }] }]}>
+      <SvgXml xml={DPAD_DIRECTION_GLOW} width={188} height={188} color={overlay ? '#A9D2FF' : colors.brand} />
+    </View>
+  );
 }
 
 function CtrlAction({
@@ -1286,16 +1479,24 @@ function TiltPanel({
   tilt,
   nightVisionMode,
   smartTrackingEnabled,
+  privacyStatus,
+  privacyProtected,
+  privacyPending,
   onNightVision,
   onSmartTracking,
   onToggle,
+  onBlockedPress,
 }: {
   tilt: Record<TiltKey, boolean>;
   nightVisionMode: NightVisionMode;
   smartTrackingEnabled: boolean;
+  privacyStatus: DevicePrivacyStatus;
+  privacyProtected: boolean;
+  privacyPending: boolean;
   onNightVision: () => void;
   onSmartTracking: () => void;
   onToggle: (k: TiltKey) => void;
+  onBlockedPress: () => void;
 }) {
   return (
     <View style={st.tiltGrid}>
@@ -1311,12 +1512,19 @@ function TiltPanel({
         return (
           <Tap
             key={it.key}
-            style={[st.tiltCell, { backgroundColor: on ? colors.brandSoft : colors.surface }]}
+            style={[
+              st.tiltCell,
+              { backgroundColor: on ? colors.brandSoft : colors.surface },
+              it.key === 'privacyOn' && st.privacyTile,
+            ]}
+            disabled={privacyPending && it.key === 'privacyOn'}
             onPress={() => {
               if (it.key === 'nightVision') onNightVision();
               else if (it.key === 'smartTrack') onSmartTracking();
               else onToggle(it.key);
             }}
+            accessibilityRole={it.key === 'privacyOn' ? 'switch' : 'button'}
+            accessibilityState={it.key === 'privacyOn' ? { checked: on, disabled: privacyPending } : { disabled: privacyProtected }}
           >
             <View style={[st.tiltIcon, { backgroundColor: on ? colors.brand : colors.bgSecondary }]}>
               <SvgXml xml={TILTICONS[glyph]} width={22} height={22} color={on ? '#fff' : colors.textSecondary} />
@@ -1329,11 +1537,28 @@ function TiltPanel({
                 color: on ? colors.brand : colors.textSecondary,
               }}
             >
-              {it.label}
+              {it.key === 'privacyOn' && privacyStatus === 'enabling'
+                ? 'Turning on…'
+                : it.key === 'privacyOn' && privacyStatus === 'disabling'
+                  ? 'Turning off…'
+                  : it.label}
             </Text>
           </Tap>
         );
       })}
+      {privacyProtected && (
+        <>
+          <Tap style={st.privacyGridOverlay} onPress={onBlockedPress} accessibilityRole="button" accessibilityLabel="Privacy mode is on. Turn it off to use these features.">
+            <View />
+          </Tap>
+          <View pointerEvents="none" style={st.privacyGridNoticeLayer}>
+            <View style={st.privacyGridNotice}>
+              <Text style={st.privacyGridNoticeText}>Privacy Mode is on</Text>
+              <Text style={st.privacyGridNoticeSub}>Turn it off to change these features</Text>
+            </View>
+          </View>
+        </>
+      )}
     </View>
   );
 }
@@ -1354,6 +1579,8 @@ function MessagesPanel({
   onCheck,
   onOpenMsg,
   onCalOpen,
+  privacyStatus,
+  privacyProtected,
 }: {
   msgs: Msg[];
   select: boolean;
@@ -1369,6 +1596,8 @@ function MessagesPanel({
   onCheck: (i: number) => void;
   onOpenMsg: () => void;
   onCalOpen: () => void;
+  privacyStatus: DevicePrivacyStatus;
+  privacyProtected: boolean;
 }) {
   const visible = msgs
     .map((m, i) => ({ m, i }))
@@ -1416,6 +1645,8 @@ function MessagesPanel({
           />
         </Tap>
       </Row>
+
+      {privacyProtected && <PrivacyNoticeBanner status={privacyStatus} compact embedded />}
 
       {!!filter && (
         <Tap style={st.filterChip} onPress={onFilterClear}>
@@ -1606,31 +1837,82 @@ const st = StyleSheet.create({
   photoBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12 },
 
   // controls d-pad
-  dpad: { position: 'relative', width: 188, height: 188, borderRadius: 94, backgroundColor: colors.bgSecondary },
-  triWrap: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
-  tri: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 9,
-    borderRightWidth: 9,
-    borderBottomWidth: 15,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
-    borderBottomColor: '#C6CAD1',
+  dpad: {
+    position: 'relative',
+    width: 188,
+    height: 188,
+    borderRadius: 94,
+    backgroundColor: '#FAFAFB',
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: '#69707C',
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 3,
   },
-  dpadHome: {
+  dpadOverlay: {
+    backgroundColor: 'rgba(28, 30, 34, 0.34)',
+    borderColor: 'rgba(255, 255, 255, 0.24)',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+  },
+  triWrap: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  dpadDirectionGlow: {
+    position: 'absolute',
+    width: 188,
+    height: 188,
+  },
+  dpadKnob: {
     position: 'absolute',
     left: '50%',
     top: '50%',
-    marginLeft: -16,
-    marginTop: -16,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#B6BAC2',
+    marginLeft: -35,
+    marginTop: -35,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: '#D9DCE1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#565B66',
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
+  dpadKnobOverlay: {
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderColor: 'rgba(255, 255, 255, 0.74)',
+    shadowColor: '#000',
+    shadowOpacity: 0.32,
+  },
+  dpadKnobDots: { width: 16, flexDirection: 'row', flexWrap: 'wrap', gap: 3, justifyContent: 'center' },
+  dpadKnobDot: { width: 2, height: 2, borderRadius: 1, backgroundColor: '#C6CAD1' },
+  dpadKnobDotOverlay: { backgroundColor: 'rgba(85, 96, 110, 0.58)' },
   ctrlAction: { flex: 1, alignItems: 'center', gap: 8, paddingVertical: 14, borderRadius: 18 },
   ctrlActionIcon: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  privacyPanelHost: { position: 'relative' },
+  privacyPanelOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 5,
+    backgroundColor: 'rgba(213, 216, 221, 0.62)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  privacyPanelNotice: {
+    maxWidth: 250,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 13,
+    paddingVertical: 9,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.82)',
+  },
+  privacyPanelText: { flexShrink: 1, fontSize: 12, fontWeight: '700', color: colors.textSecondary },
 
   presetTitle: { fontSize: 18, fontWeight: '800', color: colors.textPrimary },
   presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -1670,7 +1952,6 @@ const st = StyleSheet.create({
     position: 'absolute', right: 56, top: 40, bottom: 40,
     justifyContent: 'space-between', alignItems: 'center',
   },
-  fsDpad: { position: 'absolute', left: 56, bottom: 22 },
   // 竖屏坐标的交互层(横屏位置换算:{left:a,top:b} → {top:a,right:b})
   fsBackP: {
     position: 'absolute', top: 56, right: 24, width: 44, height: 44, borderRadius: 22,
@@ -1680,6 +1961,7 @@ const st = StyleSheet.create({
     position: 'absolute', left: 40, right: 40, bottom: 56,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
+  fsDpadP: { position: 'absolute', top: 56, left: 22, transform: [{ scale: 174 / 188 }] },
   fsRot: { transform: [{ rotate: '90deg' }] },
   // 全屏保存提示:与控制钮同款半透明灰底(#777 40%);缩略图圆角与胶囊同心(外 20 - padding 8 = 内 12)
   fsToast: {
@@ -1748,7 +2030,15 @@ const st = StyleSheet.create({
   addTxt: { fontSize: 12, fontWeight: '600', color: colors.textTertiary, textAlign: 'center', lineHeight: 16 },
 
   // tilt grid
-  tiltGrid: { padding: 18, flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  tiltGrid: {
+    position: 'relative',
+    paddingHorizontal: 18,
+    paddingVertical: 24,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    columnGap: 12,
+    rowGap: 18,
+  },
   tiltCell: {
     width: '31%',
     alignItems: 'center',
@@ -1758,6 +2048,36 @@ const st = StyleSheet.create({
     borderRadius: 18,
   },
   tiltIcon: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
+  privacyTile: { zIndex: 3 },
+  privacyGridOverlay: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    zIndex: 2,
+    borderRadius: 18,
+    backgroundColor: 'rgba(202, 205, 211, 0.6)',
+  },
+  privacyGridNoticeLayer: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    bottom: 12,
+    zIndex: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  privacyGridNotice: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.84)',
+    alignItems: 'center',
+  },
+  privacyGridNoticeText: { fontSize: 12, fontWeight: '800', color: colors.textPrimary },
+  privacyGridNoticeSub: { marginTop: 2, fontSize: 10, fontWeight: '500', color: colors.textTertiary },
 
   // messages
   msgNavBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },

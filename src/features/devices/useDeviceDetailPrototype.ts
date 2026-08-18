@@ -5,7 +5,7 @@ export type DeviceDetailTab = 'messages' | 'controls' | 'tilt' | 'playback';
 export type DeviceMessage = { day: number; icon: EventIconKey; title: string; time: string };
 export type TiltKey = 'motionOn' | 'soundOn' | 'sirenOn' | 'privacyOn';
 export type ControlKey = 'ctlSpk' | 'ctlMic' | 'ctlRec' | 'ctlSnap';
-type LocalTiltKey = Exclude<TiltKey, 'motionOn' | 'soundOn'>;
+type LocalTiltKey = Exclude<TiltKey, 'motionOn' | 'soundOn' | 'privacyOn'>;
 
 const INITIAL_MESSAGES: DeviceMessage[] = NOTIFICATION_DAYS.flatMap((group) =>
   group.events.map((event) => ({
@@ -40,7 +40,6 @@ export function useDeviceDetailPrototype() {
   // 进入页面默认全部关闭
   const [tilt, setTilt] = useState<Record<LocalTiltKey, boolean>>({
     sirenOn: false,
-    privacyOn: false,
   });
   const [msgs, setMsgs] = useState(INITIAL_MESSAGES);
   const [msgChecked, setMsgChecked] = useState<number[]>([]);

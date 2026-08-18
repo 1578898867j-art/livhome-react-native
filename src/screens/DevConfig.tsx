@@ -9,7 +9,8 @@ import { colors } from '../theme';
 import { CAMGLYPH } from '../icons/protoIcons';
 import {
   setAntiFlicker,
-  setIdleTime,
+  // Idle Time 功能暂时下线，保留实现以便后续恢复。
+  // setIdleTime,
   setImageFlip,
   setNightVisionMode,
   setSmartTrackingEnabled,
@@ -27,10 +28,11 @@ import {
 import { useSchedules } from '../features/devices/shutdownStore';
 
 // Label maps mirrored from the prototype
-const IDLE_LABELS: Record<string, string> = { '5': '5 min', '10': '10 min', '15': '15 min' };
+// Idle Time 功能暂时下线，保留标签以便后续恢复。
+// const IDLE_LABELS: Record<string, string> = { '5': '5 min', '10': '10 min', '15': '15 min' };
 const NV_LABELS: Record<string, string> = { auto: 'Auto', on: 'On', off: 'Off' };
 
-type SheetKey = null | 'idle' | 'flip' | 'nv' | 'af' | 'vol';
+type SheetKey = null | 'flip' | 'nv' | 'af' | 'vol';
 
 /* ---- flip preview card — port of flipCard() ---- */
 function FlipCard({
@@ -68,7 +70,7 @@ export default function DevConfig({ navigation }: AppScreenProps) {
   // Local state seeded from the prototype S defaults
   const schedules = useSchedules();
   const offTime = schedules.length === 0 ? 'None' : '';
-  const { antiFlicker, idleTime, imageFlip, timezone, volume } = useDeviceSettings();
+  const { antiFlicker, imageFlip, timezone, volume } = useDeviceSettings();
   const nvMode = useNightVisionMode();
   const smartTrack = useSmartTrackingEnabled();
   const [sheet, setSheet] = useState<SheetKey>(null);
@@ -108,14 +110,18 @@ export default function DevConfig({ navigation }: AppScreenProps) {
           name="Device off Time"
           value={offTime}
           onPress={() => runWhenOnline(() => navigation.navigate('shutdown-list'))}
-        />
-        <SettingRow
-          icon="timer"
-          name="Idle Time"
-          value={IDLE_LABELS[idleTime]}
-          onPress={() => runWhenOnline(() => setSheet('idle'))}
           last
         />
+        {/*
+          Idle Time 功能暂时下线，保留原实现以便后续恢复。
+          <SettingRow
+            icon="timer"
+            name="Idle Time"
+            value={IDLE_LABELS[idleTime]}
+            onPress={() => runWhenOnline(() => setSheet('idle'))}
+            last
+          />
+        */}
       </Card>
 
       <Eyebrow>Picture settings</Eyebrow>
@@ -160,23 +166,25 @@ export default function DevConfig({ navigation }: AppScreenProps) {
 
       <View style={{ height: 54 }} />
 
-      {/* Idle Time — 与其他弹层一致:点选只切换选中,Done 确认关闭 */}
-      <SettingsOptionSheet
-        visible={sheet === 'idle'}
-        title="Idle Time"
-        desc="Choose how long the device waits before entering standby mode."
-        onClose={closeSheet}
-      >
-        {(['5', '10', '15'] as const).map((v) => (
-          <SettingsOptionRow
-            key={v}
-            label={`${v} minutes`}
-            selected={idleTime === v}
-            onPress={() => runWhenOnline(() => setIdleTime(v))}
-          />
-        ))}
-        <SettingsOptionDoneButton onPress={closeSheet} />
-      </SettingsOptionSheet>
+      {/*
+        Idle Time 功能暂时下线，保留原弹层实现以便后续恢复。
+        <SettingsOptionSheet
+          visible={sheet === 'idle'}
+          title="Idle Time"
+          desc="Choose how long the device waits before entering standby mode."
+          onClose={closeSheet}
+        >
+          {(['5', '10', '15'] as const).map((v) => (
+            <SettingsOptionRow
+              key={v}
+              label={`${v} minutes`}
+              selected={idleTime === v}
+              onPress={() => runWhenOnline(() => setIdleTime(v))}
+            />
+          ))}
+          <SettingsOptionDoneButton onPress={closeSheet} />
+        </SettingsOptionSheet>
+      */}
 
       {/* Image Flip 180° */}
       <SettingsOptionSheet
