@@ -7,8 +7,14 @@ import { Icon } from '../components/Icon';
 import CalendarModal from '../components/CalendarModal';
 import { StateView, Spinner } from '../components/states';
 import { PermissionDialog } from '../components/PermissionDialog';
+import { PrivacyNoticeBanner } from '../components/PrivacyNoticeBanner';
 import { useDemoFlags, getDemoFlags } from '../features/app/demoStore';
 import { NOTIFICATION_DAYS } from '../features/notifications/demoEvents';
+import {
+  getDevicePrivacyStatus,
+  isDevicePrivacyProtected,
+  useDeviceList,
+} from '../features/devices/deviceListStore';
 import { showToast } from '../features/app/toastStore';
 import { SELICON } from '../icons/protoIcons';
 import { CAMAVATAR, MAILBOX_EMPTY } from '../assets/images';
@@ -54,6 +60,12 @@ const SYSTEM_INIT: DayGroup[] = [
 ];
 
 export default function NotifCenter({ navigation }: AppScreenProps) {
+  const devices = useDeviceList();
+  const privacyDevices = devices.filter(isDevicePrivacyProtected);
+  const privacyDeviceNames = privacyDevices.map((device) => device.name).join(', ');
+  const privacyBannerStatus = privacyDevices.length === 1
+    ? getDevicePrivacyStatus(privacyDevices[0])
+    : 'on';
   const [tab, setTab] = useState<'device' | 'system'>('device');
   const [edit, setEdit] = useState(false);
   const [checked, setChecked] = useState<number[]>([]);
@@ -214,6 +226,13 @@ export default function NotifCenter({ navigation }: AppScreenProps) {
           </Row>
         )}
         </Row>
+
+      {tab === 'device' && privacyDevices.length > 0 && (
+        <PrivacyNoticeBanner
+          status={privacyBannerStatus}
+          deviceName={privacyDeviceNames}
+        />
+      )}
 
       {/* 推送权限关闭引导条 */}
       {flags.permsDenied && (

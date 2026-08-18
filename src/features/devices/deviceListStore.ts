@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import type { DeviceSummary } from '../../contracts';
+import type { DevicePrivacyStatus, DeviceSummary } from '../../contracts';
 import {
   getPersistedValue,
   isPersistenceHydrated,
@@ -42,7 +42,8 @@ const isStoredDevice = (value: unknown): value is DeviceSummary => {
   return (
     typeof device.id === 'string' &&
     typeof device.name === 'string' &&
-    (device.status === 'online' || device.status === 'offline')
+    (device.status === 'online' || device.status === 'offline') &&
+    (device.privacyStatus == null || ['off', 'enabling', 'on', 'disabling'].includes(device.privacyStatus))
   );
 };
 
@@ -96,6 +97,36 @@ export const useSelectedDevice = () => useSyncExternalStore(subscribe, getSelect
 
 export const getSelectedDevice = getSelectedDeviceSnapshot;
 
+export const getDevicePrivacyStatus = (device: DeviceSummary | null | undefined): DevicePrivacyStatus =>
+  device?.privacyStatus ?? 'off';
+
+export const isDevicePrivacyProtected = (device: DeviceSummary | null | undefined) =>
+  getDevicePrivacyStatus(device) !== 'off';
+
+const setDevicePrivacyStatus = (deviceId: string, privacyStatus: DevicePrivacyStatus, persistChange: boolean) => {
+  devices = devices.map((device) => (device.id === deviceId ? { ...device, privacyStatus } : device));
+  emit();
+  if (persistChange) persist();
+};
+
+export async function requestDevicePrivacyMode(deviceId: string, enabled: boolean, simulateFailure = false) {
+  const device = devices.find((item) => item.id === deviceId);
+  if (!device) throw new Error('Device not found.');
+  const current = getDevicePrivacyStatus(device);
+  if (current === 'enabling' || current === 'disabling') return;
+
+  const previous: DevicePrivacyStatus = current === 'on' ? 'on' : 'off';
+  setDevicePrivacyStatus(deviceId, enabled ? 'enabling' : 'disabling', false);
+  await new Promise<void>((resolve) => setTimeout(resolve, 900));
+
+  if (simulateFailure) {
+    setDevicePrivacyStatus(deviceId, previous, false);
+    throw new Error(enabled ? 'The device did not enable privacy mode.' : 'The device did not disable privacy mode.');
+  }
+
+  setDevicePrivacyStatus(deviceId, enabled ? 'on' : 'off', true);
+}
+
 export function selectDevice(deviceId: string) {
   if (deviceId === selectedDeviceId || !devices.some((device) => device.id === deviceId)) return;
   selectedDeviceId = deviceId;
@@ -108,6 +139,7 @@ export function addBoundDevice(name: string) {
     id: `bound-device-${++boundDeviceSequence}`,
     name: name.trim() || 'Living Room Camera',
     status: 'online',
+    privacyStatus: 'off',
   };
 
   devices = [device, ...devices];

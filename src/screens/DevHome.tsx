@@ -6,9 +6,16 @@ import { Screen, Tap, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
 import { StateView, Spinner } from '../components/states';
 import { DeviceOfflineDialog } from '../components/DeviceOfflineDialog';
+import { PrivacyMask } from '../components/PrivacyMask';
 import { useDemoFlags } from '../features/app/demoStore';
-import { selectDevice, useDeviceList } from '../features/devices/deviceListStore';
+import {
+  getDevicePrivacyStatus,
+  selectDevice,
+  useDeviceList,
+} from '../features/devices/deviceListStore';
 import { requestTalk } from '../features/devices/talkIntent';
+import { showToast } from '../features/app/toastStore';
+import type { DevicePrivacyStatus } from '../contracts';
 import { colors } from '../theme';
 import { CAMAVATAR } from '../assets/images';
 
@@ -20,6 +27,12 @@ const DEVICE_PREVIEWS: Record<string, Prev> = {
 };
 
 const NEW_DEVICE_PREVIEW: Prev = { tag: 'No motion', label: 'Just now' };
+const privacyStatusLabel = (status: DevicePrivacyStatus) => {
+  if (status === 'enabling') return 'Turning on Privacy Mode…';
+  if (status === 'disabling') return 'Turning off Privacy Mode…';
+  if (status === 'on') return 'Privacy Mode';
+  return 'Online';
+};
 
 export default function DevHome({ navigation }: AppScreenProps) {
   const go = (id: StackRouteName) => () => navigateTo(navigation, id);
@@ -37,6 +50,10 @@ export default function DevHome({ navigation }: AppScreenProps) {
   const showOfflineDialog = (deviceId: string) => {
     selectDevice(deviceId);
     setOfflineDialogOpen(true);
+  };
+  const showPrivacyBlocked = (deviceId: string) => {
+    selectDevice(deviceId);
+    showToast('Turn off Privacy Mode to use this feature.', 'info');
   };
   const retryLoad = () => {
     setRetrying(true);
@@ -69,12 +86,16 @@ export default function DevHome({ navigation }: AppScreenProps) {
     name,
     status,
     prev,
+    privacyStatus,
   }: {
     id: string;
     name: string;
     status: string;
     prev: Prev;
-  }) => (
+    privacyStatus: DevicePrivacyStatus;
+  }) => {
+    const privacyProtected = privacyStatus !== 'off';
+    return (
     <View style={st.card}>
       <Tap style={st.cardHead} onPress={openDevice(id, 'dev-detail')}>
         <View style={st.avatar}>
@@ -89,7 +110,7 @@ export default function DevHome({ navigation }: AppScreenProps) {
         </View>
         <Icon name="chevR" size={16} color={colors.textTertiary} sw={2.2} />
       </Tap>
-      <CamPreview tag={prev.tag} label={prev.label} />
+      {privacyProtected ? <PrivacyMask status={privacyStatus} compact /> : <CamPreview tag={prev.tag} label={prev.label} />}
       <Row style={{ padding: 12, paddingHorizontal: 14, gap: 8 }}>
         <Pressable
           onPress={openDevice(id, 'dev-detail')}
@@ -99,11 +120,12 @@ export default function DevHome({ navigation }: AppScreenProps) {
           <Text style={[st.actText, { color: colors.textInverse }]}>Live view</Text>
         </Pressable>
         <Pressable
-          onPress={openDevice(id, 'dev-detail', requestTalk)}
-          style={({ pressed }) => [st.actBtn, st.actBtnOutline, pressed && { opacity: 0.85 }]}
+          onPress={privacyProtected ? () => showPrivacyBlocked(id) : openDevice(id, 'dev-detail', requestTalk)}
+          style={({ pressed }) => [st.actBtn, st.actBtnOutline, privacyProtected && st.actBtnDisabled, pressed && { opacity: 0.85 }]}
+          accessibilityState={{ disabled: privacyProtected }}
         >
-          <Icon name="mic" size={18} color={colors.textPrimary} />
-          <Text style={[st.actText, { color: colors.textPrimary }]}>Talk</Text>
+          <Icon name="mic" size={18} color={privacyProtected ? colors.textTertiary : colors.textPrimary} />
+          <Text style={[st.actText, { color: privacyProtected ? colors.textTertiary : colors.textPrimary }]}>Talk</Text>
         </Pressable>
         <Pressable
           onPress={openDevice(id, 'dev-messages')}
@@ -114,7 +136,8 @@ export default function DevHome({ navigation }: AppScreenProps) {
         </Pressable>
       </Row>
     </View>
-  );
+    );
+  };
 
   /* ---- devCardOffline(name) ---- */
   const DevCardOffline = ({ id, name }: { id: string; name: string }) => (
@@ -217,8 +240,9 @@ export default function DevHome({ navigation }: AppScreenProps) {
                 key={device.id}
                 id={device.id}
                 name={device.name}
-                status="Online"
+                status={privacyStatusLabel(getDevicePrivacyStatus(device))}
                 prev={DEVICE_PREVIEWS[device.id] ?? NEW_DEVICE_PREVIEW}
+                privacyStatus={getDevicePrivacyStatus(device)}
               />
             ) : (
               <DevCardOffline key={device.id} id={device.id} name={device.name} />
@@ -315,6 +339,7 @@ const st = StyleSheet.create({
   actBtn: { flex: 1, height: 40, borderRadius: 99, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   actBtnDark: { backgroundColor: colors.textPrimary },
   actBtnOutline: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.borderStrong },
+  actBtnDisabled: { backgroundColor: colors.bgSecondary, borderColor: colors.border },
   actText: { fontSize: 12, fontWeight: '600' },
 
   gearBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },

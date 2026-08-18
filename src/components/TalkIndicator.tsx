@@ -5,7 +5,15 @@ import { PHOTOICONS } from '../icons/protoSets';
 
 const BAR_COUNT = 7;
 
-export function TalkIndicator({ compact, style }: { compact: boolean; style?: StyleProp<ViewStyle> }) {
+export function TalkIndicator({
+  compact,
+  inverted = false,
+  style,
+}: {
+  compact: boolean;
+  inverted?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
   const wave = useRef(new Animated.Value(0)).current;
   const phase = useRef(new Animated.Value(compact ? 1 : 0)).current;
   const entry = useRef(new Animated.Value(0)).current;
@@ -83,7 +91,7 @@ export function TalkIndicator({ compact, style }: { compact: boolean; style?: St
         <SvgXml xml={PHOTOICONS.micSolid} width={30} height={35} color="#fff" />
       </Animated.View>
 
-      <View style={st.waveRow}>
+      <View style={[st.waveRow, inverted && { transform: [{ rotate: '180deg' }] }]}>
         {Array.from({ length: BAR_COUNT }).map((_, index) => (
           <Animated.View
             key={index}

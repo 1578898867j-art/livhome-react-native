@@ -29,6 +29,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { SvgXml } from 'react-native-svg';
 import { Icon } from '../components/Icon';
 import { SunBurst } from '../components/SunLogo';
@@ -43,6 +44,7 @@ import { showToast } from '../features/app/toastStore';
 const W = Dimensions.get('window').width;
 const H = Dimensions.get('window').height;
 const DRAWER_W = Math.round(W * 0.78);
+const DRAWER_SWIPE_EDGE_WIDTH = Math.round(Math.min(112, W * 0.26));
 const INPUT_BOTTOM_OFFSET = 114;
 const INPUT_HEIGHT = 65;
 const INPUT_HORIZONTAL_INSET = 18;
@@ -635,15 +637,24 @@ export default function AgentChat({ navigation }: AppScreenProps) {
   // 不干扰会话纵向滚动、输入框及推荐卡片的横向滚动。
   const openDrawerRef = useRef(openDrawer);
   openDrawerRef.current = openDrawer;
+  const drawerTouchStartX = useRef(Number.POSITIVE_INFINITY);
   const drawerSwipeResponder = useMemo(
     () => PanResponder.create({
+      onStartShouldSetPanResponderCapture: (event) => {
+        drawerTouchStartX.current = event.nativeEvent.pageX;
+        return false;
+      },
       onMoveShouldSetPanResponderCapture: (_event, gesture) =>
         !drawerOpenRef.current &&
-        gesture.x0 <= 32 &&
+        drawerTouchStartX.current <= DRAWER_SWIPE_EDGE_WIDTH &&
         gesture.dx > 8 &&
         Math.abs(gesture.dx) > Math.abs(gesture.dy) * 1.4,
       onPanResponderRelease: (_event, gesture) => {
         if (gesture.dx > 56 && Math.abs(gesture.dy) < 56) openDrawerRef.current();
+        drawerTouchStartX.current = Number.POSITIVE_INFINITY;
+      },
+      onPanResponderTerminate: () => {
+        drawerTouchStartX.current = Number.POSITIVE_INFINITY;
       },
     }),
     [],
@@ -770,7 +781,14 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                     onSubmitEditing={sendText}
                     returnKeyType="send"
                   />
-                  <MicOrSend draft={draft} onSend={sendText} onVoice={() => setVoiceMode(true)} />
+                  <MicOrSend
+                    draft={draft}
+                    onSend={sendText}
+                    onVoice={() => {
+                      void Haptics.selectionAsync();
+                      setVoiceMode(true);
+                    }}
+                  />
                 </View>
               )}
             </View>
@@ -928,7 +946,14 @@ export default function AgentChat({ navigation }: AppScreenProps) {
                         onSubmitEditing={sendText}
                         returnKeyType="send"
                       />
-                      <MicOrSend draft={draft} onSend={sendText} onVoice={() => setVoiceMode(true)} />
+                      <MicOrSend
+                        draft={draft}
+                        onSend={sendText}
+                        onVoice={() => {
+                          void Haptics.selectionAsync();
+                          setVoiceMode(true);
+                        }}
+                      />
                     </View>
                   )}
                 </View>

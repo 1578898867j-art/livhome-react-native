@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   Animated,
   Easing,
@@ -117,7 +118,10 @@ export function SettingsOptionDoneButton({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={() => {
+        void Haptics.selectionAsync();
+        onPress();
+      }}
       style={({ pressed }) => [st.doneButton, pressed && { opacity: 0.85 }]}
     >
       <Text style={st.doneText}>Done</Text>

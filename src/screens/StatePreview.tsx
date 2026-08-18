@@ -1,5 +1,6 @@
 import type { AppScreenProps } from '../navigation/types';
 import React from 'react';
+import * as Haptics from 'expo-haptics';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Screen, Tap, Card, Header, Eyebrow, Row } from '../components/kit';
 import { Icon } from '../components/Icon';
@@ -62,7 +63,10 @@ const GROUPS: { title: string; rows: RowDef[] }[] = [
 function RawToggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
     <Pressable
-      onPress={onToggle}
+      onPress={() => {
+        void Haptics.selectionAsync();
+        onToggle();
+      }}
       style={[st.tg, on && { backgroundColor: colors.brand, alignItems: 'flex-end' }]}
     >
       <View style={st.tgKnob} />

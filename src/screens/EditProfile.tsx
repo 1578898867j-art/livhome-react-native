@@ -1,7 +1,8 @@
 import type { AppScreenProps } from '../navigation/types';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Keyboard, Modal, Platform, Pressable, ScrollView, View, Text, StyleSheet, TextInput } from 'react-native';
+import { Image, Keyboard, Modal, Platform, Pressable, ScrollView, View, Text, StyleSheet, TextInput } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Screen, Header, Eyebrow, Row, Tap, PrimaryBtn } from '../components/kit';
 import { getDemoFlags } from '../features/app/demoStore';
@@ -50,22 +51,47 @@ const PHONE_COUNTRIES = [
 type PhoneCountry = (typeof PHONE_COUNTRIES)[number];
 
 export default function EditProfile({ navigation }: AppScreenProps) {
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
   const [nickname, setNickname] = useState('Jon Alishon');
   const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState<PhoneCountry>(PHONE_COUNTRIES[17]);
+  const [country, setCountry] = useState<PhoneCountry>(PHONE_COUNTRIES[0]);
   const [countryListOpen, setCountryListOpen] = useState(false);
   const [countryListTop, setCountryListTop] = useState(0);
   const [keyboardFrame, setKeyboardFrame] = useState<{ top: number; inset: number } | null>(null);
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
   const phoneFocusedRef = useRef(false);
-  const phoneBottomRef = useRef(0);
-  const headerHeightRef = useRef(0);
+  const phoneRowRef = useRef<View>(null);
+  const scrollOffsetRef = useRef(0);
   const countryFieldRef = useRef<View>(null);
   const countryListOpenRef = useRef(false);
   const normalizedPhone = phone.replace(/[^\d]/g, '');
   const phoneValid = country.pattern.test(normalizedPhone);
   const canSave = nickname.trim().length >= 1 && nickname.length <= 15 && phoneValid;
+
+  const chooseAvatar = async (source: 'camera' | 'library') => {
+    setAvatarPickerOpen(false);
+    try {
+      const permission = source === 'camera'
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        showToast(source === 'camera' ? 'Camera access is needed to take a profile photo.' : 'Photo library access is needed to choose a profile photo.', 'error');
+        return;
+      }
+
+      const result = source === 'camera'
+        ? await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], mediaTypes: ['images'], quality: 0.8 })
+        : await ImagePicker.launchImageLibraryAsync({ allowsEditing: true, aspect: [1, 1], mediaTypes: ['images'], quality: 0.8 });
+      const asset = result.canceled ? null : result.assets[0];
+      if (!asset) return;
+      setAvatarUri(asset.uri);
+      showToast('Profile photo updated', 'success');
+    } catch {
+      showToast('Unable to update profile photo. Please try again.', 'error');
+    }
+  };
 
   const closeCountryList = () => {
     countryListOpenRef.current = false;
@@ -90,7 +116,7 @@ export default function EditProfile({ navigation }: AppScreenProps) {
         if (!countryListOpenRef.current) return;
         // measureInWindow 的 y 是窗口全局坐标，已包含状态栏和页面导航栏的高度；
         // Modal 同样以窗口原点定位，因此两者可直接对齐。
-        const minContentTop = insets.top + headerHeightRef.current + 8;
+        const minContentTop = insets.top + 8;
         setCountryListTop(Math.max(minContentTop, y + height + 8));
         setCountryListOpen(true);
       });
@@ -98,10 +124,17 @@ export default function EditProfile({ navigation }: AppScreenProps) {
   };
 
   const revealPhoneInput = useCallback((keyboardTop: number) => {
-    const visibleBottom = keyboardTop - insets.top - headerHeightRef.current;
-    const scrollY = Math.max(0, phoneBottomRef.current - visibleBottom + PHONE_KEYBOARD_GAP);
-    scrollRef.current?.scrollTo({ y: scrollY, animated: false });
-  }, [insets.top]);
+    requestAnimationFrame(() => {
+      phoneRowRef.current?.measureInWindow((_x, y, _width, height) => {
+        const coveredByKeyboard = y + height - (keyboardTop - PHONE_KEYBOARD_GAP);
+        if (coveredByKeyboard <= 0) return;
+        scrollRef.current?.scrollTo({
+          y: scrollOffsetRef.current + coveredByKeyboard,
+          animated: true,
+        });
+      });
+    });
+  }, []);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -132,13 +165,7 @@ export default function EditProfile({ navigation }: AppScreenProps) {
     <Screen
       scroll={false}
       header={
-        <View
-          onLayout={({ nativeEvent }) => {
-            headerHeightRef.current = nativeEvent.layout.height;
-          }}
-        >
-          <Header title="Personal Account" onBack={() => navigation.goBack()} />
-        </View>
+        <Header title="Personal Account" onBack={() => navigation.goBack()} />
       }
     >
       <ScrollView
@@ -150,22 +177,36 @@ export default function EditProfile({ navigation }: AppScreenProps) {
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        onScroll={({ nativeEvent }) => { scrollOffsetRef.current = nativeEvent.contentOffset.y; }}
+        scrollEventThrottle={16}
       >
           {/* Avatar */}
           <View style={st.avatarWrap}>
-            <View style={st.avatarInner}>
-              <LinearGradient
-                colors={['#6A9BFA', '#2372F0'] as const}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={st.avatar}
-              >
-                <Text style={st.avatarLetter}>J</Text>
-              </LinearGradient>
-              <View style={st.camBadge}>
-                <Icon name="camera" size={15} color={colors.textSecondary} />
+            <Tap
+              style={st.avatarTap}
+              onPress={() => setAvatarPickerOpen(true)}
+              accessibilityRole="button"
+              accessibilityLabel="Change profile photo"
+              accessibilityHint="Opens options to take a photo or choose one from the photo library"
+            >
+              <View style={st.avatarInner}>
+                {avatarUri ? (
+                  <Image source={{ uri: avatarUri }} style={st.avatar} />
+                ) : (
+                  <LinearGradient
+                    colors={['#6A9BFA', '#2372F0'] as const}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={st.avatar}
+                  >
+                    <Text style={st.avatarLetter}>J</Text>
+                  </LinearGradient>
+                )}
+                <View style={st.camBadge} pointerEvents="none">
+                  <Icon name="camera" size={15} color={colors.textSecondary} />
+                </View>
               </View>
-            </View>
+            </Tap>
           </View>
 
           {/* Nick name */}
@@ -194,15 +235,11 @@ export default function EditProfile({ navigation }: AppScreenProps) {
           </View>
 
           {/* WhatsApp */}
-          <View
-            style={st.section}
-            onLayout={({ nativeEvent }) => {
-              phoneBottomRef.current = nativeEvent.layout.y + nativeEvent.layout.height;
-            }}
-          >
+          <View style={st.section}>
             <Eyebrow>WhatsApp</Eyebrow>
-            <Row style={{ gap: 10 }}>
-              <View ref={countryFieldRef} collapsable={false}>
+            <View ref={phoneRowRef} collapsable={false}>
+              <Row style={{ gap: 10 }}>
+                <View ref={countryFieldRef} collapsable={false}>
                 <Tap
                   style={[st.field, st.countryField, countryListOpen && st.fieldActive]}
                   onPress={toggleCountryList}
@@ -213,8 +250,8 @@ export default function EditProfile({ navigation }: AppScreenProps) {
                   <Text style={st.countryCode}>{country.code}</Text>
                   <Icon name={countryListOpen ? 'chevU' : 'chevD'} size={14} color={colors.textTertiary} sw={2.2} />
                 </Tap>
-              </View>
-              <TextInput
+                </View>
+                <TextInput
                 value={phone}
                 onChangeText={(value) => setPhone(value.replace(/[^\d]/g, '').slice(0, country.maxDigits))}
                 onFocus={() => {
@@ -230,8 +267,9 @@ export default function EditProfile({ navigation }: AppScreenProps) {
                 autoComplete="tel"
                 textContentType="telephoneNumber"
                 style={[st.field, st.phoneInput, phone.length > 0 && !phoneValid && st.fieldInvalid]}
-              />
-            </Row>
+                />
+              </Row>
+            </View>
             {phone.length > 0 && !phoneValid && (
               <Text style={st.phoneError}>Enter a valid {country.name} mobile number for {country.code}.</Text>
             )}
@@ -255,6 +293,24 @@ export default function EditProfile({ navigation }: AppScreenProps) {
           </View>
       </ScrollView>
     </Screen>
+    <Modal transparent visible={avatarPickerOpen} animationType="fade" onRequestClose={() => setAvatarPickerOpen(false)}>
+      <View style={st.avatarActionSheetRoot} accessibilityViewIsModal>
+        <Pressable style={StyleSheet.absoluteFill} onPress={() => setAvatarPickerOpen(false)} />
+        <View style={st.avatarActionSheet}>
+          <View style={st.avatarActionGroup}>
+            <Tap style={st.avatarActionItem} onPress={() => void chooseAvatar('camera')} accessibilityRole="button">
+              <Text style={st.avatarActionText}>Take a photo</Text>
+            </Tap>
+            <Tap style={[st.avatarActionItem, st.avatarActionItemLast]} onPress={() => void chooseAvatar('library')} accessibilityRole="button">
+              <Text style={st.avatarActionText}>Select from the album</Text>
+            </Tap>
+          </View>
+          <Tap style={st.avatarActionCancel} onPress={() => setAvatarPickerOpen(false)} accessibilityRole="button">
+            <Text style={st.avatarActionCancelText}>Cancel</Text>
+          </Tap>
+        </View>
+      </View>
+    </Modal>
     <Modal transparent visible={countryListOpen} animationType="none" onRequestClose={closeCountryList}>
       <View style={st.countryModalRoot} accessibilityViewIsModal>
         <Pressable style={StyleSheet.absoluteFill} onPress={closeCountryList} />
@@ -297,6 +353,7 @@ const st = StyleSheet.create({
   content: { flex: 1 },
   contentContainer: { flexGrow: 1, paddingBottom: 16 },
   avatarWrap: { alignItems: 'center', paddingTop: 14, paddingBottom: 6 },
+  avatarTap: { padding: 6 },
   avatarInner: { position: 'relative' },
   avatar: {
     width: 104,
@@ -304,6 +361,7 @@ const st = StyleSheet.create({
     borderRadius: 52,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
   avatarLetter: { fontSize: 40, fontWeight: '700', color: '#fff' },
   camBadge: {
@@ -351,6 +409,20 @@ const st = StyleSheet.create({
     ...shadow.md,
   },
   countryModalRoot: { flex: 1 },
+  avatarActionSheetRoot: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.42)' },
+  avatarActionSheet: { paddingHorizontal: 14, paddingBottom: 14, gap: 8 },
+  avatarActionGroup: { overflow: 'hidden', borderRadius: 14, backgroundColor: '#F8F9FC' },
+  avatarActionItem: {
+    minHeight: 58,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#D9DCE2',
+  },
+  avatarActionItemLast: { borderBottomWidth: 0 },
+  avatarActionText: { fontSize: 17, fontWeight: '500', color: colors.brand },
+  avatarActionCancel: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#F8F9FC' },
+  avatarActionCancelText: { fontSize: 17, fontWeight: '600', color: colors.textPrimary },
   countryListTitle: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8, fontSize: 14, fontWeight: '600', color: colors.textSecondary },
   countryOption: { minHeight: 48, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' },
   countryOptionSelected: { backgroundColor: colors.brandSoft },

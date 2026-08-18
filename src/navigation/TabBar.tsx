@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
@@ -81,7 +82,10 @@ export default function TabBar({ state, navigation }: BottomTabBarProps) {
             }
 
             const e = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-            if (!e.defaultPrevented) navigation.navigate(route.name);
+            if (!e.defaultPrevented) {
+              void Haptics.selectionAsync();
+              navigation.navigate(route.name);
+            }
           };
 
           // center Assistant tab — the sun-burst, no label, larger
