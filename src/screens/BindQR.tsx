@@ -4,7 +4,6 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Screen, Header, SecondaryBtn, Tap } from '../components/kit';
 import { Icon } from '../components/Icon';
-import { SunLogo } from '../components/SunLogo';
 import { Spinner } from '../components/states';
 import { useDemoFlags } from '../features/app/demoStore';
 import { colors } from '../theme';
@@ -24,7 +23,8 @@ const PAT = [
   '11011001011',
 ];
 
-const CELL = 14;
+// Keep the QR modules large enough to scan comfortably from the device camera.
+const CELL = 18;
 
 export default function BindQR({ navigation }: AppScreenProps) {
   const { failLoad } = useDemoFlags();
@@ -92,9 +92,6 @@ export default function BindQR({ navigation }: AppScreenProps) {
                   )),
                 )}
               </View>
-              <View style={st.logoBadge}>
-                <SunLogo size={38} />
-              </View>
             </>
           )}
         </View>
@@ -107,7 +104,6 @@ export default function BindQR({ navigation }: AppScreenProps) {
 
       {slowHint && !failLoad && (
         <View style={st.hintPill}>
-          <Icon name="info" size={13} color={colors.warning} sw={2} />
           <Text style={st.hintTxt}>Not scanned yet? Move the code closer to the camera lens.</Text>
         </View>
       )}
@@ -117,6 +113,7 @@ export default function BindQR({ navigation }: AppScreenProps) {
           label="Can’t scan? Switch to Bluetooth"
           onPress={() => navigation.navigate('bind-find')}
           style={{ borderRadius: 99 }}
+          textStyle={st.footerBtnText}
         />
       </View>
     </Screen>
@@ -141,32 +138,12 @@ const st = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 1,
     borderColor: colors.border,
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 40,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     width: CELL * 11,
     height: CELL * 11,
-  },
-  logoBadge: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    marginLeft: -22,
-    marginTop: -22,
-    width: 44,
-    height: 44,
-    borderRadius: 13,
-    backgroundColor: colors.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: '#fff',
   },
   waitRow: {
     flexDirection: 'row',
@@ -178,6 +155,7 @@ const st = StyleSheet.create({
   dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.brand },
   waitText: { fontSize: 14, fontWeight: '500', color: colors.textTertiary },
   footer: { marginTop: 'auto', paddingHorizontal: 24, paddingTop: 30, paddingBottom: 40 },
+  footerBtnText: { fontWeight: '600' },
 
   // 二维码生成失败态(占位与二维码同尺寸,卡片不跳动)
   qrError: { width: CELL * 11, height: CELL * 11, alignItems: 'center', justifyContent: 'center' },
@@ -193,15 +171,23 @@ const st = StyleSheet.create({
   qrErrRetry: { marginTop: 8, fontSize: 13, fontWeight: '700', color: colors.brand },
   // 扫码超时提示(20s 未被扫走)
   hintPill: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    alignSelf: 'center',
+    alignSelf: 'stretch',
+    marginHorizontal: 34,
     marginTop: 14,
-    paddingHorizontal: 14,
-    height: 32,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    minHeight: 60,
     borderRadius: 16,
     backgroundColor: colors.warningSoft,
   },
-  hintTxt: { fontSize: 12, fontWeight: '600', color: colors.warning },
+  hintTxt: {
+    alignSelf: 'stretch',
+    flexShrink: 1,
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '600',
+    color: colors.warning,
+    textAlign: 'center',
+  },
 });

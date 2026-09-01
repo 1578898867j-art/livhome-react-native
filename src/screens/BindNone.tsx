@@ -80,8 +80,9 @@ const st = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
   },
-  btnWrap: { paddingHorizontal: 22, paddingTop: 26 },
-  manual: { marginTop: 130, paddingHorizontal: 22, paddingBottom: 30 },
+  // Keep the manual-add section anchored while placing Retry 24px above it.
+  btnWrap: { paddingHorizontal: 22, paddingTop: 132 },
+  manual: { marginTop: 24, paddingHorizontal: 22, paddingBottom: 30 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 14 },
   dividerLine: { flex: 1, height: 1, backgroundColor: colors.border },
   dividerText: { fontSize: 12, fontWeight: '600', color: colors.textTertiary },

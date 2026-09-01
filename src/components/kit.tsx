@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Pressable,
   ViewStyle,
+  TextStyle,
   StyleProp,
   AccessibilityRole,
   AccessibilityState,
@@ -412,10 +413,20 @@ export function PrimaryBtn({
     </Pressable>
   );
 }
-export function SecondaryBtn({ label, onPress, style }: { label: string; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
+export function SecondaryBtn({
+  label,
+  onPress,
+  style,
+  textStyle,
+}: {
+  label: string;
+  onPress?: () => void;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+}) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [s.btnSec, pressed && { opacity: 0.85 }, style]}>
-      <Text style={{ color: colors.textPrimary, fontSize: 16, fontWeight: '700' }}>{label}</Text>
+      <Text style={[{ color: colors.textPrimary, fontSize: 16, fontWeight: '700' }, textStyle]}>{label}</Text>
     </Pressable>
   );
 }
